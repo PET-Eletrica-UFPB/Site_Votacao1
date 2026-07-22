@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ranking ao Vivo - Votação FEE 2026.1</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+
   <style>
   * {
     box-sizing: border-box;
@@ -12,7 +17,7 @@
   }
 
   body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Poppins', sans-serif;
     background-color: #05015d;
     color: #f8fafc;
     display: flex;
@@ -26,6 +31,9 @@
   header {
     text-align: center;
     margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 
   header h1 {
@@ -38,6 +46,23 @@
   header p {
     font-size: 1.1rem;
     color: #94a3b8;
+    text-transform: uppercase;
+  }
+
+  /* 🖼️ ESTILO DO CONTAINER DE LOGOS */
+  .logos-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 24px;              /* Espaço entre as logos */
+    margin-top: 15px;       /* Distância do texto acima */
+    flex-wrap: wrap;        /* Ajusta em telas pequenas */
+  }
+
+  .logos-container img {
+    height: 60px;           /* Altura máxima das logos (Ajuste conforme necessário) */
+    width: auto;            /* Mantém a proporção original da imagem */
+    object-fit: contain;
   }
 
   .container {
@@ -46,7 +71,6 @@
     gap: 20px;
     width: 100%;
     max-width: 1200px;
-    /* Por padrão se adapta ao tamanho da tela */
     flex-direction: row; 
     flex-wrap: wrap;
   }
@@ -54,12 +78,12 @@
   /* 📱 REGRA PARA TELA VERTICAL (Orientação Portrait) */
   @media (max-width: 768px), (orientation: portrait) {
     .container {
-      flex-direction: column; /* Empilha Engenharia Elétrica e Renováveis um embaixo do outro */
+      flex-direction: column;
       align-items: center;
     }
 
     .card {
-      width: 100% !important; /* Ocupa toda a largura da tela vertical */
+      width: 100% !important;
     }
 
     header h1 {
@@ -68,6 +92,10 @@
 
     #total-votos {
       font-size: 1.6rem !important;
+    }
+
+    .logos-container img {
+      height: 45px; /* Reduz um pouco o tamanho das logos no celular */
     }
   }
 
@@ -83,7 +111,7 @@
 
   .card h2 {
     font-size: 1.6rem;
-    color: #38bdf8;
+    color: #f8fafc;
     border-bottom: 2px solid #334155;
     padding-bottom: 10px;
     margin-bottom: 15px;
@@ -149,7 +177,13 @@
 
   <header>
     <h1>Feira de Engenharia e Energias 2026.1 - RANKING AO VIVO</h1>
-    <p> MOSTRA DE PROJETOS - FEE 2026.1</p>
+    <p>MOSTRA DE PROJETOS - FEE 2026.1</p>
+
+    <div class="logos-container">
+      <img src="logo1.png" alt="Logo 1">
+      <img src="logo2.png" alt="Logo 2">
+      <img src="logo3.png" alt="Logo 3">
+    </div>
   </header>
 
   <div class="container">
@@ -161,7 +195,7 @@
     </div>
 
     <div class="card">
-      <h2> Engenharia de Energias Renováveis</h2>
+      <h2>Engenharia de Energias Renováveis</h2>
       <ol id="top-renovaveis">
         <li>Aguardando conexão...</li>
       </ol>
@@ -190,7 +224,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // Função para ordenar usando os votos e o critério de desempate (ordemAtingida)
     function obterTop3(projetosObjeto, sufixo) {
       if (!projetosObjeto) return [];
 
@@ -199,32 +232,29 @@
         ...projetosObjeto[key]
       }));
 
-      // Critério de desempate idêntico ao C++ do ESP32
       lista.sort((a, b) => {
         const votosA = a.votos || 0;
         const votosB = b.votos || 0;
 
         if (votosB !== votosA) {
-          return votosB - votosA; // Mais votos vem primeiro
+          return votosB - votosA;
         }
 
         const ordemA = a.ordemAtingida || 0;
         const ordemB = b.ordemBtingida || 0;
 
-        return ordemA - ordemB; // Quem atingiu a pontuação primeiro ganha
+        return ordemA - ordemB;
       });
 
       return lista.slice(0, 3).map(p => `${p.numero}${sufixo} - ${p.nome}`);
     }
 
-    // Escuta em tempo real todas as alterações do nó raiz
     onValue(ref(db, '/'), (snapshot) => {
       const data = snapshot.val() || {};
 
       const eletricaTop3 = obterTop3(data.eletrica, 'A');
       const renovaveisTop3 = obterTop3(data.renovaveis, 'B');
 
-      // Calcula o total geral de votos de todos os projetos juntos
       let totalVotos = 0;
       if (data.eletrica) {
         Object.values(data.eletrica).forEach(p => totalVotos += (p.votos || 0));
@@ -233,7 +263,6 @@
         Object.values(data.renovaveis).forEach(p => totalVotos += (p.votos || 0));
       }
 
-      // Atualiza HTML de Engenharia Elétrica
       const elList = document.getElementById('top-eletrica');
       if (eletricaTop3.length > 0) {
         elList.innerHTML = eletricaTop3.map((p, i) => `
@@ -246,7 +275,6 @@
         elList.innerHTML = '<li>Nenhum voto registrado</li>';
       }
 
-      // Atualiza HTML de Energias Renováveis
       const renList = document.getElementById('top-renovaveis');
       if (renovaveisTop3.length > 0) {
         renList.innerHTML = renovaveisTop3.map((p, i) => `
@@ -259,7 +287,6 @@
         renList.innerHTML = '<li>Nenhum voto registrado</li>';
       }
 
-      // Atualiza o contador total de votos na tela
       document.getElementById('total-votos').innerText = `Total de Votos Registrados: ${totalVotos}`;
     });
   </script>
