@@ -4,5 +4,5 @@
   </font>
 </h1>
 
-URNA ELETRÔNICA - PET ELÉTRICA UFPB <b>(CEAR)</b>, 
+URNA ELETRÔNICA - PET ELÉTRICA UFPB <b>(CEAR)</b>
 
