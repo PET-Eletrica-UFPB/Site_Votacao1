@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ranking ao Vivo - URNA PET UFPB</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 2.8rem;
+      letter-spacing: 2px;
+      color: #38bdf8;
+      text-transform: uppercase;
+    }
+
+    header p {
+      font-size: 1.2rem;
+      color: #94a3b8;
+    }
+
+    .container {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      width: 100%;
+      max-width: 1200px;
+      flex-wrap: wrap;
+    }
+
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 25px;
+      flex: 1;
+      min-width: 320px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    }
+
+    .card h2 {
+      font-size: 1.8rem;
+      color: #38bdf8;
+      border-bottom: 2px solid #334155;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    ol {
+      list-style: none;
+    }
+
+    li {
+      background: #0f172a;
+      border: 1px solid #334155;
+      margin-bottom: 15px;
+      padding: 18px 20px;
+      border-radius: 12px;
+      font-size: 1.4rem;
+      display: flex;
+      align-items: center;
+      transition: transform 0.2s ease;
+    }
+
+    li:first-child {
+      border-color: #f59e0b;
+      background: linear-gradient(135deg, #1e293b 0%, #291e11 100%);
+    }
+
+    .pos {
+      font-weight: 800;
+      font-size: 1.6rem;
+      margin-right: 15px;
+      min-width: 45px;
+    }
+
+    .pos-1 { color: #f59e0b; }
+    .pos-2 { color: #94a3b8; }
+    .pos-3 { color: #b45309; }
+
+    .nome-projeto {
+      font-weight: 600;
+      color: #f1f5f9;
+      word-break: break-word;
+    }
+
+    footer {
+      width: 100%;
+      max-width: 1200px;
+      margin-top: 25px;
+      text-align: center;
+    }
+
+    #total-votos {
+      background: linear-gradient(90deg, #0284c7 0%, #0369a1 100%);
+      color: #ffffff;
+      font-size: 2.2rem;
+      font-weight: 700;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(2, 132, 199, 0.3);
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>PET UFPB - RANKING AO VIVO</h1>
+    <p>Mostra de Projetos de Engenharia</p>
+  </header>
+
+  <div class="container">
+    <div class="card">
+      <h2>Engenharia Elétrica</h2>
+      <ol id="top-eletrica">
+        <li>Aguardando conexão...</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h2>Energias Renováveis</h2>
+      <ol id="top-renovaveis">
+        <li>Aguardando conexão...</li>
+      </ol>
+    </div>
+  </div>
+
+  <footer>
+    <div id="total-votos">Total de Votos Registrados: 0</div>
+  </footer>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
+    // ⚠️ ALERTA: Substitua pelas credenciais do seu console do Firebase!
+    const firebaseConfig = {
+      apiKey: "SUA_API_KEY_AQUI",
+      authDomain: "SEU_PROJETO.firebaseapp.com",
+      databaseURL: "https://SEU_PROJETO-default-rtdb.firebaseio.com",
+      projectId: "SEU_PROJETO",
+      storageBucket: "SEU_PROJETO.appspot.com",
+      messagingSenderId: "SEU_SENDER_ID",
+      appId: "SEU_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // Função para ordenar usando os votos e o critério de desempate (ordemAtingida)
+    function obterTop3(projetosObjeto, sufixo) {
+      if (!projetosObjeto) return [];
+
+      const lista = Object.keys(projetosObjeto).map(key => ({
+        numero: key,
+        ...projetosObjeto[key]
+      }));
+
+      // Critério de desempate idêntico ao C++ do ESP32
+      lista.sort((a, b) => {
+        const votosA = a.votos || 0;
+        const votosB = b.votos || 0;
+
+        if (votosB !== votosA) {
+          return votosB - votosA; // Mais votos vem primeiro
+        }
+
+        const ordemA = a.ordemAtingida || 0;
+        const ordemB = b.ordemBtingida || 0;
+
+        return ordemA - ordemB; // Quem atingiu a pontuação primeiro ganha
+      });
+
+      return lista.slice(0, 3).map(p => `${p.numero}${sufixo} - ${p.nome}`);
+    }
+
+    // Escuta em tempo real todas as alterações do nó raiz
+    onValue(ref(db, '/'), (snapshot) => {
+      const data = snapshot.val() || {};
+
+      const eletricaTop3 = obterTop3(data.eletrica, 'A');
+      const renovaveisTop3 = obterTop3(data.renovaveis, 'B');
+
+      // Calcula o total geral de votos de todos os projetos juntos
+      let totalVotos = 0;
+      if (data.eletrica) {
+        Object.values(data.eletrica).forEach(p => totalVotos += (p.votos || 0));
+      }
+      if (data.renovaveis) {
+        Object.values(data.renovaveis).forEach(p => totalVotos += (p.votos || 0));
+      }
+
+      // Atualiza HTML de Engenharia Elétrica
+      const elList = document.getElementById('top-eletrica');
+      if (eletricaTop3.length > 0) {
+        elList.innerHTML = eletricaTop3.map((p, i) => `
+          <li>
+            <span class="pos pos-${i+1}">${i+1}º</span>
+            <span class="nome-projeto">${p}</span>
+          </li>
+        `).join('');
+      } else {
+        elList.innerHTML = '<li>Nenhum voto registrado</li>';
+      }
+
+      // Atualiza HTML de Energias Renováveis
+      const renList = document.getElementById('top-renovaveis');
+      if (renovaveisTop3.length > 0) {
+        renList.innerHTML = renovaveisTop3.map((p, i) => `
+          <li>
+            <span class="pos pos-${i+1}">${i+1}º</span>
+            <span class="nome-projeto">${p}</span>
+          </li>
+        `).join('');
+      } else {
+        renList.innerHTML = '<li>Nenhum voto registrado</li>';
+      }
+
+      // Atualiza o contador total de votos na tela
+      document.getElementById('total-votos').innerText = `Total de Votos Registrados: ${totalVotos}`;
+    });
+  </script>
+</body>
+</html>
