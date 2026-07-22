@@ -3,127 +3,147 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ranking ao Vivo - URNA PET UFPB</title>
+  <title>Ranking ao Vivo - Votação FEE 2026.1</title>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #0f172a;
-      color: #f8fafc;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: space-between;
-      min-height: 100vh;
-      padding: 20px;
-    }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #0f172a;
+    color: #f8fafc;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 100vh;
+    padding: 20px;
+  }
 
-    header {
-      text-align: center;
-      margin-bottom: 20px;
-    }
+  header {
+    text-align: center;
+    margin-bottom: 20px;
+  }
 
-    header h1 {
-      font-size: 2.8rem;
-      letter-spacing: 2px;
-      color: #38bdf8;
-      text-transform: uppercase;
-    }
+  header h1 {
+    font-size: 2.5rem;
+    letter-spacing: 2px;
+    color: #38bdf8;
+    text-transform: uppercase;
+  }
 
-    header p {
-      font-size: 1.2rem;
-      color: #94a3b8;
-    }
+  header p {
+    font-size: 1.1rem;
+    color: #94a3b8;
+  }
 
+  .container {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    width: 100%;
+    max-width: 1200px;
+    /* Por padrão se adapta ao tamanho da tela */
+    flex-direction: row; 
+    flex-wrap: wrap;
+  }
+
+  /* 📱 REGRA PARA TELA VERTICAL (Orientação Portrait) */
+  @media (max-width: 768px), (orientation: portrait) {
     .container {
-      display: flex;
-      justify-content: center;
-      gap: 30px;
-      width: 100%;
-      max-width: 1200px;
-      flex-wrap: wrap;
+      flex-direction: column; /* Empilha Engenharia Elétrica e Renováveis um embaixo do outro */
+      align-items: center;
     }
 
     .card {
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 16px;
-      padding: 25px;
-      flex: 1;
-      min-width: 320px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+      width: 100% !important; /* Ocupa toda a largura da tela vertical */
     }
 
-    .card h2 {
-      font-size: 1.8rem;
-      color: #38bdf8;
-      border-bottom: 2px solid #334155;
-      padding-bottom: 12px;
-      margin-bottom: 20px;
-      text-align: center;
-    }
-
-    ol {
-      list-style: none;
-    }
-
-    li {
-      background: #0f172a;
-      border: 1px solid #334155;
-      margin-bottom: 15px;
-      padding: 18px 20px;
-      border-radius: 12px;
-      font-size: 1.4rem;
-      display: flex;
-      align-items: center;
-      transition: transform 0.2s ease;
-    }
-
-    li:first-child {
-      border-color: #f59e0b;
-      background: linear-gradient(135deg, #1e293b 0%, #291e11 100%);
-    }
-
-    .pos {
-      font-weight: 800;
-      font-size: 1.6rem;
-      margin-right: 15px;
-      min-width: 45px;
-    }
-
-    .pos-1 { color: #f59e0b; }
-    .pos-2 { color: #94a3b8; }
-    .pos-3 { color: #b45309; }
-
-    .nome-projeto {
-      font-weight: 600;
-      color: #f1f5f9;
-      word-break: break-word;
-    }
-
-    footer {
-      width: 100%;
-      max-width: 1200px;
-      margin-top: 25px;
-      text-align: center;
+    header h1 {
+      font-size: 2rem;
     }
 
     #total-votos {
-      background: linear-gradient(90deg, #0284c7 0%, #0369a1 100%);
-      color: #ffffff;
-      font-size: 2.2rem;
-      font-weight: 700;
-      padding: 20px;
-      border-radius: 16px;
-      box-shadow: 0 4px 15px rgba(2, 132, 199, 0.3);
-      letter-spacing: 1px;
+      font-size: 1.6rem !important;
     }
-  </style>
+  }
+
+  .card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    padding: 20px;
+    flex: 1;
+    min-width: 280px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  }
+
+  .card h2 {
+    font-size: 1.6rem;
+    color: #38bdf8;
+    border-bottom: 2px solid #334155;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+    text-align: center;
+  }
+
+  ol {
+    list-style: none;
+  }
+
+  li {
+    background: #0f172a;
+    border: 1px solid #334155;
+    margin-bottom: 12px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+  }
+
+  li:first-child {
+    border-color: #f59e0b;
+    background: linear-gradient(135deg, #1e293b 0%, #291e11 100%);
+  }
+
+  .pos {
+    font-weight: 800;
+    font-size: 1.4rem;
+    margin-right: 12px;
+    min-width: 40px;
+  }
+
+  .pos-1 { color: #f59e0b; }
+  .pos-2 { color: #94a3b8; }
+  .pos-3 { color: #b45309; }
+
+  .nome-projeto {
+    font-weight: 600;
+    color: #f1f5f9;
+    word-break: break-word;
+  }
+
+  footer {
+    width: 100%;
+    max-width: 1200px;
+    margin-top: 20px;
+    text-align: center;
+  }
+
+  #total-votos {
+    background: linear-gradient(90deg, #0284c7 0%, #0369a1 100%);
+    color: #ffffff;
+    font-size: 2rem;
+    font-weight: 700;
+    padding: 16px;
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(2, 132, 199, 0.3);
+  }
+</style>
 </head>
 <body>
 
