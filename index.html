@@ -332,13 +332,12 @@
           continue;
         }
 
-        const codigo = escaparHTML(projeto.codigo);
         const nome = escaparHTML(projeto.nome);
 
         html += `
           <li>
             <span class="pos pos-${posicao}">${posicao}º</span>
-            <span class="nome-projeto">${codigo} - ${nome}</span>
+            <span class="nome-projeto">${nome}</span>
           </li>
         `;
       }
