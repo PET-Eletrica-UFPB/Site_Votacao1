@@ -308,7 +308,7 @@ footer {
     </div>
 
     <footer>
-      <div id="status-ranking">Ranking atualizado em tempo real</div>
+      <div id="status-ranking">Conectando às duas urnas...</div>
     </footer>
   </div>
 
@@ -342,9 +342,6 @@ footer {
       onValue
     } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
-    // Firebase - FEE 2026.1
-    // A chave de API identifica o projeto; o acesso aos dados continua
-    // controlado pelas regras do Realtime Database.
     const firebaseConfig = {
       apiKey: "AIzaSyA27dn6kUmDD_AtaKixZsFK-zE2DMfETP4",
       authDomain: "fee20261.firebaseapp.com",
@@ -355,11 +352,20 @@ footer {
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // O site lê SOMENTE o caminho público liberado nas regras.
-    const rankingRef = ref(
-      db,
-      "urna/ranking_publico"
-    );
+    // As duas urnas que participam da votação.
+    const idsUrnas = [
+      "urna01",
+      "urna02"
+    ];
+
+    // Armazena o último snapshot recebido de cada urna.
+    const dadosUrnas = {
+      urna01: {},
+      urna02: {}
+    };
+
+    const urnasRespondidas = new Set();
+    const urnasComErro = new Set();
 
     function escaparHTML(valor) {
       return String(valor ?? "")
@@ -370,105 +376,164 @@ footer {
         .replaceAll("'", "&#039;");
     }
 
-    function atualizarRanking(elementoId, ranking) {
-      const lista = document.getElementById(elementoId);
+    function obterNumeroProjeto(codigo) {
+      const numero = parseInt(
+        String(codigo).replace(/\D/g, ""),
+        10
+      );
 
-      if (!ranking) {
-        lista.innerHTML = "<li>Nenhum voto registrado</li>";
+      return Number.isFinite(numero)
+        ? numero
+        : 9999;
+    }
+
+    function somarProjetosDoCurso(curso) {
+      const projetosSomados = {};
+
+      for (const idUrna of idsUrnas) {
+        const projetosDaUrna =
+          dadosUrnas[idUrna]?.[curso] || {};
+
+        for (
+          const [codigo, projeto]
+          of Object.entries(projetosDaUrna)
+        ) {
+          if (!projetosSomados[codigo]) {
+            projetosSomados[codigo] = {
+              codigo,
+              numero: obterNumeroProjeto(codigo),
+              nome: projeto?.nome || codigo,
+              votos: 0
+            };
+          }
+
+          projetosSomados[codigo].votos +=
+            Number(projeto?.votos) || 0;
+
+          if (projeto?.nome) {
+            projetosSomados[codigo].nome =
+              projeto.nome;
+          }
+        }
+      }
+
+      return Object.values(projetosSomados);
+    }
+
+    function calcularTop3Global(curso) {
+      return somarProjetosDoCurso(curso)
+        .filter(projeto => projeto.votos > 0)
+        .sort((a, b) => {
+          if (b.votos !== a.votos) {
+            return b.votos - a.votos;
+          }
+
+          // Desempate determinístico entre as duas urnas:
+          // vence o projeto de menor numeração.
+          return a.numero - b.numero;
+        })
+        .slice(0, 3);
+    }
+
+    function mostrarTop3(elementoId, projetos) {
+      const lista =
+        document.getElementById(elementoId);
+
+      if (!projetos.length) {
+        lista.innerHTML =
+          "<li>Nenhum voto registrado</li>";
         return;
       }
 
-      let html = "";
+      lista.innerHTML = projetos
+        .map((projeto, indice) => {
+          const posicao = indice + 1;
+          const nome = escaparHTML(projeto.nome);
 
-      for (let posicao = 1; posicao <= 3; posicao++) {
-        const projeto = ranking[String(posicao)];
+          return `
+            <li>
+              <span class="pos pos-${posicao}">
+                ${posicao}º
+              </span>
 
-        if (!projeto) {
-          continue;
-        }
-
-        const nome = escaparHTML(projeto.nome);
-
-        html += `
-          <li>
-            <span class="pos pos-${posicao}">${posicao}º</span>
-            <span class="nome-projeto">${nome}</span>
-          </li>
-        `;
-      }
-
-      lista.innerHTML =
-        html || "<li>Nenhum voto registrado</li>";
+              <span class="nome-projeto">
+                ${nome}
+              </span>
+            </li>
+          `;
+        })
+        .join("");
     }
 
-    onValue(
-      rankingRef,
+    function atualizarStatus() {
+      const status =
+        document.getElementById("status-ranking");
 
-      (snapshot) => {
-        const ranking = snapshot.val();
-
-        console.log(
-          "Ranking recebido do Firebase:",
-          ranking
-        );
-
-        if (!ranking) {
-          document.getElementById(
-            "top-eletrica"
-          ).innerHTML =
-            "<li>Nenhum voto registrado</li>";
-
-          document.getElementById(
-            "top-renovaveis"
-          ).innerHTML =
-            "<li>Nenhum voto registrado</li>";
-
-          document.getElementById(
-            "status-ranking"
-          ).innerText =
-            "Aguardando os primeiros votos";
-
-          return;
-        }
-
-        atualizarRanking(
-          "top-eletrica",
-          ranking.eletrica
-        );
-
-        atualizarRanking(
-          "top-renovaveis",
-          ranking.renovaveis
-        );
-
-        document.getElementById(
-          "status-ranking"
-        ).innerText =
-          "Ranking atualizado em tempo real";
-      },
-
-      (erro) => {
-        console.error(
-          "Erro ao ler ranking:",
-          erro
-        );
-
-        document.getElementById(
-          "top-eletrica"
-        ).innerHTML =
-          "<li>Erro de conexão</li>";
-
-        document.getElementById(
-          "top-renovaveis"
-        ).innerHTML =
-          "<li>Erro de conexão</li>";
-
-        document.getElementById(
-          "status-ranking"
-        ).innerText =
-          "Sem conexão com o ranking";
+      if (urnasComErro.size > 0) {
+        status.innerText =
+          "Ranking parcial: uma urna sem conexão";
+        return;
       }
-    );
+
+      if (urnasRespondidas.size < idsUrnas.length) {
+        status.innerText =
+          "Conectando às duas urnas...";
+        return;
+      }
+
+      status.innerText =
+        "Ranking integrado das duas urnas";
+    }
+
+    function atualizarPodioGlobal() {
+      mostrarTop3(
+        "top-eletrica",
+        calcularTop3Global("eletrica")
+      );
+
+      mostrarTop3(
+        "top-renovaveis",
+        calcularTop3Global("renovaveis")
+      );
+
+      atualizarStatus();
+    }
+
+    for (const idUrna of idsUrnas) {
+      const projetosRef = ref(
+        db,
+        `urna/multiurna/dispositivos/${idUrna}/projetos`
+      );
+
+      onValue(
+        projetosRef,
+
+        (snapshot) => {
+          dadosUrnas[idUrna] =
+            snapshot.val() || {};
+
+          urnasRespondidas.add(idUrna);
+          urnasComErro.delete(idUrna);
+
+          console.log(
+            `Projetos recebidos da ${idUrna}:`,
+            dadosUrnas[idUrna]
+          );
+
+          atualizarPodioGlobal();
+        },
+
+        (erro) => {
+          console.error(
+            `Erro ao ler a ${idUrna}:`,
+            erro
+          );
+
+          urnasComErro.add(idUrna);
+          atualizarPodioGlobal();
+        }
+      );
+    }
   </script>
 
 </body>
