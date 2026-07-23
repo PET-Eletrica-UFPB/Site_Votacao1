@@ -23,25 +23,26 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     min-height: 100vh;
     width: 100vw;
-    overflow: hidden; /* Oculta barras de rolagem */
+    overflow-x: hidden;
   }
 
-  /* 🔄 GERENCIADOR DE SLIDES */
+  /* 🔄 GERENCIADOR DE SLIDES (MODO TV VERTICAL 9:16) */
   .slide {
-    display: none; /* Esconde por padrão */
+    display: none;
     width: 100vw;
-    height: 100vh;
+    min-height: 100vh;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
+    padding: 20px 15px;
     animation: fadeIn 0.8s ease-in-out;
   }
 
   .slide.active {
-    display: flex; /* Exibe apenas o slide ativo */
+    display: flex;
   }
 
   @keyframes fadeIn {
@@ -49,45 +50,43 @@
     to { opacity: 1; transform: scale(1); }
   }
 
-  /* 🗺️ SLIDE 1: PLANTA VERTICAL */
+  /* 🗺️ SLIDE 1: PLANTA VERTICAL DA FEIRA */
   #slide-planta {
     padding: 0;
     margin: 0;
     background-color: #02337d;
-    width: 100vw;
     height: 100vh;
+    justify-content: center;
   }
 
   .planta-img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain; /* Preenche na tela mantendo a proporção vertical */
+    width: 100vw;
+    height: 100vh;
+    object-fit: contain; /* Garante que a planta apareça inteira sem cortes */
     display: block;
   }
 
-  /* 🟢 SLIDE 2: RANKING / VOTAÇÃO */
-  #slide-ranking {
-    padding: 20px;
-    justify-content: space-between;
-  }
-
+  /* 🟢 SLIDE 2: RANKING / VOTAÇÃO VERTICAL */
   header {
     text-align: center;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
     display: flex;
     flex-direction: column;
     align-items: center;
+    width: 100%;
   }
 
   header h1 {
-    font-size: 2.2rem;
-    letter-spacing: 2px;
+    font-size: 2rem;
+    letter-spacing: 1px;
     color: #ffffff;
     text-transform: uppercase;
+    line-height: 1.2;
+    margin-bottom: 5px;
   }
 
   header p {
-    font-size: 1.1rem;
+    font-size: 1rem;
     color: #94a3b8;
     text-transform: uppercase;
   }
@@ -96,67 +95,43 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 24px;
-    margin-top: 10px;
-    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 12px;
+    width: 100%;
   }
 
   .logos-container img {
-    height: 55px;
+    height: 45px;
     width: auto;
     object-fit: contain;
   }
 
+  /* 📦 CONTAINER DOS CARDS (EMPILHADOS NA VERTICAL) */
   .container {
     display: flex;
-    justify-content: center;
-    gap: 20px;
+    flex-direction: column; /* Coloca uma caixa embaixo da outra */
+    align-items: center;
+    gap: 15px;
     width: 100%;
-    max-width: 1200px;
-    flex-direction: row; 
-    flex-wrap: wrap;
-  }
-
-  /* 📱 REGRA PARA TELA VERTICAL (Orientação Portrait) */
-  @media (max-width: 768px), (orientation: portrait) {
-    .container {
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .card {
-      width: 100% !important;
-    }
-
-    header h1 {
-      font-size: 1.8rem;
-    }
-
-    #total-votos {
-      font-size: 1.5rem !important;
-    }
-
-    .logos-container img {
-      height: 40px;
-    }
+    max-width: 600px; /* Largura ideal para TV Vertical */
+    margin: 10px 0;
   }
 
   .card {
     background: #61AF49;
     border: 1px solid #61AF49;
     border-radius: 16px;
-    padding: 20px;
-    flex: 1;
-    min-width: 280px;
+    padding: 15px 20px;
+    width: 100%;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
   }
 
   .card h2 {
-    font-size: 1.6rem;
+    font-size: 1.4rem;
     color: #f8fafc;
     border-bottom: 2px solid #334155;
-    padding-bottom: 10px;
-    margin-bottom: 15px;
+    padding-bottom: 8px;
+    margin-bottom: 12px;
     text-align: center;
   }
 
@@ -167,10 +142,10 @@
   li {
     background: #0f172a;
     border: 1px solid #334155;
-    margin-bottom: 12px;
-    padding: 14px 16px;
+    margin-bottom: 8px;
+    padding: 10px 14px;
     border-radius: 12px;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     display: flex;
     align-items: center;
   }
@@ -182,9 +157,9 @@
 
   .pos {
     font-weight: 800;
-    font-size: 1.4rem;
-    margin-right: 12px;
-    min-width: 40px;
+    font-size: 1.2rem;
+    margin-right: 10px;
+    min-width: 35px;
   }
 
   .pos-1 { color: #f59e0b; }
@@ -199,14 +174,15 @@
 
   footer {
     width: 100%;
-    max-width: 1200px;
+    max-width: 600px;
     text-align: center;
+    margin-top: 10px;
   }
 
   #total-votos {
     background: linear-gradient(90deg, #0284c7 0%, #0369a1 100%);
     color: #ffffff;
-    font-size: 1.8rem;
+    font-size: 1.5rem;
     font-weight: 700;
     padding: 14px;
     border-radius: 16px;
@@ -222,8 +198,8 @@
 
   <div id="slide-ranking" class="slide">
     <header>
-      <h1>Feira de Engenharia e Energias 2026.1 - RANKING AO VIVO</h1>
-      <p>MOSTRA DE PROJETOS - FEE 2026.1</p>
+      <h1>Feira de Engenharia e Energias 2026.1</h1>
+      <p>RANKING AO VIVO - MOSTRA DE PROJETOS</p>
 
       <div class="logos-container">
         <img src="https://github.com/PET-Eletrica-UFPB/Site_Votacao1/blob/main/cear.png?raw=true" alt="Logo CEAR">
@@ -272,7 +248,6 @@
       setTimeout(alternarParaRanking, tempoPlantaSegundos * 1000);
     }
 
-    // Inicia a transição após os primeiros 10 segundos na planta
     setTimeout(alternarParaRanking, tempoPlantaSegundos * 1000);
   </script>
 
