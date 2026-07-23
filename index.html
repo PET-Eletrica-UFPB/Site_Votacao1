@@ -18,14 +18,49 @@
 
   body {
     font-family: 'Poppins', sans-serif;
-    background-color: #BCE4E4; /*nao mudou nd*/
-    color: #BCE4E4; /*muda cor do fundo do site*/
+    background-color: #02337d; 
+    color: #f8fafc;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
     min-height: 100vh;
     padding: 20px;
+  }
+
+  /* 🔄 REGRAS DAS TELAS / SLIDES */
+  .slide {
+    display: none; /* Esconde todas as telas por padrão */
+    width: 100%;
+    max-width: 1200px;
+    flex-direction: column;
+    align-items: center;
+    animation: fadeIn 0.8s ease-in-out;
+  }
+
+  .slide.active {
+    display: flex; /* Exibe apenas a tela ativa */
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  /* 🗺️ ESTILO DA TELA DA PLANTA DA FEIRA */
+  #slide-planta h2 {
+    font-size: 2.2rem;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    text-align: center;
+  }
+
+  .planta-img {
+    max-width: 100%;
+    max-height: 75vh;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    object-fit: contain;
   }
 
   header {
@@ -39,7 +74,7 @@
   header h1 {
     font-size: 2.5rem;
     letter-spacing: 2px;
-    color: #05015d;
+    color: #ffffff;
     text-transform: uppercase;
   }
 
@@ -54,14 +89,14 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 24px;              /* Espaço entre as logos */
-    margin-top: 15px;       /* Distância do texto acima */
-    flex-wrap: wrap;        /* Ajusta em telas pequenas */
+    gap: 24px;
+    margin-top: 15px;
+    flex-wrap: wrap;
   }
 
   .logos-container img {
-    height: 60px;           /* Altura máxima das logos (Ajuste conforme necessário) */
-    width: auto;            /* Mantém a proporção original da imagem */
+    height: 60px;
+    width: auto;
     object-fit: contain;
   }
 
@@ -95,12 +130,12 @@
     }
 
     .logos-container img {
-      height: 45px; /* Reduz um pouco o tamanho das logos no celular */
+      height: 45px;
     }
   }
 
   .card {
-    background: #61AF49; /* cor da caixa de texto */
+    background: #61AF49;
     border: 1px solid #61AF49;
     border-radius: 16px;
     padding: 20px;
@@ -175,30 +210,37 @@
 </head>
 <body>
 
-  <header>
-    <h1>Feira de Engenharia e Energias 2026.1 - RANKING AO VIVO</h1>
-    <p>MOSTRA DE PROJETOS - FEE 2026.1</p>
+  <div id="slide-planta" class="slide active">
+    <h2>Planta do Evento - FEE 2026.1</h2>
+    <img src="planta.png" class="planta-img" alt="Planta da Feira">
+  </div>
 
-    <div class="logos-container">
-      <img src="https://github.com/PET-Eletrica-UFPB/Site_Votacao1/blob/main/cear.png?raw=true" alt="Logo 1">
-      <img src="https://github.com/PET-Eletrica-UFPB/Site_Votacao1/blob/main/ufpb.png?raw=true" alt="Logo 2">
-      <img src="https://github.com/PET-Eletrica-UFPB/Site_Votacao1/blob/main/pet.png?raw=true" alt="Logo 3">
-    </div>
-  </header>
+  <div id="slide-ranking" class="slide">
+    <header>
+      <h1>Feira de Engenharia e Energias 2026.1 - RANKING AO VIVO</h1>
+      <p>MOSTRA DE PROJETOS - FEE 2026.1</p>
 
-  <div class="container">
-    <div class="card">
-      <h2>Engenharia Elétrica</h2>
-      <ol id="top-eletrica">
-        <li>Aguardando conexão...</li>
-      </ol>
-    </div>
+      <div class="logos-container">
+        <img src="cear.png" alt="Logo 1">
+        <img src="ufpb.png" alt="Logo 2">
+        <img src="pet.png" alt="Logo 3">
+      </div>
+    </header>
 
-    <div class="card">
-      <h2>Engenharia de Energias Renováveis</h2>
-      <ol id="top-renovaveis">
-        <li>Aguardando conexão...</li>
-      </ol>
+    <div class="container">
+      <div class="card">
+        <h2>Engenharia Elétrica</h2>
+        <ol id="top-eletrica">
+          <li>Aguardando conexão...</li>
+        </ol>
+      </div>
+
+      <div class="card">
+        <h2>Engenharia de Energias Renováveis</h2>
+        <ol id="top-renovaveis">
+          <li>Aguardando conexão...</li>
+        </ol>
+      </div>
     </div>
   </div>
 
@@ -206,11 +248,36 @@
     <div id="total-votos">Total de Votos Registrados: 0</div>
   </footer>
 
+  <script>
+    // Configuração dos tempos em segundos
+    const tempoPlantaSegundos = 600;  // 10 minutos para a Planta
+    const tempoRankingSegundos = 300;  // 5 minutos para o Ranking
+
+    const slideRanking = document.getElementById('slide-ranking');
+    const slidePlanta = document.getElementById('slide-planta');
+
+    function mostrarPlanta() {
+      slideRanking.classList.remove('active');
+      slidePlanta.classList.add('active');
+      // Aguarda 10 minutos na planta e depois muda para o ranking
+      setTimeout(mostrarRanking, tempoPlantaSegundos * 1000);
+    }
+
+    function mostrarRanking() {
+      slidePlanta.classList.remove('active');
+      slideRanking.classList.add('active');
+      // Aguarda 5 minutos no ranking e depois volta para a planta
+      setTimeout(mostrarPlanta, tempoRankingSegundos * 1000);
+    }
+
+    // Inicia a exibição pela planta
+    mostrarPlanta();
+  </script>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
-    // ⚠️ ALERTA: Substitua pelas credenciais do seu console do Firebase!
     const firebaseConfig = {
       apiKey: "SUA_API_KEY_AQUI",
       authDomain: "SEU_PROJETO.firebaseapp.com",
