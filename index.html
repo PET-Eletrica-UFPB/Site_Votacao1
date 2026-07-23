@@ -25,15 +25,14 @@
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    padding: 10px;
-    overflow: hidden; /* Evita rolagem na TV */
+    overflow: hidden; /* Oculta barras de rolagem */
   }
 
-  /* 🔄 REGRAS DAS TELAS / SLIDES */
+  /* 🔄 GERENCIADOR DE SLIDES */
   .slide {
-    display: none; /* Esconde todas as telas por padrão */
-    width: 100%;
-    max-width: 1400px;
+    display: none; /* Esconde por padrão */
+    width: 100vw;
+    height: 100vh;
     flex-direction: column;
     align-items: center;
     justify-content: center;
@@ -41,54 +40,43 @@
   }
 
   .slide.active {
-    display: flex; /* Exibe apenas a tela ativa */
+    display: flex; /* Exibe apenas o slide ativo */
   }
 
   @keyframes fadeIn {
-    from { opacity: 0; transform: scale(0.98); }
+    from { opacity: 0; transform: scale(0.99); }
     to { opacity: 1; transform: scale(1); }
   }
 
-  /* 🗺️ ESTILO DA TELA DA PLANTA DA FEIRA (AJUSTADO VERTICALMENTE) */
+  /* 🗺️ SLIDE 1: PLANTA VERTICAL */
   #slide-planta {
-    width: 100vw;
-    height: 98vh;
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-  }
-
-  #slide-planta.active {
-    display: flex;
-  }
-
-  #slide-planta h2 {
-    font-size: 1.8rem;
-    margin-bottom: 8px;
-    text-transform: uppercase;
-    text-align: center;
+    padding: 0;
+    margin: 0;
+    background-color: #02337d;
   }
 
   .planta-img {
-    height: 85vh; /* Ocupa 85% da altura vertical da tela */
-    width: auto;
-    max-width: 95vw;
-    border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-    object-fit: contain; /* Mantém a proporção exata sem distorcer */
+    width: 100vw;
+    height: 100vh;
+    object-fit: contain; /* Preenche na proporção 9:16 perfeitamente */
+  }
+
+  /* 🟢 SLIDE 2: RANKING / VOTAÇÃO */
+  #slide-ranking {
+    padding: 20px;
+    justify-content: space-between;
   }
 
   header {
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
     display: flex;
     flex-direction: column;
     align-items: center;
   }
 
   header h1 {
-    font-size: 2.5rem;
+    font-size: 2.2rem;
     letter-spacing: 2px;
     color: #ffffff;
     text-transform: uppercase;
@@ -100,18 +88,17 @@
     text-transform: uppercase;
   }
 
-  /* 🖼️ ESTILO DO CONTAINER DE LOGOS */
   .logos-container {
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 24px;
-    margin-top: 15px;
+    margin-top: 10px;
     flex-wrap: wrap;
   }
 
   .logos-container img {
-    height: 60px;
+    height: 55px;
     width: auto;
     object-fit: contain;
   }
@@ -138,15 +125,15 @@
     }
 
     header h1 {
-      font-size: 2rem;
+      font-size: 1.8rem;
     }
 
     #total-votos {
-      font-size: 1.6rem !important;
+      font-size: 1.5rem !important;
     }
 
     .logos-container img {
-      height: 45px;
+      height: 40px;
     }
   }
 
@@ -209,16 +196,15 @@
   footer {
     width: 100%;
     max-width: 1200px;
-    margin-top: 20px;
     text-align: center;
   }
 
   #total-votos {
     background: linear-gradient(90deg, #0284c7 0%, #0369a1 100%);
     color: #ffffff;
-    font-size: 2rem;
+    font-size: 1.8rem;
     font-weight: 700;
-    padding: 16px;
+    padding: 14px;
     border-radius: 16px;
     box-shadow: 0 4px 15px rgba(2, 132, 199, 0.3);
   }
@@ -227,8 +213,7 @@
 <body>
 
   <div id="slide-planta" class="slide active">
-    <h2>Planta do Evento - FEE 2026.1</h2>
-    <img src="planta.png" class="planta-img" alt="Planta da Feira">
+    <img src="plantavertical.png" class="planta-img" alt="Planta da Feira Vertical">
   </div>
 
   <div id="slide-ranking" class="slide">
@@ -237,9 +222,9 @@
       <p>MOSTRA DE PROJETOS - FEE 2026.1</p>
 
       <div class="logos-container">
-        <img src="cear.png" alt="Logo 1">
-        <img src="ufpb.png" alt="Logo 2">
-        <img src="pet.png" alt="Logo 3">
+        <img src="https://github.com/PET-Eletrica-UFPB/Site_Votacao1/blob/main/cear.png?raw=true" alt="Logo CEAR">
+        <img src="https://github.com/PET-Eletrica-UFPB/Site_Votacao1/blob/main/ufpb.png?raw=true" alt="Logo UFPB">
+        <img src="https://github.com/PET-Eletrica-UFPB/Site_Votacao1/blob/main/pet.png?raw=true" alt="Logo PET">
       </div>
     </header>
 
@@ -252,4 +237,124 @@
       </div>
 
       <div class="card">
-        <h2>Engenharia de Energias Ren
+        <h2>Engenharia de Energias Renováveis</h2>
+        <ol id="top-renovaveis">
+          <li>Aguardando conexão...</li>
+        </ol>
+      </div>
+    </div>
+
+    <footer>
+      <div id="total-votos">Total de Votos Registrados: 0</div>
+    </footer>
+  </div>
+
+  <script>
+    const tempoPlantaSegundos = 10; // 10 segundos na Planta
+    const tempoRankingSegundos = 5;  // 5 segundos no Ranking
+
+    const slidePlanta = document.getElementById('slide-planta');
+    const slideRanking = document.getElementById('slide-ranking');
+
+    function alternarParaRanking() {
+      slidePlanta.classList.remove('active');
+      slideRanking.classList.add('active');
+      setTimeout(alternarParaPlanta, tempoRankingSegundos * 1000);
+    }
+
+    function alternarParaPlanta() {
+      slideRanking.classList.remove('active');
+      slidePlanta.classList.add('active');
+      setTimeout(alternarParaRanking, tempoPlantaSegundos * 1000);
+    }
+
+    // Inicia a transição após os primeiros 10 segundos na planta
+    setTimeout(alternarParaRanking, tempoPlantaSegundos * 1000);
+  </script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
+    // ⚠️ Substitua pelas suas credenciais do Firebase Console
+    const firebaseConfig = {
+      apiKey: "SUA_API_KEY_AQUI",
+      authDomain: "SEU_PROJETO.firebaseapp.com",
+      databaseURL: "https://SEU_PROJETO-default-rtdb.firebaseio.com",
+      projectId: "SEU_PROJETO",
+      storageBucket: "SEU_PROJETO.appspot.com",
+      messagingSenderId: "SEU_SENDER_ID",
+      appId: "SEU_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    function obterTop3(projetosObjeto, sufixo) {
+      if (!projetosObjeto) return [];
+
+      const lista = Object.keys(projetosObjeto).map(key => ({
+        numero: key,
+        ...projetosObjeto[key]
+      }));
+
+      lista.sort((a, b) => {
+        const votosA = a.votos || 0;
+        const votosB = b.votos || 0;
+
+        if (votosB !== votosA) {
+          return votosB - votosA;
+        }
+
+        const ordemA = a.ordemAtingida || 0;
+        const ordemB = b.ordemBtingida || 0;
+
+        return ordemA - ordemB;
+      });
+
+      return lista.slice(0, 3).map(p => `${p.numero}${sufixo} - ${p.nome}`);
+    }
+
+    onValue(ref(db, '/'), (snapshot) => {
+      const data = snapshot.val() || {};
+
+      const eletricaTop3 = obterTop3(data.eletrica, 'A');
+      const renovaveisTop3 = obterTop3(data.renovaveis, 'B');
+
+      let totalVotos = 0;
+      if (data.eletrica) {
+        Object.values(data.eletrica).forEach(p => totalVotos += (p.votos || 0));
+      }
+      if (data.renovaveis) {
+        Object.values(data.renovaveis).forEach(p => totalVotos += (p.votos || 0));
+      }
+
+      const elList = document.getElementById('top-eletrica');
+      if (eletricaTop3.length > 0) {
+        elList.innerHTML = eletricaTop3.map((p, i) => `
+          <li>
+            <span class="pos pos-${i+1}">${i+1}º</span>
+            <span class="nome-projeto">${p}</span>
+          </li>
+        `).join('');
+      } else {
+        elList.innerHTML = '<li>Nenhum voto registrado</li>';
+      }
+
+      const renList = document.getElementById('top-renovaveis');
+      if (renovaveisTop3.length > 0) {
+        renList.innerHTML = renovaveisTop3.map((p, i) => `
+          <li>
+            <span class="pos pos-${i+1}">${i+1}º</span>
+            <span class="nome-projeto">${p}</span>
+          </li>
+        `).join('');
+      } else {
+        renList.innerHTML = '<li>Nenhum voto registrado</li>';
+      }
+
+      document.getElementById('total-votos').innerText = `Total de Votos Registrados: ${totalVotos}`;
+    });
+  </script>
+</body>
+</html>
