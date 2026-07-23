@@ -23,21 +23,21 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
-    min-height: 100vh;
+    justify-content: center;
+    height: 100vh;
     width: 100vw;
-    overflow-x: hidden;
+    overflow: hidden; /* Garante que não apareçam barras de rolagem */
   }
 
-  /* 🔄 GERENCIADOR DE SLIDES (MODO TV VERTICAL 9:16) */
+  /* 🔄 GERENCIADOR DE SLIDES */
   .slide {
     display: none;
     width: 100vw;
-    min-height: 100vh;
+    height: 100vh;
     flex-direction: column;
     align-items: center;
-    justify-content: space-between;
-    padding: 20px 15px;
+    justify-content: space-between; /* Distribui o conteúdo perfeitamente do topo ao rodapé */
+    padding: 15px 10px;
     animation: fadeIn 0.8s ease-in-out;
   }
 
@@ -55,21 +55,19 @@
     padding: 0;
     margin: 0;
     background-color: #02337d;
-    height: 100vh;
     justify-content: center;
   }
 
   .planta-img {
     width: 100vw;
     height: 100vh;
-    object-fit: contain; /* Garante que a planta apareça inteira sem cortes */
+    object-fit: contain; /* Mostra a planta toda sem distorcer */
     display: block;
   }
 
   /* 🟢 SLIDE 2: RANKING / VOTAÇÃO VERTICAL */
   header {
     text-align: center;
-    margin-bottom: 15px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -77,18 +75,18 @@
   }
 
   header h1 {
-    font-size: 2rem;
+    font-size: 1.3rem; /* Compactado para economizar altura */
     letter-spacing: 1px;
     color: #ffffff;
     text-transform: uppercase;
     line-height: 1.2;
-    margin-bottom: 5px;
   }
 
   header p {
-    font-size: 1rem;
+    font-size: 0.85rem;
     color: #94a3b8;
     text-transform: uppercase;
+    margin-top: 2px;
   }
 
   .logos-container {
@@ -96,42 +94,44 @@
     justify-content: center;
     align-items: center;
     gap: 15px;
-    margin-top: 12px;
+    margin-top: 8px;
     width: 100%;
   }
 
   .logos-container img {
-    height: 45px;
+    height: 35px; /* Reduzido de 55px para caber tudo na tela */
     width: auto;
     object-fit: contain;
   }
 
-  /* 📦 CONTAINER DOS CARDS (EMPILHADOS NA VERTICAL) */
+  /* 📦 CONTAINER DOS CARDS */
   .container {
     display: flex;
-    flex-direction: column; /* Coloca uma caixa embaixo da outra */
+    flex-direction: column; /* Caixas empilhadas na vertical */
     align-items: center;
-    gap: 15px;
+    justify-content: center;
+    gap: 10px;
     width: 100%;
-    max-width: 600px; /* Largura ideal para TV Vertical */
+    max-width: 500px;
+    flex: 1; /* Ocupa o espaço central disponível */
     margin: 10px 0;
   }
 
   .card {
     background: #61AF49;
     border: 1px solid #61AF49;
-    border-radius: 16px;
-    padding: 15px 20px;
+    border-radius: 14px;
+    padding: 10px 14px;
     width: 100%;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
   }
 
   .card h2 {
-    font-size: 1.4rem;
+    font-size: 1.1rem;
     color: #f8fafc;
     border-bottom: 2px solid #334155;
-    padding-bottom: 8px;
-    margin-bottom: 12px;
+    padding-bottom: 4px;
+    margin-bottom: 8px;
     text-align: center;
   }
 
@@ -142,10 +142,10 @@
   li {
     background: #0f172a;
     border: 1px solid #334155;
-    margin-bottom: 8px;
-    padding: 10px 14px;
-    border-radius: 12px;
-    font-size: 1.1rem;
+    margin-bottom: 6px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    font-size: 0.95rem;
     display: flex;
     align-items: center;
   }
@@ -157,9 +157,9 @@
 
   .pos {
     font-weight: 800;
-    font-size: 1.2rem;
-    margin-right: 10px;
-    min-width: 35px;
+    font-size: 1.1rem;
+    margin-right: 8px;
+    min-width: 30px;
   }
 
   .pos-1 { color: #f59e0b; }
@@ -174,18 +174,17 @@
 
   footer {
     width: 100%;
-    max-width: 600px;
+    max-width: 500px;
     text-align: center;
-    margin-top: 10px;
   }
 
   #total-votos {
     background: linear-gradient(90deg, #0284c7 0%, #0369a1 100%);
     color: #ffffff;
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     font-weight: 700;
-    padding: 14px;
-    border-radius: 16px;
+    padding: 10px;
+    border-radius: 12px;
     box-shadow: 0 4px 15px rgba(2, 132, 199, 0.3);
   }
 </style>
@@ -230,8 +229,8 @@
   </div>
 
   <script>
-    const tempoPlantaSegundos = 10; // 10 segundos na Planta
-    const tempoRankingSegundos = 5;  // 5 segundos no Ranking
+    const tempoPlantaSegundos = 10; // 10s na Planta
+    const tempoRankingSegundos = 5;  // 5s no Ranking
 
     const slidePlanta = document.getElementById('slide-planta');
     const slideRanking = document.getElementById('slide-ranking');
