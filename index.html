@@ -25,6 +25,7 @@
     align-items: center;
     justify-content: center;
     min-height: 100vh;
+    width: 100vw;
     overflow: hidden; /* Oculta barras de rolagem */
   }
 
@@ -53,12 +54,15 @@
     padding: 0;
     margin: 0;
     background-color: #02337d;
+    width: 100vw;
+    height: 100vh;
   }
 
   .planta-img {
-    width: 100vw;
-    height: 100vh;
-    object-fit: contain; /* Preenche na proporção 9:16 perfeitamente */
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* Preenche na tela mantendo a proporção vertical */
+    display: block;
   }
 
   /* 🟢 SLIDE 2: RANKING / VOTAÇÃO */
@@ -213,7 +217,7 @@
 <body>
 
   <div id="slide-planta" class="slide active">
-    <img src="plantavertical.png" class="planta-img" alt="Planta da Feira Vertical">
+    <img src="https://raw.githubusercontent.com/PET-Eletrica-UFPB/Site_Votacao1/refs/heads/main/plantavertical.png" class="planta-img" alt="Planta da Feira Vertical">
   </div>
 
   <div id="slide-ranking" class="slide">
