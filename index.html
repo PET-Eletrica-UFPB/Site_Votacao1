@@ -4,195 +4,215 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ranking ao Vivo - Votação FEE 2026.1</title>
-  
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
 
   <style>
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-  body {
-    font-family: 'Poppins', sans-serif;
-    background-color: #BCE4E4; 
-    color: #BCE4E4;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    width: 100vw;
-    overflow: hidden; /* Garante que não apareçam barras de rolagem */
-  }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #79CBC2;
+      color: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+    }
 
-  /* 🔄 GERENCIADOR DE SLIDES */
-  .slide {
-    display: none;
-    width: 100vw;
-    height: 100vh;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between; /* Distribui o conteúdo perfeitamente do topo ao rodapé */
-    padding: 15px 10px;
-    animation: fadeIn 0.8s ease-in-out;
-  }
+    /* GERENCIADOR DE SLIDES */
+    .slide {
+      display: none;
+      width: 100vw;
+      height: 100vh;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 15px 10px;
+      animation: fadeIn 0.8s ease-in-out;
+    }
 
-  .slide.active {
-    display: flex;
-  }
+    .slide.active {
+      display: flex;
+    }
 
-  @keyframes fadeIn {
-    from { opacity: 0; transform: scale(0.99); }
-    to { opacity: 1; transform: scale(1); }
-  }
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.99);
+      }
 
-  /* 🗺️ SLIDE 1: PLANTA VERTICAL DA FEIRA */
-  #slide-planta {
-    padding: 0;
-    margin: 0;
-    background-color: #BCE4E4;
-    justify-content: center;
-  }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
 
-  .planta-img {
-    width: 100vw;
-    height: 100vh;
-    object-fit: contain; /* Mostra a planta toda sem distorcer */
-    display: block;
-  }
+    /* SLIDE 1: PLANTA VERTICAL DA FEIRA */
+    #slide-planta {
+      padding: 0;
+      margin: 0;
+      background-color: #02337d;
+      justify-content: center;
+    }
 
-  /* 🟢 SLIDE 2: RANKING / VOTAÇÃO VERTICAL */
-  header {
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-  }
+    .planta-img {
+      width: 100vw;
+      height: 100vh;
+      object-fit: contain;
+      display: block;
+    }
 
-  header h1 {
-    font-size: 1.3rem; /* Compactado para economizar altura */
-    letter-spacing: 1px;
-    color: #273C7B;
-    text-transform: uppercase;
-    line-height: 1.2;
-  }
+    /* SLIDE 2: RANKING / VOTAÇÃO VERTICAL */
+    header {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
 
-  header p {
-    font-size: 0.85rem;
-    color: #94a3b8;
-    text-transform: uppercase;
-    margin-top: 2px;
-  }
+    header h1 {
+      font-size: 1.3rem;
+      letter-spacing: 1px;
+      color: #ffffff;
+      text-transform: uppercase;
+      line-height: 1.2;
+    }
 
-  .logos-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 15px;
-    margin-top: 8px;
-    width: 100%;
-  }
+    header p {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
 
-  .logos-container img {
-    height: 35px; /* Reduzido de 55px para caber tudo na tela */
-    width: auto;
-    object-fit: contain;
-  }
+    .logos-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      margin-top: 8px;
+      width: 100%;
+    }
 
-  /* 📦 CONTAINER DOS CARDS */
-  .container {
-    display: flex;
-    flex-direction: column; /* Caixas empilhadas na vertical */
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    width: 100%;
-    max-width: 500px;
-    flex: 1; /* Ocupa o espaço central disponível */
-    margin: 10px 0;
-  }
+    .logos-container img {
+      height: 35px;
+      width: auto;
+      object-fit: contain;
+    }
 
-  .card {
-    background: #61AF49;
-    border: 1px solid #61AF49;
-    border-radius: 14px;
-    padding: 10px 14px;
-    width: 100%;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-  }
+    /* CONTAINER DOS CARDS */
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      max-width: 500px;
+      flex: 1;
+      margin: 10px 0;
+    }
 
-  .card h2 {
-    font-size: 1.1rem;
-    color: #f8fafc;
-    border-bottom: 2px solid #334155;
-    padding-bottom: 4px;
-    margin-bottom: 8px;
-    text-align: center;
-  }
+    .card {
+      background: #61AF49;
+      border: 1px solid #61AF49;
+      border-radius: 14px;
+      padding: 10px 14px;
+      width: 100%;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    }
 
-  ol {
-    list-style: none;
-  }
+    .card h2 {
+      font-size: 1.1rem;
+      color: #f8fafc;
+      border-bottom: 2px solid #334155;
+      padding-bottom: 4px;
+      margin-bottom: 8px;
+      text-align: center;
+    }
 
-  li {
-    background: #0f172a;
-    border: 1px solid #334155;
-    margin-bottom: 6px;
-    padding: 8px 10px;
-    border-radius: 10px;
-    font-size: 0.95rem;
-    display: flex;
-    align-items: center;
-  }
+    ol {
+      list-style: none;
+    }
 
-  li:first-child {
-    border-color: #f59e0b;
-    background: linear-gradient(135deg, #1e293b 0%, #291e11 100%);
-  }
+    li {
+      background: #0f172a;
+      border: 1px solid #334155;
+      margin-bottom: 6px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+    }
 
-  .pos {
-    font-weight: 800;
-    font-size: 1.1rem;
-    margin-right: 8px;
-    min-width: 30px;
-  }
+    li:first-child {
+      border-color: #f59e0b;
+      background: linear-gradient(135deg, #1e293b 0%, #291e11 100%);
+    }
 
-  .pos-1 { color: #f59e0b; }
-  .pos-2 { color: #94a3b8; }
-  .pos-3 { color: #b45309; }
+    .pos {
+      font-weight: 800;
+      font-size: 1.1rem;
+      margin-right: 8px;
+      min-width: 30px;
+    }
 
-  .nome-projeto {
-    font-weight: 600;
-    color: #f1f5f9;
-    word-break: break-word;
-  }
+    .pos-1 {
+      color: #f59e0b;
+    }
 
-  footer {
-    width: 100%;
-    max-width: 500px;
-    text-align: center;
-  }
+    .pos-2 {
+      color: #94a3b8;
+    }
 
-  #total-votos {
-    background: linear-gradient(90deg, #0284c7 0%, #0369a1 100%);
-    color: #ffffff;
-    font-size: 1.2rem;
-    font-weight: 700;
-    padding: 10px;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(2, 132, 199, 0.3);
-  }
-</style>
+    .pos-3 {
+      color: #b45309;
+    }
+
+    .nome-projeto {
+      font-weight: 600;
+      color: #f1f5f9;
+      word-break: break-word;
+    }
+
+    footer {
+      width: 100%;
+      max-width: 500px;
+      text-align: center;
+    }
+
+    #status-ranking {
+      background: #429c42;
+      color: #ffffff;
+      font-size: 1.05rem;
+      font-weight: 700;
+      padding: 10px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(2, 132, 199, 0.3);
+    }
+  </style>
 </head>
+
 <body>
 
   <div id="slide-planta" class="slide active">
-    <img src="https://raw.githubusercontent.com/PET-Eletrica-UFPB/Site_Votacao1/refs/heads/main/plantavertical.png" class="planta-img" alt="Planta da Feira Vertical">
+    <img
+      src="https://raw.githubusercontent.com/PET-Eletrica-UFPB/Site_Votacao1/refs/heads/main/plantavertical.png"
+      class="planta-img"
+      alt="Planta da Feira Vertical"
+    >
   </div>
 
   <div id="slide-ranking" class="slide">
@@ -201,9 +221,18 @@
       <p>RANKING AO VIVO - MOSTRA DE PROJETOS</p>
 
       <div class="logos-container">
-        <img src="https://github.com/PET-Eletrica-UFPB/Site_Votacao1/blob/main/cear.png?raw=true" alt="Logo CEAR">
-        <img src="https://github.com/PET-Eletrica-UFPB/Site_Votacao1/blob/main/ufpb.png?raw=true" alt="Logo UFPB">
-        <img src="https://github.com/PET-Eletrica-UFPB/Site_Votacao1/blob/main/pet.png?raw=true" alt="Logo PET">
+        <img
+          src="https://github.com/PET-Eletrica-UFPB/Site_Votacao1/blob/main/cear.png?raw=true"
+          alt="Logo CEAR"
+        >
+        <img
+          src="https://github.com/PET-Eletrica-UFPB/Site_Votacao1/blob/main/ufpb.png?raw=true"
+          alt="Logo UFPB"
+        >
+        <img
+          src="https://github.com/PET-Eletrica-UFPB/Site_Votacao1/blob/main/pet.png?raw=true"
+          alt="Logo PET"
+        >
       </div>
     </header>
 
@@ -224,13 +253,13 @@
     </div>
 
     <footer>
-      <div id="total-votos">Total de Votos Registrados: 0</div>
+      <div id="status-ranking">Ranking atualizado em tempo real</div>
     </footer>
   </div>
 
   <script>
-    const tempoPlantaSegundos = 10; // 10s na Planta
-    const tempoRankingSegundos = 5;  // 5s no Ranking
+    const tempoPlantaSegundos = 10;
+    const tempoRankingSegundos = 5;
 
     const slidePlanta = document.getElementById('slide-planta');
     const slideRanking = document.getElementById('slide-ranking');
@@ -252,97 +281,141 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+    import {
+      getDatabase,
+      ref,
+      onValue
+    } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
-    // ⚠️ Substitua pelas suas credenciais do Firebase Console
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+    // Firebase - FEE 2026.1
+    // A chave de API identifica o projeto; o acesso aos dados continua
+    // controlado pelas regras do Realtime Database.
+    const firebaseConfig = {
+      apiKey: "AIzaSyA27dn6kUmDD_AtaKixZsFK-zE2DMfETP4",
+      authDomain: "fee20261.firebaseapp.com",
+      databaseURL: "https://fee20261-default-rtdb.firebaseio.com",
+      projectId: "fee20261"
+    };
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyA27dn6kUmDD_AtaKixZsFK-zE2DMfETP4",
-  authDomain: "fee20261.firebaseapp.com",
-  databaseURL: "https://fee20261-default-rtdb.firebaseio.com",
-  projectId: "fee20261",
-  storageBucket: "fee20261.firebasestorage.app",
-  messagingSenderId: "839820397989",
-  appId: "1:839820397989:web:bccae385066d57cde42c4c",
-  measurementId: "G-EQ6VD3CTPP"
-};
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+    // O site lê SOMENTE o caminho público liberado nas regras.
+    const rankingRef = ref(
+      db,
+      "urna/ranking_publico"
+    );
 
-    function obterTop3(projetosObjeto, sufixo) {
-      if (!projetosObjeto) return [];
-
-      const lista = Object.keys(projetosObjeto).map(key => ({
-        numero: key,
-        ...projetosObjeto[key]
-      }));
-
-      lista.sort((a, b) => {
-        const votosA = a.votos || 0;
-        const votosB = b.votos || 0;
-
-        if (votosB !== votosA) {
-          return votosB - votosA;
-        }
-
-        const ordemA = a.ordemAtingida || 0;
-        const ordemB = b.ordemBtingida || 0;
-
-        return ordemA - ordemB;
-      });
-
-      return lista.slice(0, 3).map(p => `${p.numero}${sufixo} - ${p.nome}`);
+    function escaparHTML(valor) {
+      return String(valor ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
     }
 
-    onValue(ref(db, '/'), (snapshot) => {
-      const data = snapshot.val() || {};
+    function atualizarRanking(elementoId, ranking) {
+      const lista = document.getElementById(elementoId);
 
-      const eletricaTop3 = obterTop3(data.eletrica, 'A');
-      const renovaveisTop3 = obterTop3(data.renovaveis, 'B');
-
-      let totalVotos = 0;
-      if (data.eletrica) {
-        Object.values(data.eletrica).forEach(p => totalVotos += (p.votos || 0));
-      }
-      if (data.renovaveis) {
-        Object.values(data.renovaveis).forEach(p => totalVotos += (p.votos || 0));
+      if (!ranking) {
+        lista.innerHTML = "<li>Nenhum voto registrado</li>";
+        return;
       }
 
-      const elList = document.getElementById('top-eletrica');
-      if (eletricaTop3.length > 0) {
-        elList.innerHTML = eletricaTop3.map((p, i) => `
+      let html = "";
+
+      for (let posicao = 1; posicao <= 3; posicao++) {
+        const projeto = ranking[String(posicao)];
+
+        if (!projeto) {
+          continue;
+        }
+
+        const codigo = escaparHTML(projeto.codigo);
+        const nome = escaparHTML(projeto.nome);
+
+        html += `
           <li>
-            <span class="pos pos-${i+1}">${i+1}º</span>
-            <span class="nome-projeto">${p}</span>
+            <span class="pos pos-${posicao}">${posicao}º</span>
+            <span class="nome-projeto">${codigo} - ${nome}</span>
           </li>
-        `).join('');
-      } else {
-        elList.innerHTML = '<li>Nenhum voto registrado</li>';
+        `;
       }
 
-      const renList = document.getElementById('top-renovaveis');
-      if (renovaveisTop3.length > 0) {
-        renList.innerHTML = renovaveisTop3.map((p, i) => `
-          <li>
-            <span class="pos pos-${i+1}">${i+1}º</span>
-            <span class="nome-projeto">${p}</span>
-          </li>
-        `).join('');
-      } else {
-        renList.innerHTML = '<li>Nenhum voto registrado</li>';
-      }
+      lista.innerHTML =
+        html || "<li>Nenhum voto registrado</li>";
+    }
 
-      document.getElementById('total-votos').innerText = `Total de Votos Registrados: ${totalVotos}`;
-    });
+    onValue(
+      rankingRef,
+
+      (snapshot) => {
+        const ranking = snapshot.val();
+
+        console.log(
+          "Ranking recebido do Firebase:",
+          ranking
+        );
+
+        if (!ranking) {
+          document.getElementById(
+            "top-eletrica"
+          ).innerHTML =
+            "<li>Nenhum voto registrado</li>";
+
+          document.getElementById(
+            "top-renovaveis"
+          ).innerHTML =
+            "<li>Nenhum voto registrado</li>";
+
+          document.getElementById(
+            "status-ranking"
+          ).innerText =
+            "Aguardando os primeiros votos";
+
+          return;
+        }
+
+        atualizarRanking(
+          "top-eletrica",
+          ranking.eletrica
+        );
+
+        atualizarRanking(
+          "top-renovaveis",
+          ranking.renovaveis
+        );
+
+        document.getElementById(
+          "status-ranking"
+        ).innerText =
+          "Ranking atualizado em tempo real";
+      },
+
+      (erro) => {
+        console.error(
+          "Erro ao ler ranking:",
+          erro
+        );
+
+        document.getElementById(
+          "top-eletrica"
+        ).innerHTML =
+          "<li>Erro de conexão</li>";
+
+        document.getElementById(
+          "top-renovaveis"
+        ).innerHTML =
+          "<li>Erro de conexão</li>";
+
+        document.getElementById(
+          "status-ranking"
+        ).innerText =
+          "Sem conexão com o ranking";
+      }
+    );
   </script>
+
 </body>
 </html>
