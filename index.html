@@ -308,7 +308,7 @@ footer {
     </div>
 
     <footer>
-      <div id="status-ranking">Conectando às duas urnas...</div>
+      <div id="status-ranking">Sincronizando controle da votação...</div>
     </footer>
   </div>
 
@@ -352,17 +352,18 @@ footer {
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // As duas urnas que participam da votação.
     const idsUrnas = [
       "urna01",
       "urna02"
     ];
 
-    // Armazena o último snapshot recebido de cada urna.
     const dadosUrnas = {
       urna01: {},
       urna02: {}
     };
+
+    let controleGlobal = null;
+    let controleRespondido = false;
 
     const urnasRespondidas = new Set();
     const urnasComErro = new Set();
@@ -390,6 +391,17 @@ footer {
     function somarProjetosDoCurso(curso) {
       const projetosSomados = {};
 
+      // Sem controle global ainda, não exibe dados que podem ser antigos.
+      if (
+        !controleGlobal ||
+        !controleGlobal.rodada_id
+      ) {
+        return [];
+      }
+
+      const rodadaAtual =
+        String(controleGlobal.rodada_id);
+
       for (const idUrna of idsUrnas) {
         const projetosDaUrna =
           dadosUrnas[idUrna]?.[curso] || {};
@@ -398,6 +410,17 @@ footer {
           const [codigo, projeto]
           of Object.entries(projetosDaUrna)
         ) {
+          // REGRA CRÍTICA:
+          // só entram no ranking os votos da rodada global atual.
+          // Ao zerar em qualquer urna, o controle muda de rodada
+          // e o site descarta imediatamente todos os dados antigos.
+          if (
+            String(projeto?.rodada || "") !==
+            rodadaAtual
+          ) {
+            continue;
+          }
+
           if (!projetosSomados[codigo]) {
             projetosSomados[codigo] = {
               codigo,
@@ -428,8 +451,7 @@ footer {
             return b.votos - a.votos;
           }
 
-          // Desempate determinístico entre as duas urnas:
-          // vence o projeto de menor numeração.
+          // Desempate global determinístico.
           return a.numero - b.numero;
         })
         .slice(0, 3);
@@ -469,6 +491,18 @@ footer {
       const status =
         document.getElementById("status-ranking");
 
+      if (!controleRespondido) {
+        status.innerText =
+          "Sincronizando controle da votação...";
+        return;
+      }
+
+      if (!controleGlobal?.rodada_id) {
+        status.innerText =
+          "Aguardando inicialização das urnas";
+        return;
+      }
+
       if (urnasComErro.size > 0) {
         status.innerText =
           "Ranking parcial: uma urna sem conexão";
@@ -478,6 +512,12 @@ footer {
       if (urnasRespondidas.size < idsUrnas.length) {
         status.innerText =
           "Conectando às duas urnas...";
+        return;
+      }
+
+      if (controleGlobal.votacao_aberta === false) {
+        status.innerText =
+          "Votação encerrada • Ranking final";
         return;
       }
 
@@ -498,6 +538,42 @@ footer {
 
       atualizarStatus();
     }
+
+    // Estado oficial compartilhado pelas duas urnas e pelo site.
+    const controleRef = ref(
+      db,
+      "urna/multiurna/controle"
+    );
+
+    onValue(
+      controleRef,
+
+      (snapshot) => {
+        controleRespondido = true;
+        controleGlobal = snapshot.val();
+
+        console.log(
+          "Controle global:",
+          controleGlobal
+        );
+
+        // Esta chamada faz o site zerar IMEDIATAMENTE quando
+        // a rodada global muda, mesmo antes da outra urna responder.
+        atualizarPodioGlobal();
+      },
+
+      (erro) => {
+        controleRespondido = true;
+        controleGlobal = null;
+
+        console.error(
+          "Erro ao ler controle global:",
+          erro
+        );
+
+        atualizarPodioGlobal();
+      }
+    );
 
     for (const idUrna of idsUrnas) {
       const projetosRef = ref(
