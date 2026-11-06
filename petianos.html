@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Área dos Petianos | PET Elétrica</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="login" id="tela-login">
+    <div class="login-palco">
+      <img class="hero-cena" src="img/cena.svg" alt="">
+      <nav class="nav" aria-label="Principal">
+        <div class="nav-links"><a href="index.html">Voltar ao site</a></div>
+        <a class="marca" href="index.html">
+          <img src="img/logo-pet-compacto.png" alt="PET Elétrica UFPB">
+        </a>
+      </nav>
+
+      <form class="login-cartao" id="form-login">
+        <p class="rotulo">Área dos Petianos</p>
+        <h1>Organização <em>da feira.</em></h1>
+        <p>Entre com a conta do PET no Firebase para cadastrar os projetos.</p>
+        <label class="campo">
+          <span>E-mail</span>
+          <input id="login-email" type="email" autocomplete="username" required placeholder="conta@cear.ufpb.br">
+        </label>
+        <label class="campo">
+          <span>Senha</span>
+          <input id="login-senha" type="password" autocomplete="current-password" required placeholder="Sua senha">
+        </label>
+        <p class="login-erro" id="login-erro" role="alert"></p>
+        <button class="btn btn-amber" id="login-entrar" type="submit">Entrar</button>
+        <button class="botao-texto" id="esqueci" type="button">Esqueci minha senha</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="tela-painel" hidden>
+    <header class="painel-topo">
+      <a class="marca" href="index.html">
+        <img src="img/logo-pet-compacto.png" alt="PET Elétrica UFPB">
+      </a>
+      <div class="painel-usuario">
+        <span id="painel-nome"></span>
+        <button class="btn btn-vidro" id="sair">Sair</button>
+      </div>
+    </header>
+
+    <div class="painel">
+      <aside class="lateral">
+        <div class="progresso">
+          <b id="total-projetos"></b><span id="total-txt"></span>
+          <button class="btn btn-amber novo-projeto" id="novo" type="button">+ Novo projeto</button>
+        </div>
+        <div class="urnas-ino">
+          <p class="rotulo">Código das urnas</p>
+          <div id="urnas-ino"></div>
+        </div>
+        <p class="lista-aviso" id="aviso-cadastro" hidden></p>
+        <label class="campo busca">
+          <span>Buscar nos inscritos</span>
+          <input id="busca" type="search" placeholder="Nome, disciplina ou equipe">
+        </label>
+        <ul class="lista-projetos" id="lista"></ul>
+      </aside>
+
+      <main class="ficha" id="ficha">
+        <div class="ficha-cabeca">
+          <p class="rotulo">Área dos Petianos</p>
+          <h1 id="ficha-titulo">Novo projeto</h1>
+          <p class="numero-urna" id="numero-urna" hidden></p>
+        </div>
+        <form class="ficha-corpo" id="form-projeto">
+          <label class="campo primeiro">
+            <span>Nome do projeto</span>
+            <input id="nome" required maxlength="80" placeholder="Ex.: Rastreador solar de baixo custo">
+          </label>
+          <label class="campo">
+            <span>Curso (define o pódio e a letra na urna)</span>
+            <select id="curso" required></select>
+          </label>
+          <div class="campos-duplos">
+            <label class="campo">
+              <span>Disciplina ligada ao projeto</span>
+              <input id="disciplina" list="lista-disciplinas" required maxlength="80" placeholder="Escolha ou digite">
+              <datalist id="lista-disciplinas"></datalist>
+            </label>
+            <label class="campo">
+              <span>Stand (opcional)</span>
+              <input id="stand" maxlength="10" placeholder="Ex.: A1">
+            </label>
+          </div>
+          <label class="campo">
+            <span>Equipe (opcional)</span>
+            <input id="equipe" maxlength="80" placeholder="Nome da equipe ou dos integrantes">
+          </label>
+          <label class="campo">
+            <span>Breve resumo</span>
+            <textarea id="resumo" required maxlength="400" rows="5" placeholder="O que o projeto faz e qual problema resolve"></textarea>
+            <small class="contador" id="contador"></small>
+          </label>
+          <div class="ficha-rodape">
+            <button class="btn btn-vidro" id="excluir" type="button" hidden>Excluir projeto</button>
+            <div class="ficha-acoes">
+              <button class="btn btn-amber" id="salvar" type="submit">Cadastrar projeto</button>
+            </div>
+          </div>
+          <p class="feedback" id="feedback" role="status"></p>
+        </form>
+      </main>
+    </div>
+  </div>
+
+  <dialog id="confirmar" class="confirmar">
+    <h2>Excluir este projeto?</h2>
+    <p><strong id="confirmar-nome"></strong> sairá do site e do placar. As urnas só mudam depois de gravar o código de novo.</p>
+    <div class="ficha-acoes">
+      <button class="btn btn-vidro" id="confirmar-nao" type="button">Cancelar</button>
+      <button class="btn btn-amber" id="confirmar-sim" type="button">Excluir</button>
+    </div>
+  </dialog>
+
+  <dialog id="baixar" class="confirmar">
+    <form id="form-baixar">
+      <h2 id="baixar-titulo"></h2>
+      <p>As senhas entram só no arquivo baixado. O site não guarda nem envia nenhuma delas.</p>
+      <label class="campo">
+        <span>Senha do modo operador da urna</span>
+        <input id="baixar-operador" type="password" inputmode="numeric" pattern="[0-9]{1,8}" maxlength="8" required autocomplete="off" placeholder="Só números, até 8 dígitos">
+      </label>
+      <label class="campo">
+        <span>Senha da conta do Firebase (opcional)</span>
+        <input id="baixar-firebase" type="password" autocomplete="off" placeholder="Deixe em branco para preencher no Arduino IDE">
+        <small>Em branco, a urna funciona offline até você preencher FIREBASE_PASSWORD no código.</small>
+      </label>
+      <ol>
+        <li>Grave o arquivo na ESP pelo Arduino IDE, sem marcar "Erase All Flash".</li>
+        <li>Faça o mesmo na outra urna: as duas precisam da mesma lista.</li>
+        <li>No modo operador de uma urna, use "Zerar votação" antes de começar. Isso apaga os votos da rodada atual nas duas.</li>
+      </ol>
+      <div class="ficha-acoes">
+        <button class="btn btn-vidro" id="baixar-cancelar" type="button">Cancelar</button>
+        <button class="btn btn-amber" type="submit">Baixar arquivo</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="js/data.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/modelo-urna.js"></script>
+  <script src="js/gerador-urna.js"></script>
+  <script src="js/petianos.js"></script>
+</body>
+</html>

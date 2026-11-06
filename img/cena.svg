@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="ceu" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#07033f"/>
+      <stop offset=".5" stop-color="#0c065c"/>
+      <stop offset=".74" stop-color="#23307a"/>
+      <stop offset=".84" stop-color="#b9862c"/>
+      <stop offset=".9" stop-color="#eea614"/>
+    </linearGradient>
+    <radialGradient id="sol" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#f7c55c" stop-opacity=".75"/>
+      <stop offset=".45" stop-color="#eea614" stop-opacity=".22"/>
+      <stop offset="1" stop-color="#eea614" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="morro1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2f7a3a"/>
+      <stop offset="1" stop-color="#14412c"/>
+    </linearGradient>
+    <linearGradient id="morro2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#17532f"/>
+      <stop offset="1" stop-color="#0b2a2a"/>
+    </linearGradient>
+    <linearGradient id="morro3" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0b2a3a"/>
+      <stop offset="1" stop-color="#070433"/>
+    </linearGradient>
+    <filter id="grao" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .07 0"/>
+    </filter>
+    <g id="aero">
+      <path d="M-2 0 L-4 100 L4 100 L2 0Z"/>
+      <path d="M0 0 L-3 -4 L-1 -50 L1 -50 L3 -4Z"/>
+      <path d="M0 0 L-3 -4 L-1 -50 L1 -50 L3 -4Z" transform="rotate(120)"/>
+      <path d="M0 0 L-3 -4 L-1 -50 L1 -50 L3 -4Z" transform="rotate(240)"/>
+    </g>
+  </defs>
+
+  <rect width="1600" height="1000" fill="url(#ceu)"/>
+  <circle cx="820" cy="770" r="520" fill="url(#sol)"/>
+
+  <g fill="#f8f5ec" opacity=".55">
+    <circle cx="120" cy="70" r="1.4"/><circle cx="420" cy="140" r="1"/><circle cx="640" cy="60" r="1.5"/>
+    <circle cx="880" cy="170" r="1"/><circle cx="1060" cy="80" r="1.3"/><circle cx="1290" cy="150" r="1"/>
+    <circle cx="1490" cy="60" r="1.5"/><circle cx="260" cy="230" r="1"/><circle cx="1180" cy="260" r="1"/>
+    <circle cx="760" cy="280" r="1.1"/><circle cx="1420" cy="310" r="1"/><circle cx="520" cy="330" r="1"/>
+  </g>
+
+  <g fill="#14306a" opacity=".8">
+    <use href="#aero" transform="translate(180 715) scale(.9)"/>
+    <use href="#aero" transform="translate(330 735) scale(.7)"/>
+    <use href="#aero" transform="translate(1180 720) scale(.85)"/>
+    <use href="#aero" transform="translate(1330 705) scale(1.05)"/>
+    <use href="#aero" transform="translate(1490 735) scale(.7)"/>
+  </g>
+
+  <path fill="url(#morro1)" d="M0 810 C180 760 340 790 520 815 S860 850 1060 800 1400 760 1600 805 V1000 H0Z"/>
+  <path fill="url(#morro2)" d="M0 870 C240 825 420 880 680 885 S1120 825 1320 860 1500 885 1600 860 V1000 H0Z"/>
+  <path fill="url(#morro3)" d="M0 945 C260 905 520 950 800 945 S1320 905 1600 950 V1000 H0Z"/>
+
+  <rect width="1600" height="1000" fill="#070433" opacity=".14"/>
+  <rect width="1600" height="1000" filter="url(#grao)"/>
+</svg>

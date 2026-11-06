@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Modo Pódio | PET Elétrica</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/podio.css">
+</head>
+<body class="tela-podio">
+  <div class="palco">
+    <img class="hero-cena" src="img/cena.svg" alt="">
+
+    <header class="podio-topo">
+      <span class="marca">
+        <img src="img/logo-pet-compacto.png" alt="PET Elétrica UFPB">
+      </span>
+      <h1>Os favoritos <em>do público</em></h1>
+      <p>Feira de Engenharia e Energia</p>
+    </header>
+
+    <main class="podios" id="podios"></main>
+
+    <footer class="podio-rodape">
+      <span id="chamada">Ainda não votou? <b>Procure a urna mais próxima.</b></span>
+      <span class="podio-status" id="status" role="status"></span>
+    </footer>
+
+    <div class="podio-controles" id="controles">
+      <button class="btn btn-vidro" id="girar" type="button">Girar tela</button>
+      <button class="btn btn-vidro" id="tela-cheia" type="button">Tela cheia</button>
+      <a class="btn btn-vidro" href="index.html">Sair</a>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/artes.js"></script>
+  <script src="js/podio.js"></script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Área do Professor | PET Elétrica</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="login" id="tela-login">
+    <div class="login-palco">
+      <img class="hero-cena" src="img/cena.svg" alt="">
+      <nav class="nav" aria-label="Principal">
+        <div class="nav-links"><a href="index.html">Voltar ao site</a></div>
+        <a class="marca" href="index.html">
+          <img src="img/logo-pet-compacto.png" alt="PET Elétrica UFPB">
+        </a>
+      </nav>
+
+      <form class="login-cartao" id="form-login">
+        <p class="rotulo">Área do professor</p>
+        <h1>Boas-vindas à <em>banca.</em></h1>
+        <p>Entre para avaliar os projetos da feira.</p>
+        <label class="campo">
+          <span>Professor(a)</span>
+          <select id="login-nome" required></select>
+        </label>
+        <label class="campo">
+          <span>Código de acesso</span>
+          <input id="login-codigo" type="password" autocomplete="off" required placeholder="Informado pela organização">
+        </label>
+        <button class="btn btn-amber" type="submit">Entrar</button>
+        <p class="nota-demo">Versão de demonstração: qualquer código é aceito.</p>
+      </form>
+    </div>
+  </div>
+
+  <div id="tela-painel" hidden>
+    <header class="painel-topo">
+      <a class="marca" href="index.html">
+        <img src="img/logo-pet-compacto.png" alt="PET Elétrica UFPB">
+      </a>
+      <div class="painel-usuario">
+        <span id="painel-nome"></span>
+        <button class="btn btn-vidro" id="sair">Sair</button>
+      </div>
+    </header>
+
+    <div class="painel">
+      <aside class="lateral">
+        <div class="progresso">
+          <b id="progresso-num"></b><span id="progresso-txt"></span>
+          <div class="barra"><i id="progresso-barra" style="width:0"></i></div>
+        </div>
+        <ul class="lista-projetos" id="lista"></ul>
+      </aside>
+
+      <main class="ficha">
+        <div class="ficha-cabeca">
+          <p class="rotulo" id="ficha-meta"></p>
+          <h1 id="ficha-nome"></h1>
+          <p id="ficha-resumo"></p>
+        </div>
+        <form class="ficha-corpo" id="form-nota" novalidate>
+          <div id="criterios"></div>
+          <label class="campo">
+            <span>Comentário para a equipe (opcional)</span>
+            <textarea id="comentario" placeholder="Pontos fortes e o que pode melhorar"></textarea>
+          </label>
+          <div class="ficha-rodape">
+            <div class="media">
+              <b id="media">–</b>
+              <span id="media-txt">Preencha todos os critérios</span>
+            </div>
+            <div class="ficha-acoes">
+              <button class="btn btn-amber" type="submit" id="salvar" disabled>Salvar e ir para o próximo</button>
+            </div>
+          </div>
+          <p class="feedback" id="feedback" role="status"></p>
+        </form>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/professores.js"></script>
+</body>
+</html>
