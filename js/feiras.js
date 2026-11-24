@@ -1,6 +1,6 @@
 const { esc } = API;
 const $ = (id) => document.getElementById(id);
-const edicoes = window.FEIRAS_PASSADAS;
+let edicoes = [];
 
 let aberta = null; // { edicao, indice } da foto no visualizador
 
@@ -14,30 +14,38 @@ function htmlEdicao(f, i) {
         <span class="edicao-onde">${esc(f.onde)}</span>
       </div>
       <article class="edicao-cartao">
-        <button class="edicao-capa" type="button" data-edicao="${i}" data-foto="0" aria-label="Ampliar foto: ${esc(capa[1])}">
-          <img src="${esc(capa[0])}" alt="${esc(capa[1])}" loading="lazy">
-        </button>
+        ${
+          capa
+            ? `<button class="edicao-capa" type="button" data-edicao="${i}" data-foto="0" aria-label="Ampliar foto: ${esc(capa.legenda)}">
+                <img src="${esc(capa.url)}" alt="${esc(capa.legenda)}" loading="lazy">
+              </button>`
+            : ""
+        }
         <div class="edicao-corpo">
           <p class="rotulo">${esc(f.titulo)} · ${esc(f.edicao)}</p>
-          <p class="edicao-resumo">${esc(f.resumo)}</p>
-          <ul class="edicao-numeros">${f.numeros.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>
-          <div class="edicao-vencedores">
-            <h3 class="rotulo">Vencedores</h3>
-            <dl>${f.vencedores.map(([cat, nome]) => `<div><dt>${esc(cat)}</dt><dd>${esc(nome)}</dd></div>`).join("")}</dl>
-          </div>
+          ${f.resumo ? `<p class="edicao-resumo">${esc(f.resumo)}</p>` : ""}
+          ${f.numeros.length ? `<ul class="edicao-numeros">${f.numeros.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>` : ""}
+          ${
+            f.vencedores.length
+              ? `<div class="edicao-vencedores">
+                  <h3 class="rotulo">Vencedores</h3>
+                  <dl>${f.vencedores.map((v) => `<div><dt>${esc(v.categoria)}</dt><dd>${esc(v.nome)}</dd></div>`).join("")}</dl>
+                </div>`
+              : ""
+          }
           ${
             resto.length
               ? `<div class="edicao-galeria">${resto
                   .map(
-                    ([src, legenda], j) => `
-                      <button type="button" data-edicao="${i}" data-foto="${j + 1}" aria-label="Ampliar foto: ${esc(legenda)}">
-                        <img src="${esc(src)}" alt="" loading="lazy">
+                    (foto, j) => `
+                      <button type="button" data-edicao="${i}" data-foto="${j + 1}" aria-label="Ampliar foto: ${esc(foto.legenda)}">
+                        <img src="${esc(foto.url)}" alt="" loading="lazy">
                       </button>`
                   )
                   .join("")}</div>`
               : ""
           }
-          <a class="link" href="${esc(f.link)}" target="_blank" rel="noopener">Ler a página completa da edição ↗</a>
+          ${f.link ? `<a class="link" href="${esc(f.link)}" target="_blank" rel="noopener">Ler a matéria completa da edição ↗</a>` : ""}
         </div>
       </article>
     </li>`;
@@ -45,10 +53,10 @@ function htmlEdicao(f, i) {
 
 function mostrarFoto() {
   const f = edicoes[aberta.edicao];
-  const [src, legenda] = f.fotos[aberta.indice];
-  $("foto-img").src = src;
+  const { url, legenda } = f.fotos[aberta.indice];
+  $("foto-img").src = url;
   $("foto-img").alt = legenda;
-  $("foto-legenda").textContent = `${legenda} · ${f.titulo} ${f.edicao} (${aberta.indice + 1}/${f.fotos.length})`;
+  $("foto-legenda").textContent = `${legenda ? `${legenda} · ` : ""}${f.titulo} ${f.edicao} (${aberta.indice + 1}/${f.fotos.length})`;
 }
 
 function andar(passo) {
@@ -57,8 +65,12 @@ function andar(passo) {
   mostrarFoto();
 }
 
-$("qtd-edicoes").textContent = edicoes.length;
-$("edicoes").innerHTML = edicoes.map(htmlEdicao).join("");
+function render() {
+  $("qtd-edicoes").textContent = edicoes.length;
+  $("edicoes").innerHTML = edicoes.length
+    ? edicoes.map(htmlEdicao).join("")
+    : `<li class="lista-vazia">Nenhuma edição cadastrada ainda.</li>`;
+}
 
 $("edicoes").addEventListener("click", (e) => {
   const botao = e.target.closest("[data-foto]");
@@ -78,3 +90,19 @@ $("foto").addEventListener("keydown", (e) => {
   if (e.key === "ArrowLeft") andar(-1);
   if (e.key === "ArrowRight") andar(1);
 });
+
+// As edições vêm do Firebase (cadastradas na Área dos Petianos). Sem conexão ou sem
+// nada cadastrado ainda, vale a lista que acompanha o site em feiras-dados.js.
+(async () => {
+  edicoes = window.FEIRAS_PASSADAS.map(normalizarFeira);
+  render();
+  try {
+    const doBanco = await API.lerFeiras();
+    if (doBanco) {
+      edicoes = doBanco.map(normalizarFeira);
+      render();
+    }
+  } catch (erro) {
+    console.warn("Feiras do Firebase indisponíveis, usando as do site:", erro.message);
+  }
+})();

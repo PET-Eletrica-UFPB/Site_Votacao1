@@ -52,5 +52,5 @@ window.Exportar = (() => {
     }
   }
 
-  return { tabela, csv };
+  return { tabela, csv, carregar };
 })();

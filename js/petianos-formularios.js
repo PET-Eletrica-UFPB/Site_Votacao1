@@ -1,6 +1,7 @@
 // Aba "Formulários" da Área dos Petianos: perguntas e respostas das inscrições. Usa $ e esc de petianos.js.
 window.PainelFormularios = (() => {
-  const TIPOS = ["alunos", "professores"];
+  const TIPOS = Object.keys(window.FEIRA.publicos);
+  const dos = (t) => window.FEIRA.publicos[t].dos;
   const { tiposPergunta, formulariosPadrao } = window.FEIRA;
   const comOpcoes = (tipo) => tiposPergunta.find((t) => t.id === tipo)?.opcoes;
   const copia = (obj) => JSON.parse(JSON.stringify(obj));
@@ -49,7 +50,7 @@ window.PainelFormularios = (() => {
     const n = e.rascunho?.perguntas.length || 0;
     $("form-qtd-perguntas").textContent = `${n} pergunta${n === 1 ? "" : "s"}${e.alterado ? " · não salvas" : ""}`;
     $("respostas-titulo").textContent = `Inscrições de ${tipo}`;
-    $("perguntas-titulo").textContent = `Formulário dos ${tipo}`;
+    $("perguntas-titulo").textContent = `Formulário ${dos(tipo)}`;
 
     document.querySelectorAll("[data-secao]").forEach((b) => b.setAttribute("aria-current", b.dataset.secao === secao));
     $("secao-respostas").hidden = secao !== "respostas";
@@ -348,7 +349,7 @@ window.PainelFormularios = (() => {
   });
 
   $("restaurar-modelo").addEventListener("click", () => {
-    if (!confirm(`Trocar as perguntas atuais pelo modelo inicial do formulário dos ${tipo}? Nada é salvo até você clicar em “Salvar perguntas”.`)) return;
+    if (!confirm(`Trocar as perguntas atuais pelo modelo inicial do formulário ${dos(tipo)}? Nada é salvo até você clicar em “Salvar perguntas”.`)) return;
     const r = estado[tipo].rascunho;
     Object.assign(r, copia(formulariosPadrao[tipo]));
     marcarAlterado();
@@ -366,7 +367,7 @@ window.PainelFormularios = (() => {
       await API.salvarFormulario(tipo, { ...dados, aberto: !!e.formulario?.aberto });
       e.alterado = false;
       await carregar(tipo);
-      aviso(`Formulário dos ${tipo} salvo com ${dados.perguntas.length} pergunta${dados.perguntas.length === 1 ? "" : "s"}.`);
+      aviso(`Formulário ${dos(tipo)} salvo com ${dados.perguntas.length} pergunta${dados.perguntas.length === 1 ? "" : "s"}.`);
     } catch (erroSalvar) {
       aviso(erroSalvar.message, true);
     } finally {
@@ -385,7 +386,7 @@ window.PainelFormularios = (() => {
     },
     podeDescartar() {
       const pendentes = TIPOS.filter((t) => estado[t].alterado);
-      return !pendentes.length || confirm(`Há perguntas não salvas no formulário dos ${pendentes.join(" e dos ")}. Sair mesmo assim?`);
+      return !pendentes.length || confirm(`Há perguntas não salvas ${pendentes.length > 1 ? "nos formulários" : "no formulário"} ${pendentes.map(dos).join(" e ")}. Sair mesmo assim?`);
     },
   };
 })();

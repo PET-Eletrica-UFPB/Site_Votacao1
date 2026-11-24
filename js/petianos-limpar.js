@@ -4,6 +4,7 @@
   const NOMES = {
     inscricoesAlunos: "respostas dos alunos",
     inscricoesProfessores: "respostas dos professores",
+    inscricoesEscolas: "respostas das escolas",
     avaliacoes: "notas",
     projetos: "projetos",
     professores: "professores",

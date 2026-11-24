@@ -447,7 +447,7 @@ window.API = (() => {
   }
 
   /* Inscrições: um formulário para alunos e outro para professores, montados pelos petianos. */
-  const TIPOS_FORMULARIO = ["alunos", "professores"];
+  const TIPOS_FORMULARIO = ["alunos", "professores", "escolas"];
 
   function conferirTipo(tipo) {
     if (!TIPOS_FORMULARIO.includes(tipo)) throw new Error(`Formulário desconhecido: ${tipo}`);
@@ -502,8 +502,56 @@ window.API = (() => {
     await escrever("DELETE", `/site/inscricoes/${tipo}/${id}`);
   }
 
+  // Respostas vindas de uma planilha (ex.: Google Forms), gravadas de uma vez com a data original.
+  // linhas: [{ enviadoEm, respostas, planilha }]; "planilha" identifica a linha para não importar duas vezes.
+  async function importarInscricoes(tipo, linhas, perguntasNovas) {
+    conferirTipo(tipo);
+    const mudancas = {};
+    linhas.forEach((l, i) => {
+      const id = `pl${Date.now().toString(36)}${String(i).padStart(4, "0")}${Math.random().toString(36).slice(2, 5)}`;
+      mudancas[`inscricoes/${tipo}/${id}`] = { enviadoEm: l.enviadoEm, respostas: l.respostas, planilha: l.planilha };
+    });
+    if (perguntasNovas) mudancas[`formularios/${tipo}/perguntas`] = perguntasNovas;
+    if (Object.keys(mudancas).length) await atualizarSite(mudancas);
+  }
+
+  // Assinaturas das linhas de planilha já importadas.
+  async function assinaturasImportadas(tipo) {
+    conferirTipo(tipo);
+    const dados = (await escrever("GET", `/site/inscricoes/${tipo}`)) || {};
+    return new Set(Object.values(dados).map((r) => r?.planilha).filter(Boolean));
+  }
+
+  /* Edições anteriores (página Feiras). Sem nada no Firebase, a página usa feiras-dados.js. */
+  const numeroEdicao = (f) => parseFloat(String(f.edicao).replace(",", ".")) || 0;
+
+  async function lerFeiras() {
+    const dados = await lerPublico("/site/feiras");
+    if (!dados) return null;
+    return Object.entries(dados)
+      .map(([id, f]) => ({ ...f, id, fotos: f.fotos || [], numeros: f.numeros || [], vencedores: f.vencedores || [] }))
+      .sort((a, b) => numeroEdicao(b) - numeroEdicao(a));
+  }
+
+  async function salvarFeira(id, feira) {
+    const chave = id || `f${Date.now().toString(36)}`;
+    await escrever("PUT", `/site/feiras/${chave}`, feira);
+    return chave;
+  }
+
+  const removerFeira = (id) => escrever("DELETE", `/site/feiras/${id}`);
+
+  // Grava de uma vez as edições que estavam fixas no código do site.
+  async function publicarFeirasIniciais(lista) {
+    const mudancas = {};
+    lista.forEach((f, i) => {
+      mudancas[`feiras/f${String(i).padStart(2, "0")}${f.edicao.replace(/\W/g, "")}`] = f;
+    });
+    await atualizarSite(mudancas);
+  }
+
   /* Nova feira: cópia de segurança e limpeza do que ficou da anterior. */
-  const PARTES_SITE = ["projetos", "professores", "professores_codigos", "avaliacoes", "formularios", "inscricoes"];
+  const PARTES_SITE = ["projetos", "professores", "professores_codigos", "avaliacoes", "formularios", "inscricoes", "feiras"];
 
   // Tudo que o site guarda, num objeto só (para baixar em .json antes de apagar).
   async function copiaDeSeguranca() {
@@ -513,17 +561,19 @@ window.API = (() => {
 
   // Quanto existe hoje de cada coisa que pode ser apagada.
   async function contarDados() {
-    const [projetos, professores, avaliacoes, alunos, profs] = await Promise.all([
+    const [projetos, professores, avaliacoes, alunos, profs, escolas] = await Promise.all([
       lerPublico("/site/projetos"),
       lerPublico("/site/professores"),
       escrever("GET", "/site/avaliacoes"),
       escrever("GET", "/site/inscricoes/alunos"),
       escrever("GET", "/site/inscricoes/professores"),
+      escrever("GET", "/site/inscricoes/escolas"),
     ]);
     const n = (o) => Object.keys(o || {}).length;
     return {
       inscricoesAlunos: n(alunos),
       inscricoesProfessores: n(profs),
+      inscricoesEscolas: n(escolas),
       projetos: n(projetos),
       avaliacoes: Object.values(avaliacoes || {}).reduce((s, x) => s + n(x), 0),
       professores: n(professores),
@@ -535,6 +585,7 @@ window.API = (() => {
     const mudancas = {};
     if (escolha.inscricoesAlunos) mudancas["inscricoes/alunos"] = null;
     if (escolha.inscricoesProfessores) mudancas["inscricoes/professores"] = null;
+    if (escolha.inscricoesEscolas) mudancas["inscricoes/escolas"] = null;
     if (escolha.projetos) mudancas.projetos = null;
     if (escolha.avaliacoes || escolha.professores || escolha.projetos) mudancas.avaliacoes = null;
     if (escolha.professores) {
@@ -562,6 +613,7 @@ window.API = (() => {
     entrarProfessor, sairProfessor: contaProfessor.sair, sessaoProfessor: contaProfessor.atual,
     meuPerfil, minhasAvaliacoes, salvarAvaliacao,
     lerFormulario, salvarFormulario, definirInscricoesAbertas, enviarInscricao, lerInscricoes, removerInscricao,
-    importarProjetos, copiaDeSeguranca, contarDados, limparDados,
+    importarProjetos, copiaDeSeguranca, contarDados, limparDados, importarInscricoes, assinaturasImportadas,
+    lerFeiras, salvarFeira, removerFeira, publicarFeirasIniciais,
   };
 })();

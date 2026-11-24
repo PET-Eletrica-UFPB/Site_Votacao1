@@ -57,24 +57,33 @@ window.FEIRA = {
     { id: "lista", nome: "Lista suspensa", opcoes: true },
   ],
 
+  // Os três formulários de inscrição e como o site se refere a cada um.
+  publicos: {
+    alunos: { nome: "alunos", dos: "dos alunos" },
+    professores: { nome: "professores", dos: "dos professores" },
+    escolas: { nome: "escolas", dos: "das escolas" },
+  },
+
   // Modelo inicial dos formulários. Depois de salvos pela Área dos Petianos, valem os do Firebase.
   formulariosPadrao: {
+    // Mesmas perguntas do formulário de mostradores usado no Google Forms (26.2), mais o curso.
     alunos: {
       titulo: "Inscrição de projeto",
       descricao: "Inscreva o projeto da sua equipe para expor na Feira de Engenharia e Energia. Basta um integrante preencher.",
       perguntas: [
-        { id: "nome", texto: "Nome completo de quem está inscrevendo", tipo: "curta", obrigatoria: true },
-        { id: "email", texto: "E-mail para contato", tipo: "email", obrigatoria: true },
-        { id: "telefone", texto: "WhatsApp", tipo: "telefone", obrigatoria: false },
-        { id: "matricula", texto: "Matrícula", tipo: "curta", obrigatoria: true },
+        { id: "email", texto: "E-mail", tipo: "email", obrigatoria: true },
         { id: "curso", texto: "Curso", tipo: "unica", obrigatoria: true,
           opcoes: ["Engenharia Elétrica", "Engenharia de Energias Alternativas e Renováveis"] },
-        { id: "disciplina", texto: "Disciplina ligada ao projeto", tipo: "curta", obrigatoria: true },
-        { id: "projeto", texto: "Nome do projeto", tipo: "curta", obrigatoria: true },
-        { id: "resumo", texto: "Breve resumo do projeto", tipo: "longa", obrigatoria: true },
-        { id: "equipe", texto: "Integrantes da equipe", tipo: "longa", obrigatoria: true, ajuda: "Um nome por linha." },
-        { id: "estrutura", texto: "O que o projeto vai precisar no stand?", tipo: "varias", obrigatoria: false,
-          opcoes: ["Tomada", "Mesa", "Extensão", "Internet"] },
+        { id: "disciplina", texto: "Disciplina", tipo: "curta", obrigatoria: true },
+        { id: "resumo", texto: "Do que se trata o projeto?", tipo: "longa", obrigatoria: true },
+        { id: "projeto", texto: "Nome da equipe", tipo: "curta", obrigatoria: true, ajuda: "É o nome que aparece no site, no placar e na urna." },
+        { id: "quantidade", texto: "Quantos alunos participantes?", tipo: "numero", obrigatoria: true },
+        { id: "equipe", texto: "Quais alunos participantes? (Deve conter o nome de todos os integrantes)", tipo: "longa", obrigatoria: true },
+        { id: "estrutura", texto: "Quais materiais serão necessários para a exposição do projeto?", tipo: "varias", obrigatoria: false,
+          opcoes: ["Mesa", "Ponto de Energia", "Porta banner"] },
+        { id: "telefone", texto: "Telefone para contato do representante do projeto (será criado um grupo de whatsapp para comunicação com os participantes)", tipo: "telefone", obrigatoria: true },
+        { id: "imagem", texto: "Autorizo o uso de imagem (fotos e vídeos) para divulgação no Instagram do curso e do grupo PET Elétrica - UFPB.", tipo: "unica", obrigatoria: true,
+          opcoes: ["Sim", "Não"] },
       ],
     },
     professores: {
@@ -89,6 +98,20 @@ window.FEIRA = {
           opcoes: ["Durante todo o evento", "Só em parte do evento", "Não poderei comparecer"] },
         { id: "avaliar", texto: "Quais disciplinas prefere avaliar?", tipo: "varias", obrigatoria: false,
           opcoes: ["Introdução à Engenharia Elétrica", "Integradora I", "Integradora II", "Integradora III", "Profissional III", "Projeto Integrador II", "Introdução à Ciência dos Materiais"] },
+        { id: "observacoes", texto: "Observações", tipo: "longa", obrigatoria: false },
+      ],
+    },
+    escolas: {
+      titulo: "Visita de escolas",
+      descricao: "Sua escola quer visitar a Feira de Engenharia e Energia? Preencha os dados abaixo para a organização entrar em contato.",
+      perguntas: [
+        { id: "escola", texto: "Nome da escola", tipo: "curta", obrigatoria: true },
+        { id: "responsavel", texto: "Nome do responsável", tipo: "curta", obrigatoria: true },
+        { id: "telefone", texto: "Telefone para contato", tipo: "telefone", obrigatoria: true },
+        { id: "email", texto: "E-mail para contato", tipo: "email", obrigatoria: true },
+        { id: "transporte", texto: "A escola possui transporte próprio para a visita?", tipo: "unica", obrigatoria: true,
+          opcoes: ["Sim", "Não"] },
+        { id: "alunos", texto: "Quantidade de alunos que irão", tipo: "numero", obrigatoria: true },
         { id: "observacoes", texto: "Observações", tipo: "longa", obrigatoria: false },
       ],
     },

@@ -164,7 +164,7 @@ $("esqueci").addEventListener("click", async () => {
 });
 
 $("sair").addEventListener("click", () => {
-  if (!podeDescartar() || !PainelProfessores.podeDescartar() || !PainelFormularios.podeDescartar()) return;
+  if (!podeDescartar() || !PainelProfessores.podeDescartar() || !PainelFormularios.podeDescartar() || !PainelFeiras.podeDescartar()) return;
   API.sair();
   location.reload();
 });

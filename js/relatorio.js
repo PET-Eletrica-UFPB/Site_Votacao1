@@ -392,7 +392,7 @@ window.Relatorio = (() => {
 
 /* Relatório das respostas de um formulário de inscrição */
 window.RelatorioInscricoes = (() => {
-  const NOMES = { alunos: "alunos", professores: "professores" };
+  const NOMES = { alunos: "alunos", professores: "professores", escolas: "escolas" };
 
   // Colunas: perguntas atuais na ordem do formulário e, no fim, as que já foram removidas.
   function colunas(formulario, inscricoes) {

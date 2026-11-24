@@ -5,11 +5,11 @@
 
   // Campo do projeto ← pergunta do formulário. "padrao" é o id da pergunta no modelo; "parecido" acha a pergunta se o id mudou.
   const CAMPOS = [
-    { campo: "nome", rotulo: "Nome do projeto", padrao: "projeto", parecido: /projeto/i, obrigatorio: true, limite: 80 },
-    { campo: "curso", rotulo: "Curso", padrao: "curso", parecido: /curso/i, obrigatorio: true },
+    { campo: "nome", rotulo: "Nome do projeto", padrao: "projeto", parecido: /nome d[oa] (projeto|equipe)|^\s*projeto/i, obrigatorio: true, limite: 80 },
+    { campo: "curso", rotulo: "Curso", padrao: "curso", parecido: /^\s*curso/i, obrigatorio: true },
     { campo: "disciplina", rotulo: "Disciplina", padrao: "disciplina", parecido: /disciplina/i, obrigatorio: true, limite: 80 },
-    { campo: "equipe", rotulo: "Equipe", padrao: "equipe", parecido: /equipe|integrantes/i, limite: 80 },
-    { campo: "resumo", rotulo: "Resumo", padrao: "resumo", parecido: /resumo|descri/i, limite: 400 },
+    { campo: "equipe", rotulo: "Equipe", padrao: "equipe", parecido: /integrantes|quais alunos/i, limite: 80 },
+    { campo: "resumo", rotulo: "Resumo", padrao: "resumo", parecido: /resumo|descri|do que se trata/i, limite: 400 },
     { campo: "stand", rotulo: "Stand", padrao: "stand", parecido: /^\s*(n[uú]mero do )?stand\s*$/i, limite: 10 },
   ];
 
@@ -19,6 +19,7 @@
   let mapa = {}; // campo → id da pergunta ("" = não usar)
   const marcadas = new Set();
   const cursoEscolhido = {}; // id da resposta → curso escolhido à mão
+  const cursoPorDisciplina = {}; // disciplina (normalizada) → curso, para as respostas sem curso
 
   const normalizar = (t) => String(t ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 
@@ -47,7 +48,7 @@
       if (c.campo === "curso") continue;
       dados[c.campo] = cortar(valor(r, c.campo), c.limite);
     }
-    dados.curso = cursoEscolhido[r.id] || acharCurso(valor(r, "curso"));
+    dados.curso = cursoEscolhido[r.id] || acharCurso(valor(r, "curso")) || cursoPorDisciplina[normalizar(dados.disciplina)] || null;
     dados.inscricao = r.id;
     return dados;
   }
@@ -80,9 +81,41 @@
     ).join("");
   }
 
+  // Respostas sem curso escrito: o curso vem da disciplina, escolhido uma vez para todas.
+  function renderCursos(pendentes) {
+    const semCurso = pendentes.filter((r) => !acharCurso(valor(r, "curso")) && !cursoEscolhido[r.id]);
+    const disciplinas = new Map();
+    for (const r of semCurso) {
+      const d = cortar(valor(r, "disciplina"), 80);
+      if (!d) continue;
+      const n = normalizar(d);
+      disciplinas.set(n, { nome: disciplinas.get(n)?.nome || d, qtd: (disciplinas.get(n)?.qtd || 0) + 1 });
+    }
+    $("importar-cursos").hidden = !disciplinas.size;
+    if (!disciplinas.size) return;
+    $("importar-cursos").innerHTML = `
+      <p class="campo-titulo">Curso de cada disciplina <small>(${semCurso.length} inscrições não dizem o curso)</small></p>
+      <div class="importar-cursos-grade">
+        ${[...disciplinas.entries()]
+          .sort((a, b) => a[1].nome.localeCompare(b[1].nome, "pt-BR"))
+          .map(
+            ([n, d]) => `
+              <label class="importar-curso-linha">
+                <span>${esc(d.nome)} <small>${d.qtd}</small></span>
+                <select data-disciplina="${esc(n)}">
+                  <option value="">Curso?</option>
+                  ${cursos.map((c) => `<option value="${c.id}" ${cursoPorDisciplina[n] === c.id ? "selected" : ""}>${esc(c.curto)}</option>`).join("")}
+                </select>
+              </label>`
+          )
+          .join("")}
+      </div>`;
+  }
+
   function renderLista() {
     const pendentes = inscricoes.filter((r) => !projetoExistente(r));
     const feitas = inscricoes.filter((r) => projetoExistente(r));
+    renderCursos(pendentes);
     for (const id of [...marcadas]) if (!pendentes.some((r) => r.id === id)) marcadas.delete(id);
 
     if (!inscricoes.length) {
@@ -173,6 +206,14 @@
     const sel = e.target.closest("[data-campo]");
     if (!sel) return;
     mapa[sel.dataset.campo] = sel.value;
+    renderLista();
+  });
+
+  $("importar-cursos").addEventListener("change", (e) => {
+    const sel = e.target.closest("[data-disciplina]");
+    if (!sel) return;
+    if (sel.value) cursoPorDisciplina[sel.dataset.disciplina] = sel.value;
+    else delete cursoPorDisciplina[sel.dataset.disciplina];
     renderLista();
   });
 

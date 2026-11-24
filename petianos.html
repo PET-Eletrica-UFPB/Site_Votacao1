@@ -48,6 +48,7 @@
         <button class="aba" type="button" data-aba="projetos" aria-pressed="true">Projetos</button>
         <button class="aba" type="button" data-aba="professores" aria-pressed="false">Professores e notas</button>
         <button class="aba" type="button" data-aba="formularios" aria-pressed="false">Formulários</button>
+        <button class="aba" type="button" data-aba="feiras" aria-pressed="false">Feiras</button>
         <button class="aba" type="button" data-aba="limpar" aria-pressed="false">Limpar dados</button>
       </nav>
       <div class="painel-usuario">
@@ -190,6 +191,7 @@
       <div class="abas abas-form" role="group" aria-label="Formulário">
         <button class="aba" type="button" data-tipo="alunos" aria-pressed="true">Alunos</button>
         <button class="aba" type="button" data-tipo="professores" aria-pressed="false">Professores</button>
+        <button class="aba" type="button" data-tipo="escolas" aria-pressed="false">Escolas</button>
       </div>
       <div class="relatorio">
         <p class="rotulo">Inscrições de <span id="form-tipo-nome">alunos</span></p>
@@ -203,6 +205,8 @@
           <button class="btn btn-vidro" id="exportar-tabela" type="button">Baixar tabela</button>
           <button class="btn btn-vidro" id="exportar-pdf" type="button">Baixar PDF</button>
         </div>
+        <button class="btn btn-vidro importar-planilha-btn" id="planilha-abrir" type="button">Importar planilha (.xlsx)</button>
+        <input type="file" id="planilha-arquivo" accept=".xlsx,.xls,.csv" hidden>
         <span class="urna-situacao" id="form-situacao"></span>
         <a class="link link-pequeno" id="form-link" href="inscricoes.html#alunos" target="_blank" rel="noopener">Abrir o formulário público ↗</a>
       </div>
@@ -266,6 +270,86 @@
     </main>
   </div>
 
+  <!-- Aba: edições anteriores (página Feiras) -->
+  <div class="painel" id="aba-feiras" hidden>
+    <aside class="lateral">
+      <div class="progresso">
+        <b id="total-feiras">–</b><span id="total-feiras-txt">edições na página Feiras</span>
+        <button class="btn btn-amber novo-projeto" id="nova-feira" type="button">+ Nova edição</button>
+        <a class="link link-pequeno" href="feiras.html" target="_blank" rel="noopener">Ver a página Feiras ↗</a>
+      </div>
+      <div class="lista-aviso aviso-feiras" id="aviso-feiras" hidden>
+        <p>As edições que aparecem hoje no site ainda não estão no Firebase. Traga-as para cá para poder editá-las.</p>
+        <button class="btn btn-vidro" id="trazer-feiras" type="button">Trazer as edições do site</button>
+      </div>
+      <ul class="lista-projetos" id="lista-feiras"></ul>
+    </aside>
+
+    <main class="ficha" id="ficha-feira">
+      <div class="ficha-cabeca">
+        <p class="rotulo">Página Feiras</p>
+        <h1 id="feira-titulo-ficha">Nova edição</h1>
+        <p>A página mostra as edições da mais recente para a mais antiga, pelo número da edição.</p>
+      </div>
+      <form class="ficha-corpo" id="form-feira" novalidate>
+        <div class="campos-duplos">
+          <label class="campo primeiro">
+            <span>Edição</span>
+            <input id="feira-edicao" maxlength="12" required placeholder="Ex.: 2026.1">
+          </label>
+          <label class="campo primeiro">
+            <span>Título</span>
+            <input id="feira-titulo" maxlength="80" placeholder="Feira de Engenharia e Energia">
+          </label>
+        </div>
+        <div class="campos-duplos">
+          <label class="campo">
+            <span>Quando</span>
+            <input id="feira-quando" maxlength="60" placeholder="Ex.: 13 de março">
+          </label>
+          <label class="campo">
+            <span>Onde</span>
+            <input id="feira-onde" maxlength="80" placeholder="Ex.: Pátio do CEAR">
+          </label>
+        </div>
+        <label class="campo">
+          <span>Resumo</span>
+          <textarea id="feira-resumo" maxlength="1200" rows="6" placeholder="Como foi a edição: quem visitou, o que foi exposto, como foi a votação…"></textarea>
+          <small class="contador" id="feira-contador"></small>
+        </label>
+        <label class="campo">
+          <span>Link da matéria completa</span>
+          <input id="feira-link" type="url" maxlength="300" placeholder="https://www.cear.ufpb.br/peteletrica/…">
+        </label>
+        <div class="campos-duplos">
+          <label class="campo">
+            <span>Destaques (um por linha)</span>
+            <textarea id="feira-numeros" rows="4" placeholder="274 votos&#10;6 disciplinas&#10;Urna eletrônica do PET"></textarea>
+          </label>
+          <label class="campo">
+            <span>Vencedores (um por linha, “categoria: projeto”)</span>
+            <textarea id="feira-vencedores" rows="4" placeholder="1º lugar: Casa automática&#10;Integradora I: Manopla de Libras"></textarea>
+          </label>
+        </div>
+
+        <div class="editor-topo">
+          <span class="campo-titulo">Fotos <small>(a primeira é a capa)</small></span>
+        </div>
+        <p class="limpar-nota">Cole o link direto de cada imagem (o que termina em .jpg, .png…). Para hospedar fotos novas, dá para usar o postimg.cc, como no site do CEAR.</p>
+        <ol class="fotos-editor" id="feira-fotos"></ol>
+        <button class="btn btn-vidro adicionar-pergunta" id="feira-add-foto" type="button">+ Adicionar foto</button>
+
+        <div class="ficha-rodape">
+          <button class="btn btn-vidro" id="feira-excluir" type="button" hidden>Excluir edição</button>
+          <div class="ficha-acoes">
+            <button class="btn btn-amber" id="feira-salvar" type="submit">Publicar edição</button>
+          </div>
+        </div>
+        <p class="feedback" id="feira-feedback" role="status"></p>
+      </form>
+    </main>
+  </div>
+
   <!-- Aba: limpar dados para uma nova feira -->
   <div class="painel painel-unico" id="aba-limpar" hidden>
     <main class="ficha">
@@ -294,6 +378,11 @@
               <input type="checkbox" data-parte="inscricoesProfessores" checked>
               <span><b>Respostas do formulário dos professores</b><small>As inscrições para a banca avaliadora.</small></span>
               <em data-conta="inscricoesProfessores">–</em>
+            </label>
+            <label class="limpar-opcao">
+              <input type="checkbox" data-parte="inscricoesEscolas" checked>
+              <span><b>Respostas do formulário das escolas</b><small>As visitas de escolas agendadas.</small></span>
+              <em data-conta="inscricoesEscolas">–</em>
             </label>
             <label class="limpar-opcao">
               <input type="checkbox" data-parte="avaliacoes">
@@ -333,6 +422,24 @@
   </div>
   </div><!-- fim de #tela-painel -->
 
+  <dialog id="planilha" class="confirmar importar-modal">
+    <button class="fechar" id="planilha-fechar" type="button" aria-label="Fechar">×</button>
+    <h2 id="planilha-titulo">Importar planilha</h2>
+    <p id="planilha-resumo"></p>
+    <div class="tabela-rolagem planilha-mapa">
+      <table class="tabela-respostas">
+        <thead><tr><th>Coluna da planilha</th><th>Exemplo</th><th>Vira</th></tr></thead>
+        <tbody id="planilha-colunas"></tbody>
+      </table>
+    </div>
+    <p class="limpar-nota">“Nova pergunta” acrescenta a coluna ao formulário do site. Linhas que já foram importadas antes são puladas.</p>
+    <p class="feedback" id="planilha-feedback" role="status"></p>
+    <div class="ficha-acoes">
+      <button class="btn btn-vidro" id="planilha-cancelar" type="button">Cancelar</button>
+      <button class="btn btn-amber" id="planilha-confirmar" type="button" disabled>Importar</button>
+    </div>
+  </dialog>
+
   <dialog id="importar" class="confirmar importar-modal">
     <button class="fechar" id="importar-fechar" type="button" aria-label="Fechar">×</button>
     <h2>Importar das inscrições</h2>
@@ -341,6 +448,7 @@
       <summary>Qual pergunta do formulário preenche cada campo</summary>
       <div class="importar-mapa-campos" id="importar-mapa"></div>
     </details>
+    <div class="importar-cursos" id="importar-cursos" hidden></div>
     <div class="importar-topo">
       <label class="ep-obrig"><input type="checkbox" id="importar-todos"> Marcar todas</label>
       <small id="importar-contagem"></small>
@@ -417,6 +525,9 @@
   <script src="js/petianos-professores.js"></script>
   <script src="js/petianos-formularios.js"></script>
   <script src="js/petianos-importar.js"></script>
+  <script src="js/petianos-planilha.js"></script>
   <script src="js/petianos-limpar.js"></script>
+  <script src="js/feiras-dados.js"></script>
+  <script src="js/petianos-feiras.js"></script>
 </body>
 </html>

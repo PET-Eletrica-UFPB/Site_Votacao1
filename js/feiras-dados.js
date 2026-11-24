@@ -1,5 +1,25 @@
 // Edições anteriores da feira, resumidas das páginas do PET Elétrica no site do CEAR.
-// Para acrescentar uma edição, copie um bloco e coloque no topo (a mais recente primeiro).
+// Hoje as edições são cadastradas na Área dos Petianos (aba Feiras) e ficam no Firebase;
+// esta lista é o ponto de partida e o reserva para quando o Firebase não responde.
+
+// Deixa uma edição sempre no mesmo formato: fotos [{ url, legenda }] e vencedores [{ categoria, nome }].
+window.normalizarFeira = (f) => ({
+  edicao: String(f.edicao ?? ""),
+  titulo: f.titulo || "Feira de Engenharia e Energia",
+  quando: f.quando || "",
+  onde: f.onde || "",
+  resumo: f.resumo || "",
+  link: f.link || "",
+  numeros: (f.numeros || []).filter(Boolean),
+  vencedores: (f.vencedores || [])
+    .map((v) => (Array.isArray(v) ? { categoria: v[0], nome: v[1] } : v))
+    .filter((v) => v && (v.categoria || v.nome)),
+  fotos: (f.fotos || [])
+    .map((x) => (Array.isArray(x) ? { url: x[0], legenda: x[1] || "" } : { url: x?.url, legenda: x?.legenda || "" }))
+    .filter((x) => x.url),
+  ...(f.id ? { id: f.id } : {}),
+});
+
 window.FEIRAS_PASSADAS = [
   {
     edicao: "2025.2",

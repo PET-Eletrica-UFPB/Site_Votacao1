@@ -1,6 +1,6 @@
 const { esc } = API;
 const $ = (id) => document.getElementById(id);
-const ROTULOS = { alunos: "Inscrição de alunos", professores: "Inscrição de professores" };
+const ROTULOS = { alunos: "Inscrição de alunos", professores: "Inscrição de professores", escolas: "Inscrição de escolas" };
 const LIMITE = { curta: 200, longa: 2000, email: 120, telefone: 30, numero: 20, data: 10 };
 
 const formularios = {};
@@ -150,7 +150,7 @@ $("outra").addEventListener("click", () => mostrar(tipoAtual));
 
 /* Início */
 (async () => {
-  const tipos = ["alunos", "professores"];
+  const tipos = Object.keys(window.FEIRA.publicos);
   const lidos = await Promise.allSettled(tipos.map((t) => API.lerFormulario(t)));
   tipos.forEach((t, i) => {
     formularios[t] = lidos[i].status === "fulfilled" ? lidos[i].value : { perguntas: [], aberto: false, erro: lidos[i].reason?.status || true };
