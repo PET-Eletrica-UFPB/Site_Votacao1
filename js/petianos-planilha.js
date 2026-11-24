@@ -98,6 +98,20 @@
 
   const novas = () => linhas.filter((l) => !jaImportadas.has(assinatura(l)));
 
+  // Mesma checagem do formulário do site, aplicada à coluna que vai para uma pergunta "Só um nome".
+  function nomesParaConferir() {
+    const porId = Object.fromEntries(formulario.perguntas.map((q) => [q.id, q]));
+    const iNome = colunas.findIndex((c) => porId[c.destino]?.apenasNome);
+    if (iNome < 0) return [];
+    const iEquipe = colunas.findIndex((c) => /integrante|participante/i.test(porId[c.destino]?.texto || "") && porId[c.destino]?.tipo === "longa");
+    return novas()
+      .filter((l) => {
+        const equipe = iEquipe >= 0 ? textoDe(l[iEquipe]) : "";
+        return NomeProjeto.problema(textoDe(l[iNome]), { outros: [equipe], equipe, rigor: "revisao" });
+      })
+      .map((l) => textoDe(l[iNome]));
+  }
+
   function render() {
     $("planilha-colunas").innerHTML = colunas
       .map((c, i) => {
@@ -112,10 +126,14 @@
       .join("");
     const n = novas().length;
     const puladas = linhas.length - n;
+    const suspeitos = nomesParaConferir();
     $("planilha-resumo").textContent =
       `${linhas.length} resposta${linhas.length === 1 ? "" : "s"} na planilha para o formulário ${publicos[tipo].dos}` +
       (puladas ? ` · ${puladas} já importada${puladas === 1 ? "" : "s"} antes (serão puladas)` : "") +
-      ". Confira para onde vai cada coluna.";
+      ". Confira para onde vai cada coluna." +
+      (suspeitos.length
+        ? ` Atenção: ${suspeitos.length} nome${suspeitos.length === 1 ? "" : "s"} de projeto parece${suspeitos.length === 1 ? "" : "m"} errado${suspeitos.length === 1 ? "" : "s"} (${suspeitos.slice(0, 3).map((s) => `“${s.slice(0, 30)}”`).join(", ")}${suspeitos.length > 3 ? "…" : ""}). Eles entram assim mesmo; corrija em “Corrigir respostas” ou na hora de importar os projetos.`
+        : "");
     $("planilha-confirmar").disabled = !n;
     $("planilha-confirmar").textContent = n ? `Importar ${n} resposta${n === 1 ? "" : "s"}` : "Nada novo para importar";
   }

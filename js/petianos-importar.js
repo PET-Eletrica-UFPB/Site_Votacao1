@@ -1,7 +1,7 @@
 // "Importar das inscrições": transforma respostas do formulário dos alunos em projetos.
 // Usa $, esc, cursos, projetos e recarregar de petianos.js.
 (() => {
-  const { colunas, valorTexto } = RelatorioInscricoes;
+  const { colunas, valorTexto, dataHora } = RelatorioInscricoes;
 
   // Campo do projeto ← pergunta do formulário. "padrao" é o id da pergunta no modelo; "parecido" acha a pergunta se o id mudou.
   const CAMPOS = [
@@ -20,6 +20,7 @@
   const marcadas = new Set();
   const cursoEscolhido = {}; // id da resposta → curso escolhido à mão
   const cursoPorDisciplina = {}; // disciplina (normalizada) → curso, para as respostas sem curso
+  const nomeEditado = {}; // id da resposta → nome do projeto corrigido aqui na janela
 
   const normalizar = (t) => String(t ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 
@@ -48,6 +49,7 @@
       if (c.campo === "curso") continue;
       dados[c.campo] = cortar(valor(r, c.campo), c.limite);
     }
+    if (nomeEditado[r.id] != null) dados.nome = cortar(nomeEditado[r.id].trim(), 80);
     dados.curso = cursoEscolhido[r.id] || acharCurso(valor(r, "curso")) || cursoPorDisciplina[normalizar(dados.disciplina)] || null;
     dados.inscricao = r.id;
     return dados;
@@ -55,8 +57,37 @@
 
   // Já virou projeto? Pelo vínculo gravado ou por um projeto com o mesmo nome.
   function projetoExistente(r) {
-    const nome = normalizar(valor(r, "nome"));
+    const nome = normalizar(dadosDe(r).nome);
     return projetos.find((p) => p.inscricao === r.id || (nome && normalizar(p.nome) === nome));
+  }
+
+  // Inscrição enviada mais de uma vez: mesmo nome e disciplina, ou mesmo resumo e equipe.
+  // Vale a mais recente; devolve { id da repetida: inscrição mais recente }.
+  function repetidas() {
+    const chaves = (r) => {
+      const k = [];
+      const nome = NomeProjeto.normalizar(valor(r, "nome"));
+      const disc = NomeProjeto.normalizar(valor(r, "disciplina"));
+      const resumo = NomeProjeto.normalizar(valor(r, "resumo"));
+      const equipe = NomeProjeto.normalizar(valor(r, "equipe"));
+      if (nome && disc) k.push(`n|${nome}|${disc}`);
+      if (resumo.length > 10 && equipe.length > 5) k.push(`r|${resumo}|${equipe}`);
+      return k;
+    };
+    const maisRecente = {};
+    for (const r of inscricoes) for (const k of chaves(r)) if (!maisRecente[k] || r.enviadoEm > maisRecente[k].enviadoEm) maisRecente[k] = r;
+    const resultado = {};
+    for (const r of inscricoes) {
+      const outra = chaves(r).map((k) => maisRecente[k]).find((x) => x && x.id !== r.id && x.enviadoEm >= r.enviadoEm);
+      if (outra) resultado[r.id] = outra;
+    }
+    return resultado;
+  }
+
+  // Nome que vale conferir antes de ir para a urna (lista de nomes, nome de pessoa, "Grupo 2"…).
+  function alertaNome(r) {
+    const d = dadosDe(r);
+    return NomeProjeto.problema(d.nome, { outros: [valor(r, "equipe")], equipe: valor(r, "equipe"), rigor: "revisao" });
   }
 
   function problema(r) {
@@ -113,8 +144,12 @@
   }
 
   function renderLista() {
-    const pendentes = inscricoes.filter((r) => !projetoExistente(r));
+    let pendentes = inscricoes.filter((r) => !projetoExistente(r));
     const feitas = inscricoes.filter((r) => projetoExistente(r));
+    // As repetidas saem das pendentes: fica só a inscrição mais recente de cada equipe.
+    const rep = repetidas();
+    const repetidasPendentes = pendentes.filter((r) => rep[r.id]);
+    pendentes = pendentes.filter((r) => !rep[r.id]);
     renderCursos(pendentes);
     for (const id of [...marcadas]) if (!pendentes.some((r) => r.id === id)) marcadas.delete(id);
 
@@ -126,14 +161,23 @@
           .map((r) => {
             const d = dadosDe(r);
             const erro = problema(r);
+            const alerta = alertaNome(r);
             const curso = cursos.find((c) => c.id === d.curso);
+            const editando = alerta || nomeEditado[r.id] != null;
             return `
-              <li class="importar-item ${erro ? "com-erro" : ""}">
+              <li class="importar-item ${erro ? "com-erro" : ""} ${alerta ? "com-alerta" : ""}">
                 <input type="checkbox" data-id="${esc(r.id)}" ${marcadas.has(r.id) ? "checked" : ""} ${erro ? "disabled" : ""} aria-label="Importar ${esc(d.nome || "inscrição sem nome")}">
                 <span class="importar-info">
                   <b>${esc(d.nome) || "<em>Sem nome do projeto</em>"}</b>
                   <small>${[curso?.curto, d.disciplina, d.equipe].filter(Boolean).map(esc).join(" · ") || "Sem detalhes"}</small>
                   ${erro && erro !== "Escolha o curso" ? `<small class="importar-erro">${esc(erro)}: ajuste o campo acima ou cadastre à mão.</small>` : ""}
+                  ${alerta ? `<small class="importar-erro">Confira o nome: ${esc(alerta)}.${d.resumo ? ` Sobre o projeto: “${esc(cortar(d.resumo, 90))}”` : ""}</small>` : ""}
+                  ${
+                    editando
+                      ? `<label class="importar-renomear"><span>Nome que vai para o site e a urna</span>
+                          <input data-nome-de="${esc(r.id)}" value="${esc(nomeEditado[r.id] ?? d.nome)}" maxlength="80"></label>`
+                      : ""
+                  }
                 </span>
                 ${
                   !d.curso || cursoEscolhido[r.id]
@@ -146,6 +190,15 @@
               </li>`;
           })
           .join("") +
+        (repetidasPendentes.length
+          ? `<li class="importar-separador">Enviadas mais de uma vez: fica só a mais recente (${repetidasPendentes.length})</li>` +
+            repetidasPendentes
+              .map((r) => {
+                const nova = rep[r.id];
+                return `<li class="importar-item feito"><span class="item-stand">2×</span><span class="importar-info"><b>${esc(dadosDe(r).nome) || "Sem nome"}</b><small>Enviada em ${esc(dataHora(r.enviadoEm))}; vale a de ${esc(dataHora(nova.enviadoEm))}</small></span></li>`;
+              })
+              .join("")
+          : "") +
         (feitas.length
           ? `<li class="importar-separador">Já cadastradas (${feitas.length})</li>` +
             feitas
@@ -158,10 +211,15 @@
     }
 
     const validas = pendentes.filter((r) => !problema(r));
-    $("importar-todos").checked = validas.length > 0 && validas.every((r) => marcadas.has(r.id));
+    const paraRevisar = validas.filter((r) => alertaNome(r)).length;
+    const marcaveis = validas.filter((r) => !alertaNome(r));
+    $("importar-todos").checked = marcaveis.length > 0 && marcaveis.every((r) => marcadas.has(r.id));
     $("importar-todos").indeterminate = marcadas.size > 0 && !$("importar-todos").checked;
     $("importar-todos").disabled = !validas.length;
-    $("importar-contagem").textContent = `${pendentes.length} nova${pendentes.length === 1 ? "" : "s"} · ${feitas.length} já cadastrada${feitas.length === 1 ? "" : "s"}`;
+    $("importar-contagem").textContent =
+      `${pendentes.length} nova${pendentes.length === 1 ? "" : "s"} · ${feitas.length} já cadastrada${feitas.length === 1 ? "" : "s"}` +
+      (repetidasPendentes.length ? ` · ${repetidasPendentes.length} repetida${repetidasPendentes.length === 1 ? "" : "s"}` : "") +
+      (paraRevisar ? ` · ${paraRevisar} nome${paraRevisar === 1 ? "" : "s"} para conferir` : "");
     $("importar-confirmar").disabled = !marcadas.size;
     $("importar-confirmar").textContent = marcadas.size
       ? `Cadastrar ${marcadas.size} projeto${marcadas.size === 1 ? "" : "s"}`
@@ -217,9 +275,17 @@
     renderLista();
   });
 
+  // Digitando o nome novo: guarda sem redesenhar (para não perder o cursor); redesenha ao sair do campo.
+  $("importar-lista").addEventListener("input", (e) => {
+    const nome = e.target.closest("[data-nome-de]");
+    if (nome) nomeEditado[nome.dataset.nomeDe] = nome.value;
+  });
+
   $("importar-lista").addEventListener("change", (e) => {
     const caixa = e.target.closest("[data-id]");
     const curso = e.target.closest("[data-curso-de]");
+    const nome = e.target.closest("[data-nome-de]");
+    if (nome) nomeEditado[nome.dataset.nomeDe] = nome.value;
     if (caixa) caixa.checked ? marcadas.add(caixa.dataset.id) : marcadas.delete(caixa.dataset.id);
     if (curso) {
       if (curso.value) cursoEscolhido[curso.dataset.cursoDe] = curso.value;
@@ -229,7 +295,9 @@
   });
 
   $("importar-todos").addEventListener("change", () => {
-    const validas = inscricoes.filter((r) => !projetoExistente(r) && !problema(r));
+    // "Marcar todas" deixa de fora as repetidas e os nomes que ainda pedem conferência.
+    const rep = repetidas();
+    const validas = inscricoes.filter((r) => !projetoExistente(r) && !problema(r) && !rep[r.id] && !alertaNome(r));
     if ($("importar-todos").checked) validas.forEach((r) => marcadas.add(r.id));
     else marcadas.clear();
     renderLista();

@@ -2,7 +2,7 @@ const { esc } = API;
 const $ = (id) => document.getElementById(id);
 const ROTULOS = { alunos: "Inscrição de alunos", professores: "Inscrição de professores", escolas: "Inscrição de escolas" };
 const LIMITE = { curta: 200, longa: 2000, email: 120, telefone: 30, numero: 20, data: 10 };
-const LIMITE_NOME = 60; // nome de projeto: precisa caber no site, no placar e na urna
+const LIMITE_NOME = NomeProjeto.LIMITE; // nome de projeto: precisa caber no site, no placar e na urna
 
 const formularios = {};
 let tipoAtual = null;
@@ -87,21 +87,8 @@ function valorDe(q, i) {
   return v;
 }
 
-// Pergunta marcada como "apenasNome" (ex.: nome do projeto): recusa listas de pessoas e matrículas.
-function problemaNoNome(valor, outras) {
-  const t = valor.trim();
-  if (/\d{6,}/.test(t)) return "parece ter números de matrícula";
-  if ((t.match(/,|;/g) || []).length >= 1 && t.split(/\s*[,;]\s*|\s+e\s+/i).filter((p) => p.split(/\s+/).length >= 1).length >= 3) {
-    return "parece uma lista de nomes";
-  }
-  if (/^\(?\s*grupo\s*\d+\s*[-–(:]/i.test(t) && /[,(]/.test(t)) return "tem os nomes dos integrantes";
-  const norm = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\W+/g, " ").trim();
-  // Igual (ou quase) ao que foi escrito na pergunta dos integrantes.
-  if (outras.some((o) => o && norm(o).length > 15 && (norm(o).includes(norm(t)) || norm(t).includes(norm(o))))) {
-    return "é igual à lista de integrantes";
-  }
-  return null;
-}
+// Pergunta marcada como "apenasNome" (ex.: nome do projeto): recusa listas de pessoas, matrículas e "Grupo N" sozinho.
+const problemaNoNome = (valor, outros) => NomeProjeto.problema(valor, { outros });
 
 function validar(f) {
   let primeiroErro = null;
