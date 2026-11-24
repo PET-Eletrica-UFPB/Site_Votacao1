@@ -307,7 +307,9 @@ window.API = (() => {
     const numero = atual && atual.curso === dados.curso ? atual.numero : proximoNumero(lista, dados.curso);
     const codigo = codigoDe(dados.curso, numero);
 
-    const mudancas = { [`projetos/${codigo}`]: { ...dados, numero } };
+    // Mantém o vínculo com a inscrição de onde o projeto veio, se houver.
+    const extra = atual?.inscricao ? { inscricao: atual.inscricao } : {};
+    const mudancas = { [`projetos/${codigo}`]: { ...dados, ...extra, numero } };
     if (atual && atual.codigo !== codigo) {
       mudancas[`projetos/${atual.codigo}`] = null;
       Object.assign(mudancas, await mudancasDeCodigo(atual.codigo, codigo));
@@ -318,6 +320,22 @@ window.API = (() => {
 
   async function removerProjeto(codigo) {
     await atualizarSite({ [`projetos/${codigo}`]: null, ...(await mudancasDeCodigo(codigo, null)) });
+  }
+
+  // Cadastra vários projetos de uma vez (vindos das inscrições): ou entram todos, ou nenhum.
+  async function importarProjetos(novos) {
+    const lista = await lerCadastro();
+    const mudancas = {};
+    const criados = [];
+    for (const dados of novos) {
+      const numero = proximoNumero(lista, dados.curso);
+      const projeto = { ...dados, numero };
+      lista.push(projeto);
+      mudancas[`projetos/${codigoDe(dados.curso, numero)}`] = projeto;
+      criados.push(completarProjeto(projeto));
+    }
+    if (criados.length) await atualizarSite(mudancas);
+    return criados;
   }
 
   /* Professores (cadastrados pelos petianos) */
@@ -484,6 +502,59 @@ window.API = (() => {
     await escrever("DELETE", `/site/inscricoes/${tipo}/${id}`);
   }
 
+  /* Nova feira: cópia de segurança e limpeza do que ficou da anterior. */
+  const PARTES_SITE = ["projetos", "professores", "professores_codigos", "avaliacoes", "formularios", "inscricoes"];
+
+  // Tudo que o site guarda, num objeto só (para baixar em .json antes de apagar).
+  async function copiaDeSeguranca() {
+    const partes = await Promise.all(PARTES_SITE.map((p) => escrever("GET", `/site/${p}`)));
+    return { geradoEm: new Date().toISOString(), banco: "urna/multiurna/site", ...Object.fromEntries(PARTES_SITE.map((p, i) => [p, partes[i]])) };
+  }
+
+  // Quanto existe hoje de cada coisa que pode ser apagada.
+  async function contarDados() {
+    const [projetos, professores, avaliacoes, alunos, profs] = await Promise.all([
+      lerPublico("/site/projetos"),
+      lerPublico("/site/professores"),
+      escrever("GET", "/site/avaliacoes"),
+      escrever("GET", "/site/inscricoes/alunos"),
+      escrever("GET", "/site/inscricoes/professores"),
+    ]);
+    const n = (o) => Object.keys(o || {}).length;
+    return {
+      inscricoesAlunos: n(alunos),
+      inscricoesProfessores: n(profs),
+      projetos: n(projetos),
+      avaliacoes: Object.values(avaliacoes || {}).reduce((s, x) => s + n(x), 0),
+      professores: n(professores),
+    };
+  }
+
+  // escolha: { inscricoesAlunos, inscricoesProfessores, projetos, avaliacoes, professores } (true = apagar)
+  async function limparDados(escolha) {
+    const mudancas = {};
+    if (escolha.inscricoesAlunos) mudancas["inscricoes/alunos"] = null;
+    if (escolha.inscricoesProfessores) mudancas["inscricoes/professores"] = null;
+    if (escolha.projetos) mudancas.projetos = null;
+    if (escolha.avaliacoes || escolha.professores || escolha.projetos) mudancas.avaliacoes = null;
+    if (escolha.professores) {
+      // Apaga também as contas de login de cada professor.
+      const professores = await listarProfessores();
+      await Promise.allSettled(
+        professores.map(async (p) => {
+          const conta = await contaDoProfessor(p.uid);
+          if (conta) await chamarContas("delete", { idToken: conta.idToken });
+        })
+      );
+      mudancas.professores = null;
+      mudancas.professores_codigos = null;
+    } else if (escolha.projetos) {
+      // Sem projetos, as atribuições dos professores perdem o sentido.
+      for (const p of await listarProfessores()) mudancas[`professores/${p.uid}/projetos`] = null;
+    }
+    if (Object.keys(mudancas).length) await atualizarSite(mudancas);
+  }
+
   return {
     esc, carregarProjetos, lerCadastro, listasGravadas, buscarVotos,
     entrar, sair: contaPet.sair, esqueciSenha, sessaoAtual: contaPet.atual, salvarProjeto, removerProjeto,
@@ -491,5 +562,6 @@ window.API = (() => {
     entrarProfessor, sairProfessor: contaProfessor.sair, sessaoProfessor: contaProfessor.atual,
     meuPerfil, minhasAvaliacoes, salvarAvaliacao,
     lerFormulario, salvarFormulario, definirInscricoesAbertas, enviarInscricao, lerInscricoes, removerInscricao,
+    importarProjetos, copiaDeSeguranca, contarDados, limparDados,
   };
 })();

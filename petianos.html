@@ -48,6 +48,7 @@
         <button class="aba" type="button" data-aba="projetos" aria-pressed="true">Projetos</button>
         <button class="aba" type="button" data-aba="professores" aria-pressed="false">Professores e notas</button>
         <button class="aba" type="button" data-aba="formularios" aria-pressed="false">Formulários</button>
+        <button class="aba" type="button" data-aba="limpar" aria-pressed="false">Limpar dados</button>
       </nav>
       <div class="painel-usuario">
         <span id="painel-nome"></span>
@@ -61,6 +62,7 @@
         <div class="progresso">
           <b id="total-projetos"></b><span id="total-txt"></span>
           <button class="btn btn-amber novo-projeto" id="novo" type="button">+ Novo projeto</button>
+          <button class="btn btn-vidro importar-btn" id="importar-abrir" type="button">Importar das inscrições</button>
         </div>
         <div class="urnas-ino">
           <p class="rotulo">Código das urnas</p>
@@ -263,7 +265,93 @@
       </section>
     </main>
   </div>
+
+  <!-- Aba: limpar dados para uma nova feira -->
+  <div class="painel painel-unico" id="aba-limpar" hidden>
+    <main class="ficha">
+      <div class="ficha-cabeca">
+        <p class="rotulo">Nova feira</p>
+        <h1>Limpar dados</h1>
+        <p>Use ao terminar uma feira, para começar a próxima do zero. As perguntas dos formulários continuam como estão; só as respostas e os dados que você marcar são apagados.</p>
+      </div>
+      <div class="ficha-corpo">
+        <section class="passo">
+          <h2><span>1</span> Guarde uma cópia</h2>
+          <p>Antes de apagar, baixe tudo o que está no banco em um arquivo .json. Se quiser os relatórios bonitos, baixe também os PDFs nas abas Professores e notas e Formulários.</p>
+          <button class="btn btn-vidro" id="baixar-copia" type="button">Baixar cópia de segurança (.json)</button>
+          <span class="urna-situacao" id="copia-situacao"></span>
+        </section>
+
+        <section class="passo">
+          <h2><span>2</span> Escolha o que apagar</h2>
+          <div class="limpar-opcoes" id="limpar-opcoes">
+            <label class="limpar-opcao">
+              <input type="checkbox" data-parte="inscricoesAlunos" checked>
+              <span><b>Respostas do formulário dos alunos</b><small>As inscrições de projetos recebidas pelo site.</small></span>
+              <em data-conta="inscricoesAlunos">–</em>
+            </label>
+            <label class="limpar-opcao">
+              <input type="checkbox" data-parte="inscricoesProfessores" checked>
+              <span><b>Respostas do formulário dos professores</b><small>As inscrições para a banca avaliadora.</small></span>
+              <em data-conta="inscricoesProfessores">–</em>
+            </label>
+            <label class="limpar-opcao">
+              <input type="checkbox" data-parte="avaliacoes">
+              <span><b>Notas dos professores</b><small>Todas as avaliações dadas aos projetos.</small></span>
+              <em data-conta="avaliacoes">–</em>
+            </label>
+            <label class="limpar-opcao">
+              <input type="checkbox" data-parte="projetos">
+              <span><b>Projetos cadastrados</b><small>Saem do site, do placar e levam junto as notas. Depois grave as urnas de novo.</small></span>
+              <em data-conta="projetos">–</em>
+            </label>
+            <label class="limpar-opcao">
+              <input type="checkbox" data-parte="professores">
+              <span><b>Professores e códigos de acesso</b><small>Apaga os cadastros e as contas de login, junto com as notas.</small></span>
+              <em data-conta="professores">–</em>
+            </label>
+          </div>
+          <p class="limpar-nota">Os votos ficam nas urnas: para zerá-los, use "Zerar votação" no modo operador de uma urna.</p>
+        </section>
+
+        <section class="passo">
+          <h2><span>3</span> Confirme</h2>
+          <label class="campo primeiro">
+            <span>Digite APAGAR para liberar o botão</span>
+            <input id="limpar-confirmacao" autocomplete="off" placeholder="APAGAR">
+          </label>
+          <div class="ficha-rodape">
+            <span class="dica-rodape" id="limpar-resumo">Nada selecionado.</span>
+            <div class="ficha-acoes">
+              <button class="btn btn-amber" id="limpar-apagar" type="button" disabled>Apagar selecionados</button>
+            </div>
+          </div>
+          <p class="feedback" id="limpar-feedback" role="status"></p>
+        </section>
+      </div>
+    </main>
+  </div>
   </div><!-- fim de #tela-painel -->
+
+  <dialog id="importar" class="confirmar importar-modal">
+    <button class="fechar" id="importar-fechar" type="button" aria-label="Fechar">×</button>
+    <h2>Importar das inscrições</h2>
+    <p>Inscrições de alunos que ainda não viraram projeto. Marque as que quer cadastrar: cada uma ganha o seu número na urna.</p>
+    <details class="importar-mapa">
+      <summary>Qual pergunta do formulário preenche cada campo</summary>
+      <div class="importar-mapa-campos" id="importar-mapa"></div>
+    </details>
+    <div class="importar-topo">
+      <label class="ep-obrig"><input type="checkbox" id="importar-todos"> Marcar todas</label>
+      <small id="importar-contagem"></small>
+    </div>
+    <ul class="importar-lista" id="importar-lista"></ul>
+    <p class="feedback" id="importar-feedback" role="status"></p>
+    <div class="ficha-acoes">
+      <button class="btn btn-vidro" id="importar-cancelar" type="button">Cancelar</button>
+      <button class="btn btn-amber" id="importar-confirmar" type="button" disabled>Cadastrar projetos</button>
+    </div>
+  </dialog>
 
   <dialog id="ver-resposta" class="confirmar resposta-modal">
     <button class="fechar" id="ver-resposta-fechar" type="button" aria-label="Fechar">×</button>
@@ -328,5 +416,7 @@
   <script src="js/petianos.js"></script>
   <script src="js/petianos-professores.js"></script>
   <script src="js/petianos-formularios.js"></script>
+  <script src="js/petianos-importar.js"></script>
+  <script src="js/petianos-limpar.js"></script>
 </body>
 </html>

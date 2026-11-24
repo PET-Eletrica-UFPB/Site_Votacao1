@@ -1,0 +1,214 @@
+// "Importar das inscrições": transforma respostas do formulário dos alunos em projetos.
+// Usa $, esc, cursos, projetos e recarregar de petianos.js.
+(() => {
+  const { colunas, valorTexto } = RelatorioInscricoes;
+
+  // Campo do projeto ← pergunta do formulário. "padrao" é o id da pergunta no modelo; "parecido" acha a pergunta se o id mudou.
+  const CAMPOS = [
+    { campo: "nome", rotulo: "Nome do projeto", padrao: "projeto", parecido: /projeto/i, obrigatorio: true, limite: 80 },
+    { campo: "curso", rotulo: "Curso", padrao: "curso", parecido: /curso/i, obrigatorio: true },
+    { campo: "disciplina", rotulo: "Disciplina", padrao: "disciplina", parecido: /disciplina/i, obrigatorio: true, limite: 80 },
+    { campo: "equipe", rotulo: "Equipe", padrao: "equipe", parecido: /equipe|integrantes/i, limite: 80 },
+    { campo: "resumo", rotulo: "Resumo", padrao: "resumo", parecido: /resumo|descri/i, limite: 400 },
+    { campo: "stand", rotulo: "Stand", padrao: "stand", parecido: /^\s*(n[uú]mero do )?stand\s*$/i, limite: 10 },
+  ];
+
+  let formulario = null;
+  let inscricoes = [];
+  let cols = [];
+  let mapa = {}; // campo → id da pergunta ("" = não usar)
+  const marcadas = new Set();
+  const cursoEscolhido = {}; // id da resposta → curso escolhido à mão
+
+  const normalizar = (t) => String(t ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+
+  const cortar = (texto, limite) => (limite && texto.length > limite ? `${texto.slice(0, limite - 1).trimEnd()}…` : texto);
+
+  // Resposta escrita → curso do site. Aceita o nome completo, o curto ou só a palavra principal.
+  function acharCurso(resposta) {
+    const r = normalizar(resposta);
+    if (!r) return null;
+    const exato = cursos.find((c) => [c.nome, c.curto, c.id].some((t) => normalizar(t) === r));
+    if (exato) return exato.id;
+    return cursos.find((c) => r.includes(normalizar(c.id).slice(0, 5)))?.id || null;
+  }
+
+  function valor(r, campo) {
+    const id = mapa[campo];
+    if (!id) return "";
+    const v = valorTexto(r.respostas[id]?.v);
+    // Equipe com um nome por linha vira uma lista separada por vírgulas.
+    return campo === "equipe" ? v.split(/\s*[\n;]\s*/).filter(Boolean).join(", ") : v.replace(/\s+/g, " ").trim();
+  }
+
+  function dadosDe(r) {
+    const dados = {};
+    for (const c of CAMPOS) {
+      if (c.campo === "curso") continue;
+      dados[c.campo] = cortar(valor(r, c.campo), c.limite);
+    }
+    dados.curso = cursoEscolhido[r.id] || acharCurso(valor(r, "curso"));
+    dados.inscricao = r.id;
+    return dados;
+  }
+
+  // Já virou projeto? Pelo vínculo gravado ou por um projeto com o mesmo nome.
+  function projetoExistente(r) {
+    const nome = normalizar(valor(r, "nome"));
+    return projetos.find((p) => p.inscricao === r.id || (nome && normalizar(p.nome) === nome));
+  }
+
+  function problema(r) {
+    const d = dadosDe(r);
+    if (!d.nome) return "Sem nome do projeto";
+    if (!d.disciplina) return "Sem disciplina";
+    if (!d.curso) return "Escolha o curso";
+    return null;
+  }
+
+  /* Tela */
+  function renderMapa() {
+    $("importar-mapa").innerHTML = CAMPOS.map(
+      (c) => `
+        <label class="campo">
+          <span>${c.rotulo}${c.obrigatorio ? " *" : ""}</span>
+          <select data-campo="${c.campo}">
+            <option value="">— não usar —</option>
+            ${cols.map((q) => `<option value="${esc(q.id)}" ${mapa[c.campo] === q.id ? "selected" : ""}>${esc(q.texto)}</option>`).join("")}
+          </select>
+        </label>`
+    ).join("");
+  }
+
+  function renderLista() {
+    const pendentes = inscricoes.filter((r) => !projetoExistente(r));
+    const feitas = inscricoes.filter((r) => projetoExistente(r));
+    for (const id of [...marcadas]) if (!pendentes.some((r) => r.id === id)) marcadas.delete(id);
+
+    if (!inscricoes.length) {
+      $("importar-lista").innerHTML = `<li class="lista-vazia">Ainda não há respostas no formulário dos alunos.</li>`;
+    } else {
+      $("importar-lista").innerHTML =
+        pendentes
+          .map((r) => {
+            const d = dadosDe(r);
+            const erro = problema(r);
+            const curso = cursos.find((c) => c.id === d.curso);
+            return `
+              <li class="importar-item ${erro ? "com-erro" : ""}">
+                <input type="checkbox" data-id="${esc(r.id)}" ${marcadas.has(r.id) ? "checked" : ""} ${erro ? "disabled" : ""} aria-label="Importar ${esc(d.nome || "inscrição sem nome")}">
+                <span class="importar-info">
+                  <b>${esc(d.nome) || "<em>Sem nome do projeto</em>"}</b>
+                  <small>${[curso?.curto, d.disciplina, d.equipe].filter(Boolean).map(esc).join(" · ") || "Sem detalhes"}</small>
+                  ${erro && erro !== "Escolha o curso" ? `<small class="importar-erro">${esc(erro)}: ajuste o campo acima ou cadastre à mão.</small>` : ""}
+                </span>
+                ${
+                  !d.curso || cursoEscolhido[r.id]
+                    ? `<select class="importar-curso" data-curso-de="${esc(r.id)}" aria-label="Curso de ${esc(d.nome)}">
+                        <option value="">Curso?</option>
+                        ${cursos.map((c) => `<option value="${c.id}" ${d.curso === c.id ? "selected" : ""}>${esc(c.curto)}</option>`).join("")}
+                      </select>`
+                    : ""
+                }
+              </li>`;
+          })
+          .join("") +
+        (feitas.length
+          ? `<li class="importar-separador">Já cadastradas (${feitas.length})</li>` +
+            feitas
+              .map((r) => {
+                const p = projetoExistente(r);
+                return `<li class="importar-item feito"><span class="item-stand">${esc(p.codigo)}</span><span class="importar-info"><b>${esc(p.nome)}</b><small>Já está na lista de projetos</small></span></li>`;
+              })
+              .join("")
+          : "");
+    }
+
+    const validas = pendentes.filter((r) => !problema(r));
+    $("importar-todos").checked = validas.length > 0 && validas.every((r) => marcadas.has(r.id));
+    $("importar-todos").indeterminate = marcadas.size > 0 && !$("importar-todos").checked;
+    $("importar-todos").disabled = !validas.length;
+    $("importar-contagem").textContent = `${pendentes.length} nova${pendentes.length === 1 ? "" : "s"} · ${feitas.length} já cadastrada${feitas.length === 1 ? "" : "s"}`;
+    $("importar-confirmar").disabled = !marcadas.size;
+    $("importar-confirmar").textContent = marcadas.size
+      ? `Cadastrar ${marcadas.size} projeto${marcadas.size === 1 ? "" : "s"}`
+      : "Cadastrar projetos";
+  }
+
+  function aviso(texto, erro = false) {
+    $("importar-feedback").textContent = texto;
+    $("importar-feedback").classList.toggle("erro", erro);
+  }
+
+  /* Eventos */
+  $("importar-abrir").addEventListener("click", async () => {
+    $("importar-abrir").disabled = true;
+    aviso("");
+    try {
+      [formulario, inscricoes] = await Promise.all([API.lerFormulario("alunos"), API.lerInscricoes("alunos")]);
+      cols = colunas(formulario, inscricoes);
+      mapa = {};
+      for (const c of CAMPOS) {
+        mapa[c.campo] = cols.find((q) => q.id === c.padrao)?.id || cols.find((q) => c.parecido.test(q.texto))?.id || "";
+      }
+      // O nome de quem se inscreveu não é o nome do projeto.
+      if (mapa.nome && /complet|quem/i.test(cols.find((q) => q.id === mapa.nome)?.texto || "")) mapa.nome = "";
+      marcadas.clear();
+      renderMapa();
+      renderLista();
+      $("importar").showModal();
+    } catch (erro) {
+      $("feedback").textContent = `Não consegui ler as inscrições. ${erro.message}`;
+      $("feedback").classList.add("erro");
+    } finally {
+      $("importar-abrir").disabled = false;
+    }
+  });
+
+  const fechar = () => $("importar").close();
+  $("importar-fechar").addEventListener("click", fechar);
+  $("importar-cancelar").addEventListener("click", fechar);
+
+  $("importar-mapa").addEventListener("change", (e) => {
+    const sel = e.target.closest("[data-campo]");
+    if (!sel) return;
+    mapa[sel.dataset.campo] = sel.value;
+    renderLista();
+  });
+
+  $("importar-lista").addEventListener("change", (e) => {
+    const caixa = e.target.closest("[data-id]");
+    const curso = e.target.closest("[data-curso-de]");
+    if (caixa) caixa.checked ? marcadas.add(caixa.dataset.id) : marcadas.delete(caixa.dataset.id);
+    if (curso) {
+      if (curso.value) cursoEscolhido[curso.dataset.cursoDe] = curso.value;
+      else delete cursoEscolhido[curso.dataset.cursoDe];
+    }
+    renderLista();
+  });
+
+  $("importar-todos").addEventListener("change", () => {
+    const validas = inscricoes.filter((r) => !projetoExistente(r) && !problema(r));
+    if ($("importar-todos").checked) validas.forEach((r) => marcadas.add(r.id));
+    else marcadas.clear();
+    renderLista();
+  });
+
+  $("importar-confirmar").addEventListener("click", async () => {
+    const escolhidas = inscricoes.filter((r) => marcadas.has(r.id) && !problema(r));
+    if (!escolhidas.length) return;
+    $("importar-confirmar").disabled = true;
+    aviso("Cadastrando…");
+    try {
+      const criados = await API.importarProjetos(escolhidas.map(dadosDe));
+      await recarregar();
+      marcadas.clear();
+      fechar();
+      $("feedback").classList.remove("erro");
+      $("feedback").textContent = `${criados.length} projeto${criados.length === 1 ? "" : "s"} importado${criados.length === 1 ? "" : "s"}: ${criados.map((p) => p.codigo).join(", ")}. Confira os dados e grave as urnas de novo.`;
+    } catch (erro) {
+      aviso(erro.message, true);
+      $("importar-confirmar").disabled = false;
+    }
+  });
+})();

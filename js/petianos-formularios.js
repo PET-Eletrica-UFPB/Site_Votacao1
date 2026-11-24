@@ -380,6 +380,9 @@ window.PainelFormularios = (() => {
       iniciado = true;
       TIPOS.forEach((t) => carregar(t));
     },
+    recarregar() {
+      if (iniciado) TIPOS.forEach((t) => carregar(t));
+    },
     podeDescartar() {
       const pendentes = TIPOS.filter((t) => estado[t].alterado);
       return !pendentes.length || confirm(`Há perguntas não salvas no formulário dos ${pendentes.join(" e dos ")}. Sair mesmo assim?`);
