@@ -636,6 +636,10 @@ dialog::backdrop { background: rgba(4, 2, 30, .72); backdrop-filter: blur(6px); 
 .resposta-lista > div { padding: 10px 0; border-bottom: 1px solid var(--borda); }
 .resposta-lista dt { font-size: 12.5px; font-weight: 700; color: var(--tinta-3); }
 .resposta-lista dd { margin: 3px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.edicao-resposta { width: 100%; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--borda); background: rgba(255, 255, 255, .06); font-size: 14px; resize: vertical; white-space: pre-wrap; }
+.edicao-resposta:focus { border-color: var(--amber); outline: none; }
+.resposta-acoes { flex-wrap: wrap; justify-content: flex-end; }
+.ep-nome { margin-top: 10px; font-size: 13px; color: var(--tinta-2); }
 
 /* Área dos petianos: importar das inscrições */
 .importar-btn { width: 100%; margin-top: 8px; }

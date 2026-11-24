@@ -493,8 +493,20 @@ window.API = (() => {
     conferirTipo(tipo);
     const dados = (await escrever("GET", `/site/inscricoes/${tipo}`)) || {};
     return Object.entries(dados)
-      .map(([id, r]) => ({ id, enviadoEm: Number(r?.enviadoEm) || 0, respostas: r?.respostas || {} }))
+      .map(([id, r]) => ({ id, enviadoEm: Number(r?.enviadoEm) || 0, respostas: r?.respostas || {}, editadoEm: Number(r?.editadoEm) || 0 }))
       .sort((a, b) => a.enviadoEm - b.enviadoEm);
+  }
+
+  // Corrige as respostas de uma inscrição. Na primeira correção, guarda as respostas originais em "original".
+  async function editarInscricao(tipo, id, respostas) {
+    conferirTipo(tipo);
+    const atual = await escrever("GET", `/site/inscricoes/${tipo}/${id}`);
+    if (!atual) throw new Error("Esta resposta não existe mais.");
+    await escrever("PATCH", `/site/inscricoes/${tipo}/${id}`, {
+      respostas,
+      editadoEm: { ".sv": "timestamp" },
+      ...(atual.original ? {} : { original: atual.respostas || {} }),
+    });
   }
 
   async function removerInscricao(tipo, id) {
@@ -638,7 +650,7 @@ window.API = (() => {
     listarProfessores, codigosDosProfessores, cadastrarProfessor, atualizarProfessor, removerProfessor, lerAvaliacoes,
     entrarProfessor, sairProfessor: contaProfessor.sair, sessaoProfessor: contaProfessor.atual,
     meuPerfil, minhasAvaliacoes, salvarAvaliacao,
-    lerFormulario, salvarFormulario, definirInscricoesAbertas, enviarInscricao, lerInscricoes, removerInscricao,
+    lerFormulario, salvarFormulario, definirInscricoesAbertas, enviarInscricao, lerInscricoes, removerInscricao, editarInscricao,
     importarProjetos, copiaDeSeguranca, contarDados, limparDados, importarInscricoes, assinaturasImportadas,
     lerFeiras, salvarFeira, removerFeira, publicarFeirasIniciais,
   };

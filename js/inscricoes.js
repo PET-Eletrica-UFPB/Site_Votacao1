@@ -2,6 +2,7 @@ const { esc } = API;
 const $ = (id) => document.getElementById(id);
 const ROTULOS = { alunos: "Inscrição de alunos", professores: "Inscrição de professores", escolas: "Inscrição de escolas" };
 const LIMITE = { curta: 200, longa: 2000, email: 120, telefone: 30, numero: 20, data: 10 };
+const LIMITE_NOME = 60; // nome de projeto: precisa caber no site, no placar e na urna
 
 const formularios = {};
 let tipoAtual = null;
@@ -34,14 +35,16 @@ function htmlPergunta(q, i) {
   }
 
   let campo;
+  const exemplo = q.exemplo ? ` placeholder="${esc(q.exemplo)}"` : "";
   if (q.tipo === "longa") {
-    campo = `<textarea id="${id}" rows="4" maxlength="${LIMITE.longa}"${req}${desc}></textarea>`;
+    campo = `<textarea id="${id}" rows="4" maxlength="${LIMITE.longa}"${exemplo}${req}${desc}></textarea>`;
   } else if (q.tipo === "lista") {
     campo = `<select id="${id}"${req}${desc}><option value="">Selecione</option>${opcoes.map((o) => `<option>${esc(o)}</option>`).join("")}</select>`;
   } else {
     const tipos = { curta: "text", email: "email", telefone: "tel", numero: "number", data: "date" };
     const extra = q.tipo === "email" ? ' autocomplete="email"' : q.tipo === "telefone" ? ' autocomplete="tel" inputmode="tel"' : "";
-    campo = `<input id="${id}" type="${tipos[q.tipo] || "text"}" maxlength="${LIMITE[q.tipo] || 200}"${extra}${req}${desc}>`;
+    const limite = q.apenasNome ? LIMITE_NOME : LIMITE[q.tipo] || 200;
+    campo = `<input id="${id}" type="${tipos[q.tipo] || "text"}" maxlength="${limite}"${exemplo}${extra}${req}${desc}>`;
   }
   return `
     <div class="campo pergunta-publica" data-i="${i}">
@@ -84,18 +87,42 @@ function valorDe(q, i) {
   return v;
 }
 
+// Pergunta marcada como "apenasNome" (ex.: nome do projeto): recusa listas de pessoas e matrículas.
+function problemaNoNome(valor, outras) {
+  const t = valor.trim();
+  if (/\d{6,}/.test(t)) return "parece ter números de matrícula";
+  if ((t.match(/,|;/g) || []).length >= 1 && t.split(/\s*[,;]\s*|\s+e\s+/i).filter((p) => p.split(/\s+/).length >= 1).length >= 3) {
+    return "parece uma lista de nomes";
+  }
+  if (/^\(?\s*grupo\s*\d+\s*[-–(:]/i.test(t) && /[,(]/.test(t)) return "tem os nomes dos integrantes";
+  const norm = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\W+/g, " ").trim();
+  // Igual (ou quase) ao que foi escrito na pergunta dos integrantes.
+  if (outras.some((o) => o && norm(o).length > 15 && (norm(o).includes(norm(t)) || norm(t).includes(norm(o))))) {
+    return "é igual à lista de integrantes";
+  }
+  return null;
+}
+
 function validar(f) {
   let primeiroErro = null;
   document.querySelectorAll(".pergunta-publica").forEach((bloco) => bloco.classList.remove("invalida"));
+  const longas = f.perguntas.map((q, i) => (q.tipo === "longa" ? valorDe(q, i) : "")).filter(Boolean);
   f.perguntas.forEach((q, i) => {
     const v = valorDe(q, i);
     const vazio = Array.isArray(v) ? !v.length : !v;
     const campo = $(`q-${i}`);
     const formatoRuim = campo && !vazio && !campo.checkValidity();
-    if ((q.obrigatoria && vazio) || formatoRuim) {
+    const nomeRuim = q.apenasNome && !vazio ? problemaNoNome(v, longas) : null;
+    if ((q.obrigatoria && vazio) || formatoRuim || nomeRuim) {
       const bloco = document.querySelector(`.pergunta-publica[data-i="${i}"]`);
       bloco.classList.add("invalida");
-      primeiroErro ??= { bloco, msg: formatoRuim ? `Confira o formato de “${q.texto}”.` : `Responda “${q.texto}”.` };
+      const integrantes = f.perguntas.find((x) => x.tipo === "longa" && /integrante|participante/i.test(x.texto));
+      const msg = nomeRuim
+        ? `Em “${q.texto}”, escreva só o nome do projeto ou da equipe (${q.exemplo ? q.exemplo.replace(/^Ex\.:\s*/, "por exemplo, ") : "um nome curto"}): o que você digitou ${nomeRuim}.${integrantes ? ` Os nomes dos alunos vão em “${integrantes.texto.replace(/\s*\(.*\)$/, "")}”.` : ""}`
+        : formatoRuim
+          ? `Confira o formato de “${q.texto}”.`
+          : `Responda “${q.texto}”.`;
+      primeiroErro ??= { bloco, msg };
     }
   });
   return primeiroErro;

@@ -103,15 +103,76 @@ window.PainelFormularios = (() => {
     respostaAberta = r.id;
     const cols = colunas(e.formulario, e.inscricoes);
     const primeira = cols.map((c) => valorTexto(r.respostas[c.id]?.v)).find((v) => v.trim());
-    $("ver-resposta-meta").textContent = `Resposta nº ${i + 1} · ${dataHora(r.enviadoEm)}`;
+    $("ver-resposta-meta").textContent =
+      `Resposta nº ${i + 1} · ${dataHora(r.enviadoEm)}` + (r.editadoEm ? ` · corrigida em ${dataHora(r.editadoEm)}` : "");
     $("ver-resposta-titulo").textContent = primeira || "Resposta";
     $("ver-resposta-lista").innerHTML = cols
       .map((c) => `<div><dt>${esc(c.texto)}</dt><dd>${esc(valorTexto(r.respostas[c.id]?.v)) || '<span class="vazio">Sem resposta</span>'}</dd></div>`)
       .join("");
     $("excluir-resposta").textContent = "Excluir resposta";
     $("excluir-resposta").dataset.confirmar = "";
+    modoEdicao(false);
+    $("ver-resposta-feedback").textContent = "";
     $("ver-resposta").showModal();
   }
+
+  /* Corrigir uma resposta (ex.: aluno que escreveu os nomes no lugar do projeto) */
+  function modoEdicao(ligado) {
+    $("editar-resposta").hidden = ligado;
+    $("excluir-resposta").hidden = ligado;
+    $("cancelar-edicao").hidden = !ligado;
+    $("salvar-resposta").hidden = !ligado;
+  }
+
+  $("editar-resposta").addEventListener("click", () => {
+    const e = estado[tipo];
+    const r = e.inscricoes.find((x) => x.id === respostaAberta);
+    const cols = colunas(e.formulario, e.inscricoes);
+    $("ver-resposta-lista").innerHTML = cols
+      .map((c) => {
+        const v = valorTexto(r.respostas[c.id]?.v);
+        const linhas = Math.min(6, Math.max(1, Math.ceil(v.length / 60), v.split("\n").length));
+        return `
+          <div>
+            <dt><label for="ed-${esc(c.id)}">${esc(c.texto)}</label></dt>
+            <dd><textarea class="edicao-resposta" id="ed-${esc(c.id)}" data-pergunta="${esc(c.id)}" rows="${linhas}">${esc(v)}</textarea>
+            ${c.tipo === "varias" ? `<small class="vazio">Várias opções: separe com ponto e vírgula.</small>` : ""}</dd>
+          </div>`;
+      })
+      .join("");
+    modoEdicao(true);
+    $("ver-resposta-lista").querySelector("textarea")?.focus();
+  });
+
+  $("cancelar-edicao").addEventListener("click", () => abrirResposta(respostaAberta));
+
+  $("salvar-resposta").addEventListener("click", async () => {
+    const e = estado[tipo];
+    const r = e.inscricoes.find((x) => x.id === respostaAberta);
+    const cols = colunas(e.formulario, e.inscricoes);
+    const respostas = {};
+    for (const c of cols) {
+      const campo = document.querySelector(`.edicao-resposta[data-pergunta="${CSS.escape(c.id)}"]`);
+      const texto = (campo?.value ?? valorTexto(r.respostas[c.id]?.v)).trim();
+      if (!texto) continue;
+      const v = c.tipo === "varias" ? texto.split(/\s*;\s*/).filter(Boolean) : texto;
+      respostas[c.id] = { p: r.respostas[c.id]?.p || c.texto.replace(/ \(pergunta removida\)$/, ""), v };
+    }
+    $("salvar-resposta").disabled = true;
+    $("ver-resposta-feedback").classList.remove("erro");
+    $("ver-resposta-feedback").textContent = "Salvando…";
+    try {
+      await API.editarInscricao(tipo, respostaAberta, respostas);
+      await carregar(tipo);
+      abrirResposta(respostaAberta);
+      $("ver-resposta-feedback").textContent = "Correção salva. A resposta original fica guardada na cópia de segurança.";
+    } catch (erro) {
+      $("ver-resposta-feedback").classList.add("erro");
+      $("ver-resposta-feedback").textContent = erro.message;
+    } finally {
+      $("salvar-resposta").disabled = false;
+    }
+  });
 
   /* Editor de perguntas */
   function renderEditor() {
@@ -147,6 +208,16 @@ window.PainelFormularios = (() => {
                 : ""
             }
             <label class="campo"><span>Texto de ajuda (opcional)</span><input data-campo="ajuda" value="${esc(q.ajuda || "")}" maxlength="200" placeholder="Aparece embaixo da pergunta"></label>
+            ${
+              ["curta", "longa", "email", "telefone", "numero"].includes(q.tipo)
+                ? `<label class="campo"><span>Exemplo dentro do campo (opcional)</span><input data-campo="exemplo" value="${esc(q.exemplo || "")}" maxlength="120" placeholder="Ex.: EletroBraço"></label>`
+                : ""
+            }
+            ${
+              q.tipo === "curta"
+                ? `<label class="ep-obrig ep-nome"><input type="checkbox" data-campo="apenasNome" ${q.apenasNome ? "checked" : ""}> Só um nome (recusa listas de pessoas e matrículas, até 60 letras)</label>`
+                : ""
+            }
           </li>`
       )
       .join("");
@@ -182,6 +253,8 @@ window.PainelFormularios = (() => {
         limpa.opcoes = opcoes;
       }
       if ((q.ajuda || "").trim()) limpa.ajuda = q.ajuda.trim();
+      if ((q.exemplo || "").trim()) limpa.exemplo = q.exemplo.trim();
+      if (q.apenasNome && q.tipo === "curta") limpa.apenasNome = true;
       perguntas.push(limpa);
     }
     return { dados: { titulo: (r.titulo || "").trim(), descricao: (r.descricao || "").trim(), perguntas } };
@@ -311,7 +384,7 @@ window.PainelFormularios = (() => {
     else if (alvo.dataset.campo) {
       const q = r.perguntas[Number(alvo.closest("[data-i]").dataset.i)];
       const campo = alvo.dataset.campo;
-      if (campo === "obrigatoria") q.obrigatoria = alvo.checked;
+      if (campo === "obrigatoria" || campo === "apenasNome") q[campo] = alvo.checked;
       else if (campo === "opcoes") q.opcoes = alvo.value.split("\n");
       else q[campo] = alvo.value;
       if (campo === "tipo") {

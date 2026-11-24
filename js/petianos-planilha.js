@@ -214,9 +214,9 @@
       const mudouFormulario = perguntas.length !== formulario.perguntas.length || !formulario.salvo;
       if (mudouFormulario) {
         const { titulo, descricao, aberto } = formulario;
-        const limpas = perguntas.map(({ id, texto, tipo: t, obrigatoria, opcoes, ajuda }) => ({
+        const limpas = perguntas.map(({ id, texto, tipo: t, obrigatoria, opcoes, ajuda, exemplo, apenasNome }) => ({
           id, texto, tipo: tiposPergunta.some((x) => x.id === t) ? t : "curta", obrigatoria: !!obrigatoria,
-          ...(opcoes?.length ? { opcoes } : {}), ...(ajuda ? { ajuda } : {}),
+          ...(opcoes?.length ? { opcoes } : {}), ...(ajuda ? { ajuda } : {}), ...(exemplo ? { exemplo } : {}), ...(apenasNome ? { apenasNome: true } : {}),
         }));
         await API.salvarFormulario(tipo, { titulo, descricao, aberto, perguntas: limpas });
       }
