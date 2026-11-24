@@ -362,8 +362,38 @@
       <div class="ficha-corpo">
         <section class="passo">
           <h2><span>1</span> Guarde uma cópia</h2>
-          <p>Antes de apagar, baixe tudo o que está no banco em um arquivo .json. Se quiser os relatórios bonitos, baixe também os PDFs nas abas Professores e notas e Formulários.</p>
-          <button class="btn btn-vidro" id="baixar-copia" type="button">Baixar cópia de segurança (.json)</button>
+          <p>Antes de apagar, baixe os relatórios da feira. Cada um sai em PDF (para ler e arquivar) e em Excel (para mexer nos dados).</p>
+          <ul class="backups" id="backups">
+            <li data-backup="alunos">
+              <span><b>Formulário dos alunos</b><small data-info="inscricoesAlunos">–</small></span>
+              <button class="btn btn-vidro" type="button" data-formato="pdf">PDF</button>
+              <button class="btn btn-vidro" type="button" data-formato="excel">Excel</button>
+            </li>
+            <li data-backup="professores">
+              <span><b>Formulário dos professores</b><small data-info="inscricoesProfessores">–</small></span>
+              <button class="btn btn-vidro" type="button" data-formato="pdf">PDF</button>
+              <button class="btn btn-vidro" type="button" data-formato="excel">Excel</button>
+            </li>
+            <li data-backup="escolas">
+              <span><b>Formulário das escolas</b><small data-info="inscricoesEscolas">–</small></span>
+              <button class="btn btn-vidro" type="button" data-formato="pdf">PDF</button>
+              <button class="btn btn-vidro" type="button" data-formato="excel">Excel</button>
+            </li>
+            <li data-backup="notas">
+              <span><b>Notas dos professores</b><small data-info="avaliacoes">–</small></span>
+              <button class="btn btn-vidro" type="button" data-formato="pdf">PDF</button>
+              <button class="btn btn-vidro" type="button" data-formato="excel">Excel</button>
+            </li>
+            <li data-backup="votos">
+              <span><b>Pódio e votos dos projetos</b><small data-info="votacao">–</small></span>
+              <button class="btn btn-vidro" type="button" data-formato="pdf">PDF</button>
+              <button class="btn btn-vidro" type="button" data-formato="excel">Excel</button>
+            </li>
+          </ul>
+          <div class="backups-extra">
+            <button class="btn btn-amber" id="baixar-tudo" type="button">Baixar tudo (PDF e Excel)</button>
+            <button class="btn btn-vidro" id="baixar-copia" type="button">Cópia completa do banco (.json)</button>
+          </div>
           <span class="urna-situacao" id="copia-situacao"></span>
         </section>
 

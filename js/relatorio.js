@@ -387,7 +387,156 @@ window.Relatorio = (() => {
     p.salvar("avaliacoes-feira");
   }
 
-  return { baixar, montar };
+  // As mesmas informações do PDF, em abas de planilha.
+  function abasPlanilha(dados) {
+    const r = montar(dados);
+    const num = (n) => (n == null ? "" : Math.round(n * 100) / 100);
+    const resultado = [["Disciplina", "Posição", "Código", "Projeto", "Curso", "Avaliações feitas", "Avaliadores", "Média final"]];
+    for (const [disciplina, lista] of r.disciplinas) {
+      lista.forEach((x, i) => resultado.push([disciplina, x.media == null ? "" : i + 1, x.codigo, x.nome, x.curso, x.feitas, x.linhas.length, num(x.media)]));
+    }
+    const notas = [["Código", "Projeto", "Disciplina", "Curso", "Professor", ...r.criterios.map((c) => `${c.nome} (peso ${c.peso})`), "Média do professor", "Comentário", "Situação"]];
+    for (const [disciplina, lista] of r.disciplinas) {
+      for (const x of lista) {
+        for (const { professor, avaliacao } of x.linhas) {
+          notas.push([
+            x.codigo, x.nome, disciplina, x.curso, professor,
+            ...r.criterios.map((c) => (avaliacao ? num(avaliacao.notas?.[c.id]) : "")),
+            avaliacao ? num(Number(avaliacao.media)) : "",
+            avaliacao?.comentario || "",
+            avaliacao ? "Avaliado" : "Pendente",
+          ]);
+        }
+      }
+    }
+    const profs = [["Professor", "Projetos", "Avaliados", "Pendentes", "Média das notas dadas"]];
+    r.porProfessor.forEach((x) => profs.push([x.nome, x.total, x.feitos, x.total - x.feitos, num(x.mediaDada)]));
+    return [
+      { nome: "Resultado por disciplina", linhas: resultado },
+      { nome: "Notas de cada professor", linhas: notas },
+      { nome: "Andamento por professor", linhas: profs },
+    ];
+  }
+
+  const planilha = (dados) => Exportar.planilha("avaliacoes-feira", abasPlanilha(dados));
+
+  return { baixar, montar, planilha };
+})();
+
+/* Pódio e votos das urnas */
+window.RelatorioVotos = (() => {
+  const pct = (n, total) => (total ? Math.round((n / total) * 1000) / 10 : 0);
+
+  // Projetos de cada curso ordenados pelos votos da rodada atual.
+  function montar(projetos, { votos, urnas: situacao, rodada, aberta }) {
+    const { cursos, urnas } = window.FEIRA;
+    const porCurso = cursos.map((c) => {
+      const lista = projetos
+        .filter((p) => p.curso === c.id)
+        .map((p) => ({ ...p, votos: votos[p.codigo] || 0 }))
+        .sort((a, b) => b.votos - a.votos || a.nome.localeCompare(b.nome, "pt-BR"));
+      const total = lista.reduce((s, p) => s + p.votos, 0);
+      return { curso: c, lista, total, podio: lista.filter((p) => p.votos > 0).slice(0, 3) };
+    });
+    return {
+      porCurso,
+      total: porCurso.reduce((s, c) => s + c.total, 0),
+      urnas: urnas.map((u) => ({ nome: u.nome, votos: situacao[u.id]?.votos || 0, online: !!situacao[u.id]?.online })),
+      rodada: rodada || "–",
+      aberta,
+    };
+  }
+
+  async function baixar(projetos, dadosVotos) {
+    const r = montar(projetos, dadosVotos);
+    const p = await PDF.criar({
+      rotulo: "PET ELÉTRICA UFPB  ·  VOTO POPULAR",
+      titulo: "Pódio e votos",
+      subtitulo: "Feira de Engenharia e Energia",
+      cabecalho: "Pódio e votos",
+    });
+    const { doc, COR } = p;
+
+    p.cartoes([
+      ["Votos computados", String(r.total)],
+      ["Projetos", String(projetos.length)],
+      ["Urnas com dados", `${r.urnas.filter((u) => u.online).length}/${r.urnas.length}`],
+      ["Votação", r.aberta ? "Aberta" : "Encerrada"],
+    ]);
+    p.paragrafo(`Votos da rodada ${r.rodada}, somando as urnas: ${r.urnas.map((u) => `${u.nome} com ${u.votos}`).join(" e ")}. Votos de rodadas anteriores (antes de um "Zerar votação") não entram.`);
+    p.y += 4;
+
+    /* Pódio */
+    p.tituloSecao("Pódio", "Os três projetos mais votados de cada curso.");
+    for (const { curso, podio, total } of r.porCurso) {
+      p.subtitulo(curso.nome);
+      p.tabela({
+        head: [["Lugar", "Código", "Projeto", "Disciplina", "Votos", "% do curso"]],
+        body: podio.length
+          ? podio.map((x, i) => [`${i + 1}º`, x.codigo, x.nome, x.disciplina || "", x.votos, `${String(pct(x.votos, total)).replace(".", ",")}%`])
+          : [[{ content: "Ainda sem votos", colSpan: 6, styles: { halign: "center", textColor: COR.cinza, fontStyle: "italic" } }]],
+        columnStyles: {
+          0: { cellWidth: 14, halign: "center", fontStyle: "bold" },
+          1: { cellWidth: 16, halign: "center", font: "courier" },
+          4: { cellWidth: 16, halign: "center", fontStyle: "bold" },
+          5: { cellWidth: 20, halign: "center" },
+        },
+        didParseCell: (c) => {
+          if (c.section !== "body" || !podio.length) return;
+          const cores = [[253, 236, 190], [232, 232, 238], [245, 222, 200]];
+          c.cell.styles.fillColor = cores[c.row.index];
+        },
+      });
+    }
+
+    /* Todos os votos */
+    p.tituloSecao("Votos de cada projeto", "Todos os projetos cadastrados, do mais ao menos votado em cada curso.");
+    for (const { curso, lista, total } of r.porCurso) {
+      if (!lista.length) continue;
+      p.subtitulo(`${curso.nome} · ${total} voto${total === 1 ? "" : "s"}`);
+      const maior = Math.max(1, ...lista.map((x) => x.votos));
+      p.tabela({
+        head: [["Pos.", "Código", "Projeto", "Disciplina", "Votos", "%", ""]],
+        body: lista.map((x, i) => [x.votos ? `${i + 1}º` : "–", x.codigo, x.nome, x.disciplina || "", x.votos, `${String(pct(x.votos, total)).replace(".", ",")}%`, x.votos]),
+        columnStyles: {
+          0: { cellWidth: 12, halign: "center" },
+          1: { cellWidth: 15, halign: "center", font: "courier" },
+          4: { cellWidth: 14, halign: "center", fontStyle: "bold" },
+          5: { cellWidth: 14, halign: "center" },
+          6: { cellWidth: 30 },
+        },
+        didParseCell: (c) => {
+          if (c.section === "body" && c.column.index === 6) c.cell.text = [""];
+        },
+        didDrawCell: (c) => {
+          if (c.section !== "body" || c.column.index !== 6) return;
+          const w = (c.cell.width - 4) * (Number(c.row.raw[6]) / maior);
+          doc.setFillColor(...COR.amber);
+          if (w > 0) doc.roundedRect(c.cell.x + 2, c.cell.y + c.cell.height / 2 - 1.5, w, 3, 1, 1, "F");
+        },
+      });
+    }
+
+    p.salvar("podio-e-votos");
+  }
+
+  function planilha(projetos, dadosVotos) {
+    const r = montar(projetos, dadosVotos);
+    const podio = [["Curso", "Lugar", "Código", "Projeto", "Disciplina", "Votos"]];
+    const votos = [["Curso", "Posição", "Código", "Projeto", "Disciplina", "Equipe", "Votos", "% do curso"]];
+    for (const { curso, podio: tres, lista, total } of r.porCurso) {
+      tres.forEach((x, i) => podio.push([curso.nome, `${i + 1}º`, x.codigo, x.nome, x.disciplina || "", x.votos]));
+      lista.forEach((x, i) => votos.push([curso.nome, x.votos ? i + 1 : "", x.codigo, x.nome, x.disciplina || "", x.equipe || "", x.votos, pct(x.votos, total)]));
+    }
+    const urnas = [["Urna", "Votos na rodada", "Com dados", "Rodada"], ...r.urnas.map((u) => [u.nome, u.votos, u.online ? "Sim" : "Não", r.rodada])];
+    return Exportar.planilha("podio-e-votos", [
+      { nome: "Pódio", linhas: podio },
+      { nome: "Votos por projeto", linhas: votos },
+      { nome: "Urnas", linhas: urnas },
+    ]);
+  }
+
+  return { baixar, planilha, montar };
 })();
 
 /* Relatório das respostas de um formulário de inscrição */

@@ -44,6 +44,8 @@
       for (const [parte, n] of Object.entries(contagem)) {
         const el = document.querySelector(`[data-conta="${parte}"]`);
         if (el) el.textContent = n ?? "–";
+        const info = document.querySelector(`[data-info="${parte}"]`);
+        if (info) info.textContent = n == null ? "sem dados" : `${n} ${INFO[parte]}${n === 1 ? "" : "s"}`;
       }
     } catch (erro) {
       $("limpar-feedback").textContent = `Não consegui contar os dados. ${erro.message}`;
@@ -62,6 +64,88 @@
   }
 
   let copiaFeita = false;
+  const INFO = { inscricoesAlunos: "resposta", inscricoesProfessores: "resposta", inscricoesEscolas: "resposta", avaliacoes: "nota", votacao: "voto" };
+
+  /* Relatórios de backup: cada item em PDF ou Excel */
+  const GERADORES = {
+    async alunos(formato) { return formulario("alunos", formato); },
+    async professores(formato) { return formulario("professores", formato); },
+    async escolas(formato) { return formulario("escolas", formato); },
+    async notas(formato) {
+      const [projetos, professores, avaliacoes] = await Promise.all([API.lerCadastro(), API.listarProfessores(), API.lerAvaliacoes()]);
+      const dados = { projetos, professores, avaliacoes };
+      return formato === "pdf" ? Relatorio.baixar(dados) : Relatorio.planilha(dados);
+    },
+    async votos(formato) {
+      const [projetos, votos] = await Promise.all([API.lerCadastro(), API.buscarVotos()]);
+      return formato === "pdf" ? RelatorioVotos.baixar(projetos, votos) : RelatorioVotos.planilha(projetos, votos);
+    },
+  };
+
+  async function formulario(tipo, formato) {
+    const [form, inscricoes] = await Promise.all([API.lerFormulario(tipo), API.lerInscricoes(tipo)]);
+    return formato === "pdf"
+      ? RelatorioInscricoes.baixar(tipo, form, inscricoes)
+      : Exportar.tabela(`inscricoes-${tipo}`, `Inscrições ${tipo}`, RelatorioInscricoes.tabela(form, inscricoes));
+  }
+
+  function situacaoCopia(texto, classe = "") {
+    $("copia-situacao").className = `urna-situacao ${classe}`;
+    $("copia-situacao").textContent = texto;
+  }
+
+  const NOMES_BACKUP = { alunos: "formulário dos alunos", professores: "formulário dos professores", escolas: "formulário das escolas", notas: "notas dos professores", votos: "pódio e votos" };
+
+  async function gerar(item, formato) {
+    await GERADORES[item](formato);
+    copiaFeita = true;
+  }
+
+  $("backups").addEventListener("click", async (e) => {
+    const botao = e.target.closest("[data-formato]");
+    if (!botao) return;
+    const item = botao.closest("[data-backup]").dataset.backup;
+    const formato = botao.dataset.formato;
+    botao.disabled = true;
+    situacaoCopia(`Gerando ${formato === "pdf" ? "o PDF" : "a planilha"}: ${NOMES_BACKUP[item]}…`);
+    try {
+      await gerar(item, formato);
+      situacaoCopia(`Baixado: ${NOMES_BACKUP[item]} (${formato === "pdf" ? "PDF" : "Excel"}).`, "ok");
+    } catch (erro) {
+      console.error(erro);
+      situacaoCopia(`Não consegui gerar: ${NOMES_BACKUP[item]}. ${erro.message}`, "alerta");
+    } finally {
+      botao.disabled = false;
+    }
+  });
+
+  // Tudo de uma vez: o navegador pode perguntar se permite baixar vários arquivos.
+  $("baixar-tudo").addEventListener("click", async () => {
+    const botoes = document.querySelectorAll("#backups button, #baixar-tudo");
+    botoes.forEach((b) => (b.disabled = true));
+    const falhas = [];
+    let feitos = 0;
+    const itens = Object.keys(GERADORES);
+    for (const item of itens) {
+      for (const formato of ["pdf", "excel"]) {
+        situacaoCopia(`Gerando ${++feitos} de ${itens.length * 2}: ${NOMES_BACKUP[item]} (${formato === "pdf" ? "PDF" : "Excel"})…`);
+        try {
+          await gerar(item, formato);
+        } catch (erro) {
+          console.error(erro);
+          falhas.push(`${NOMES_BACKUP[item]} (${formato})`);
+        }
+        await new Promise((r) => setTimeout(r, 700));
+      }
+    }
+    botoes.forEach((b) => (b.disabled = false));
+    situacaoCopia(
+      falhas.length
+        ? `Baixei ${itens.length * 2 - falhas.length} arquivos; falharam: ${falhas.join(", ")}.`
+        : `Pronto: ${itens.length * 2} arquivos baixados. Se faltar algum, confira se o navegador bloqueou downloads múltiplos.`,
+      falhas.length ? "alerta" : "ok"
+    );
+  });
 
   $("baixar-copia").addEventListener("click", async () => {
     $("baixar-copia").disabled = true;
