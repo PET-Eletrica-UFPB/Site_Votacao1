@@ -23,7 +23,8 @@ window.NomeProjeto = (() => {
     if (/\d{6,}/.test(t)) return "parece ter números de matrícula";
     const partes = t.split(/\s*[,;]\s*|\s+e\s+/i).filter(Boolean);
     if (/[,;]/.test(t) && partes.length >= 3) return "parece uma lista de nomes";
-    if (/^\(?\s*grupo\s*\d+/i.test(t) && /[,(]/.test(t)) return "tem os nomes dos integrantes";
+    // "Grupo 1 (Gustavo, Luan…)": número do grupo seguido de nomes separados por vírgula.
+    if (/^\(?\s*grupo\s*\d+/i.test(t) && /,/.test(t)) return "tem os nomes dos integrantes";
     if (/^\(?\s*(grupo|equipe|time)\s*\d+\s*\)?\s*$/i.test(t)) return "é só um número de grupo: acrescente o assunto do projeto";
     const n = normalizar(t);
     if (outros.some((o) => normalizar(o).length > 15 && (normalizar(o).includes(n) || n.includes(normalizar(o))))) {
