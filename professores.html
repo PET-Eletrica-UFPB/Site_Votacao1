@@ -23,17 +23,19 @@
       <form class="login-cartao" id="form-login">
         <p class="rotulo">Área do professor</p>
         <h1>Boas-vindas à <em>banca.</em></h1>
-        <p>Entre para avaliar os projetos da feira.</p>
+        <p>Escolha seu nome e digite o código de acesso entregue pela organização.</p>
         <label class="campo">
           <span>Professor(a)</span>
-          <select id="login-nome" required></select>
+          <select id="login-nome" required>
+            <option value="">Carregando…</option>
+          </select>
         </label>
         <label class="campo">
           <span>Código de acesso</span>
           <input id="login-codigo" type="password" autocomplete="off" required placeholder="Informado pela organização">
         </label>
-        <button class="btn btn-amber" type="submit">Entrar</button>
-        <p class="nota-demo">Versão de demonstração: qualquer código é aceito.</p>
+        <p class="login-erro" id="login-erro" role="alert"></p>
+        <button class="btn btn-amber" id="login-entrar" type="submit">Entrar</button>
       </form>
     </div>
   </div>
@@ -55,11 +57,13 @@
           <b id="progresso-num"></b><span id="progresso-txt"></span>
           <div class="barra"><i id="progresso-barra" style="width:0"></i></div>
         </div>
+        <div class="filtros-disciplina" id="filtro-disciplina" role="group" aria-label="Filtrar por disciplina"></div>
         <ul class="lista-projetos" id="lista"></ul>
       </aside>
 
-      <main class="ficha">
+      <main class="ficha" id="ficha">
         <div class="ficha-cabeca">
+          <p class="disciplina-tag" id="ficha-disciplina" hidden></p>
           <p class="rotulo" id="ficha-meta"></p>
           <h1 id="ficha-nome"></h1>
           <p id="ficha-resumo"></p>
@@ -68,12 +72,12 @@
           <div id="criterios"></div>
           <label class="campo">
             <span>Comentário para a equipe (opcional)</span>
-            <textarea id="comentario" placeholder="Pontos fortes e o que pode melhorar"></textarea>
+            <textarea id="comentario" maxlength="600" placeholder="Pontos fortes e o que pode melhorar"></textarea>
           </label>
           <div class="ficha-rodape">
             <div class="media">
               <b id="media">–</b>
-              <span id="media-txt">Preencha todos os critérios</span>
+              <span id="media-txt">Escolha uma nota em cada critério</span>
             </div>
             <div class="ficha-acoes">
               <button class="btn btn-amber" type="submit" id="salvar" disabled>Salvar e ir para o próximo</button>
@@ -87,6 +91,7 @@
 
   <script src="js/data.js"></script>
   <script src="js/api.js"></script>
+  <script src="js/senha.js"></script>
   <script src="js/professores.js"></script>
 </body>
 </html>

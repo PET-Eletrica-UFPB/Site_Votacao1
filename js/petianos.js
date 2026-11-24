@@ -16,6 +16,8 @@ function abrirPainel() {
   $("painel-nome").textContent = API.sessaoAtual().email;
   novoProjeto();
   recarregar();
+  PainelProfessores.iniciar();
+  PainelFormularios.iniciar();
 }
 
 async function recarregar() {
@@ -25,11 +27,12 @@ async function recarregar() {
   } catch (erro) {
     console.error(erro);
     $("aviso-cadastro").textContent =
-      "Não consegui ler o cadastro. Confira a internet e se as regras de firebase_rules.json já foram publicadas no Firebase.";
+      "Não consegui ler o cadastro. Confira a internet e se as regras de REGRAS_FIREBASE.md já foram publicadas no Firebase.";
     $("aviso-cadastro").hidden = false;
   }
   renderLista();
   renderUrnas();
+  PainelProfessores.projetosMudaram();
 }
 
 /* Lista lateral */
@@ -161,7 +164,7 @@ $("esqueci").addEventListener("click", async () => {
 });
 
 $("sair").addEventListener("click", () => {
-  if (!podeDescartar()) return;
+  if (!podeDescartar() || !PainelProfessores.podeDescartar() || !PainelFormularios.podeDescartar()) return;
   API.sair();
   location.reload();
 });
@@ -271,4 +274,7 @@ $("form-baixar").addEventListener("submit", async (e) => {
   }
 });
 
-if (API.sessaoAtual()) abrirPainel();
+// Espera petianos-professores.js carregar antes de abrir o painel.
+addEventListener("DOMContentLoaded", () => {
+  if (API.sessaoAtual()) abrirPainel();
+});

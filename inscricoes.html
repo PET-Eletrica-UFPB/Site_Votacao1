@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inscrições | PET Elétrica</title>
+  <meta name="description" content="Inscrições de alunos e professores para a Feira de Engenharia e Energia, organizada pelo PET Elétrica UFPB.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="hero-moldura">
+    <header class="hero hero-curto">
+      <img class="hero-cena" src="img/cena.svg" alt="">
+
+      <nav class="nav" aria-label="Principal">
+        <div class="nav-links">
+          <a href="index.html">Início</a>
+          <a href="index.html#projetos">Projetos</a>
+          <a href="index.html#placar">Placar</a>
+          <a href="feiras.html">Feiras</a>
+          <a href="inscricoes.html" aria-current="page">Inscrições</a>
+        </div>
+        <a class="marca" href="index.html">
+          <img src="img/logo-pet-compacto.png" alt="PET Elétrica UFPB">
+        </a>
+        <div class="nav-acoes">
+          <a class="btn btn-amber nav-acao nav-podio" href="podio.html">Modo pódio</a>
+        </div>
+      </nav>
+
+      <div class="hero-feiras">
+        <span class="etiqueta"><span class="ponto-vivo"></span>Inscrições</span>
+        <h1>Faça parte <em>da feira.</em></h1>
+        <p>Alunos inscrevem os projetos das equipes; professores se inscrevem para a banca avaliadora. Escolha abaixo o seu formulário.</p>
+      </div>
+    </header>
+  </div>
+
+  <main class="secao secao-inscricao">
+    <div class="escolha-publico" role="tablist" aria-label="Quem está se inscrevendo">
+      <button class="escolha" type="button" role="tab" id="tab-alunos" data-tipo="alunos" aria-selected="false" aria-controls="painel-form">
+        <span class="escolha-icone" aria-hidden="true">
+          <svg viewBox="0 0 48 48"><path d="M4 18 24 9l20 9-20 9z"/><path d="M12 22v10c0 3 6 6 12 6s12-3 12-6V22M44 18v12"/></svg>
+        </span>
+        <span><b>Sou aluno</b><small>Inscrever o projeto da equipe</small></span>
+        <span class="escolha-status" id="status-alunos"></span>
+      </button>
+      <button class="escolha" type="button" role="tab" id="tab-professores" data-tipo="professores" aria-selected="false" aria-controls="painel-form">
+        <span class="escolha-icone" aria-hidden="true">
+          <svg viewBox="0 0 48 48"><rect x="6" y="8" width="36" height="24" rx="3"/><path d="M16 40h16M24 32v8M14 18h12M14 24h20"/></svg>
+        </span>
+        <span><b>Sou professor</b><small>Participar da banca avaliadora</small></span>
+        <span class="escolha-status" id="status-professores"></span>
+      </button>
+    </div>
+
+    <section class="form-inscricao" id="painel-form" role="tabpanel" hidden>
+      <div class="form-cabeca">
+        <p class="rotulo" id="form-rotulo"></p>
+        <h2 id="form-titulo"></h2>
+        <p id="form-descricao"></p>
+      </div>
+      <p class="form-fechado" id="form-fechado" hidden></p>
+      <form id="form-inscricao" novalidate>
+        <div id="perguntas"></div>
+        <p class="legenda-obrigatoria"><span aria-hidden="true">*</span> Resposta obrigatória</p>
+        <p class="feedback erro" id="form-erro" role="alert"></p>
+        <button class="btn btn-amber" id="enviar" type="submit">Enviar inscrição</button>
+      </form>
+      <div class="form-enviado" id="form-enviado" hidden>
+        <span class="form-enviado-icone" aria-hidden="true">✓</span>
+        <h2>Inscrição enviada!</h2>
+        <p>Obrigado. A organização da feira vai entrar em contato pelos dados que você informou.</p>
+        <button class="btn btn-vidro" id="outra" type="button">Enviar outra resposta</button>
+      </div>
+    </section>
+
+    <p class="carregando" id="carregando">Carregando os formulários…</p>
+  </main>
+
+  <footer class="rodape">
+    <span class="marca">
+      <img src="img/logo-pet-compacto.png" alt="PET Elétrica UFPB">
+    </span>
+    <span>Feira de Engenharia e Energia · <a class="link" href="feiras.html">Edições anteriores</a></span>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/inscricoes.js"></script>
+</body>
+</html>

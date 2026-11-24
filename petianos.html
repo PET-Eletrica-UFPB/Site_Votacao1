@@ -44,13 +44,19 @@
       <a class="marca" href="index.html">
         <img src="img/logo-pet-compacto.png" alt="PET Elétrica UFPB">
       </a>
+      <nav class="abas" aria-label="Seções da área">
+        <button class="aba" type="button" data-aba="projetos" aria-pressed="true">Projetos</button>
+        <button class="aba" type="button" data-aba="professores" aria-pressed="false">Professores e notas</button>
+        <button class="aba" type="button" data-aba="formularios" aria-pressed="false">Formulários</button>
+      </nav>
       <div class="painel-usuario">
         <span id="painel-nome"></span>
         <button class="btn btn-vidro" id="sair">Sair</button>
       </div>
     </header>
 
-    <div class="painel">
+    <!-- Aba: projetos -->
+    <div class="painel" id="aba-projetos">
       <aside class="lateral">
         <div class="progresso">
           <b id="total-projetos"></b><span id="total-txt"></span>
@@ -113,14 +119,177 @@
         </form>
       </main>
     </div>
+
+    <!-- Aba: professores e notas -->
+    <div class="painel" id="aba-professores" hidden>
+      <aside class="lateral">
+        <div class="progresso">
+          <b id="total-professores"></b><span id="total-prof-txt"></span>
+          <button class="btn btn-amber novo-projeto" id="novo-prof" type="button">+ Novo professor</button>
+        </div>
+        <div class="relatorio">
+          <p class="rotulo">Avaliações</p>
+          <p class="relatorio-num"><b id="aval-feitas">–</b><span id="aval-txt"></span></p>
+          <div class="barra"><i id="aval-barra" style="width:0"></i></div>
+          <button class="btn btn-vidro" id="baixar-pdf" type="button">Baixar PDF das avaliações</button>
+          <span class="urna-situacao" id="pdf-situacao"></span>
+        </div>
+        <p class="lista-aviso" id="aviso-prof" hidden></p>
+        <ul class="lista-projetos" id="lista-prof"></ul>
+      </aside>
+
+      <main class="ficha" id="ficha-prof">
+        <div class="ficha-cabeca">
+          <p class="rotulo">Banca avaliadora</p>
+          <h1 id="prof-titulo">Novo professor</h1>
+          <p>O professor entra na Área do professor escolhendo o próprio nome e digitando o código de acesso. Ele só vê os projetos marcados aqui.</p>
+        </div>
+        <form class="ficha-corpo" id="form-prof" novalidate>
+          <div class="campos-duplos">
+            <label class="campo primeiro">
+              <span>Nome como aparece na lista</span>
+              <input id="prof-nome" required maxlength="60" placeholder="Ex.: Profa. Maria Silva">
+            </label>
+            <div class="campo primeiro">
+              <label class="campo-titulo" for="prof-codigo">Código de acesso</label>
+              <div class="codigo-linha">
+                <input id="prof-codigo" type="password" required minlength="6" maxlength="30" autocomplete="new-password" placeholder="Mínimo de 6 caracteres">
+                <button class="btn btn-vidro" id="gerar-codigo" type="button">Gerar</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="atribuir">
+            <div class="atribuir-topo">
+              <span class="campo-titulo">Projetos que vai avaliar</span>
+              <small id="atribuir-total"></small>
+            </div>
+            <label class="campo busca">
+              <span class="visualmente-oculto">Buscar projeto</span>
+              <input id="atribuir-busca" type="search" placeholder="Buscar projeto ou disciplina">
+            </label>
+            <div id="atribuir-lista"></div>
+          </div>
+
+          <div class="ficha-rodape">
+            <button class="btn btn-vidro" id="excluir-prof" type="button" hidden>Excluir professor</button>
+            <div class="ficha-acoes">
+              <button class="btn btn-amber" id="salvar-prof" type="submit">Cadastrar professor</button>
+            </div>
+          </div>
+          <p class="feedback" id="feedback-prof" role="status"></p>
+        </form>
+      </main>
+    </div>
+
+  <!-- Aba: formulários de inscrição -->
+  <div class="painel" id="aba-formularios" hidden>
+    <aside class="lateral">
+      <div class="abas abas-form" role="group" aria-label="Formulário">
+        <button class="aba" type="button" data-tipo="alunos" aria-pressed="true">Alunos</button>
+        <button class="aba" type="button" data-tipo="professores" aria-pressed="false">Professores</button>
+      </div>
+      <div class="relatorio">
+        <p class="rotulo">Inscrições de <span id="form-tipo-nome">alunos</span></p>
+        <p class="relatorio-num"><b id="form-total">–</b><span id="form-total-txt">respostas</span></p>
+        <label class="interruptor">
+          <input type="checkbox" id="form-aberto" role="switch">
+          <span class="interruptor-trilho" aria-hidden="true"></span>
+          <span id="form-aberto-txt">Inscrições fechadas</span>
+        </label>
+        <div class="botoes-exportar">
+          <button class="btn btn-vidro" id="exportar-tabela" type="button">Baixar tabela</button>
+          <button class="btn btn-vidro" id="exportar-pdf" type="button">Baixar PDF</button>
+        </div>
+        <span class="urna-situacao" id="form-situacao"></span>
+        <a class="link link-pequeno" id="form-link" href="inscricoes.html#alunos" target="_blank" rel="noopener">Abrir o formulário público ↗</a>
+      </div>
+      <p class="lista-aviso" id="aviso-form" hidden></p>
+      <ul class="lista-projetos">
+        <li><button class="item-projeto" type="button" data-secao="respostas" aria-current="true">
+          <span class="item-stand">≡</span><span><span class="item-nome">Respostas</span><span class="item-sub">Quem já se inscreveu</span></span>
+        </button></li>
+        <li><button class="item-projeto" type="button" data-secao="perguntas" aria-current="false">
+          <span class="item-stand">?</span><span><span class="item-nome">Editar perguntas</span><span class="item-sub" id="form-qtd-perguntas"></span></span>
+        </button></li>
+      </ul>
+    </aside>
+
+    <main class="ficha">
+      <section id="secao-respostas">
+        <div class="ficha-cabeca">
+          <p class="rotulo">Formulários · Respostas</p>
+          <h1 id="respostas-titulo">Inscrições de alunos</h1>
+          <p>Clique em uma linha para ver a resposta completa.</p>
+        </div>
+        <div class="ficha-corpo">
+          <label class="campo busca primeiro">
+            <span class="visualmente-oculto">Buscar nas respostas</span>
+            <input id="respostas-busca" type="search" placeholder="Buscar nas respostas">
+          </label>
+          <div class="tabela-rolagem" id="respostas-tabela"></div>
+        </div>
+      </section>
+
+      <section id="secao-perguntas" hidden>
+        <div class="ficha-cabeca">
+          <p class="rotulo">Formulários · Perguntas</p>
+          <h1 id="perguntas-titulo">Formulário dos alunos</h1>
+          <p>Mudanças só valem para quem responder depois de salvar. As respostas antigas guardam o texto da pergunta que tinham.</p>
+        </div>
+        <form class="ficha-corpo" id="form-editor" novalidate>
+          <label class="campo primeiro">
+            <span>Título do formulário</span>
+            <input id="editor-titulo" maxlength="100" required>
+          </label>
+          <label class="campo">
+            <span>Texto de apresentação (opcional)</span>
+            <textarea id="editor-descricao" maxlength="600" rows="3"></textarea>
+          </label>
+          <div class="editor-topo">
+            <span class="campo-titulo">Perguntas</span>
+            <button class="btn btn-vidro" id="restaurar-modelo" type="button">Restaurar modelo</button>
+          </div>
+          <ol class="editor-perguntas" id="editor-perguntas"></ol>
+          <button class="btn btn-vidro adicionar-pergunta" id="adicionar-pergunta" type="button">+ Adicionar pergunta</button>
+          <div class="ficha-rodape">
+            <span class="dica-rodape" id="editor-status"></span>
+            <div class="ficha-acoes">
+              <button class="btn btn-amber" id="salvar-form" type="submit">Salvar perguntas</button>
+            </div>
+          </div>
+          <p class="feedback" id="feedback-form" role="status"></p>
+        </form>
+      </section>
+    </main>
   </div>
+  </div><!-- fim de #tela-painel -->
+
+  <dialog id="ver-resposta" class="confirmar resposta-modal">
+    <button class="fechar" id="ver-resposta-fechar" type="button" aria-label="Fechar">×</button>
+    <p class="rotulo" id="ver-resposta-meta"></p>
+    <h2 id="ver-resposta-titulo"></h2>
+    <dl class="resposta-lista" id="ver-resposta-lista"></dl>
+    <div class="ficha-acoes">
+      <button class="btn btn-vidro" id="excluir-resposta" type="button">Excluir resposta</button>
+    </div>
+  </dialog>
 
   <dialog id="confirmar" class="confirmar">
     <h2>Excluir este projeto?</h2>
-    <p><strong id="confirmar-nome"></strong> sairá do site e do placar. As urnas só mudam depois de gravar o código de novo.</p>
+    <p><strong id="confirmar-nome"></strong> sairá do site e do placar, junto com as notas que os professores deram a ele. As urnas só mudam depois de gravar o código de novo.</p>
     <div class="ficha-acoes">
       <button class="btn btn-vidro" id="confirmar-nao" type="button">Cancelar</button>
       <button class="btn btn-amber" id="confirmar-sim" type="button">Excluir</button>
+    </div>
+  </dialog>
+
+  <dialog id="confirmar-prof" class="confirmar">
+    <h2>Excluir este professor?</h2>
+    <p><strong id="confirmar-prof-nome"></strong> perde o acesso, e as notas que ele já deu são apagadas do Firebase. Isso não pode ser desfeito.</p>
+    <div class="ficha-acoes">
+      <button class="btn btn-vidro" id="confirmar-prof-nao" type="button">Cancelar</button>
+      <button class="btn btn-amber" id="confirmar-prof-sim" type="button">Excluir</button>
     </div>
   </dialog>
 
@@ -151,8 +320,13 @@
 
   <script src="js/data.js"></script>
   <script src="js/api.js"></script>
+  <script src="js/senha.js"></script>
   <script src="js/modelo-urna.js"></script>
   <script src="js/gerador-urna.js"></script>
+  <script src="js/relatorio.js"></script>
+  <script src="js/exportar.js"></script>
   <script src="js/petianos.js"></script>
+  <script src="js/petianos-professores.js"></script>
+  <script src="js/petianos-formularios.js"></script>
 </body>
 </html>

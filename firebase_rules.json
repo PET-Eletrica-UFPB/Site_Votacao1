@@ -1,0 +1,63 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "urna": {
+      ".write": "auth != null && auth.uid === 'b2Ejyy4jJCYbx0edNZxB3QAnYuE2'",
+      "ranking_publico": {
+        ".read": true
+      },
+      "multiurna": {
+        "controle": {
+          ".read": true
+        },
+        "dispositivos": {
+          "urna01": {
+            "projetos": {
+              ".read": true
+            }
+          },
+          "urna02": {
+            "projetos": {
+              ".read": true
+            }
+          }
+        },
+        "site": {
+          "projetos": {
+            ".read": true
+          },
+          "professores": {
+            ".read": true
+          },
+          "professores_codigos": {
+            ".read": "auth != null && auth.uid === 'b2Ejyy4jJCYbx0edNZxB3QAnYuE2'"
+          },
+          "avaliacoes": {
+            ".read": "auth != null && auth.uid === 'b2Ejyy4jJCYbx0edNZxB3QAnYuE2'",
+            "$professor": {
+              ".read": "auth != null && auth.uid === $professor",
+              "$projeto": {
+                ".write": "auth != null && auth.uid === $professor && root.child('urna/multiurna/site/professores/' + $professor + '/projetos/' + $projeto).val() === true",
+                ".validate": "newData.hasChildren(['notas', 'media', 'salvoEm']) && newData.child('media').isNumber() && newData.child('media').val() >= 0 && newData.child('media').val() <= 10"
+              }
+            }
+          },
+          "formularios": {
+            ".read": true
+          },
+          "inscricoes": {
+            ".read": "auth != null && auth.uid === 'b2Ejyy4jJCYbx0edNZxB3QAnYuE2'",
+            "$tipo": {
+              ".validate": "$tipo === 'alunos' || $tipo === 'professores'",
+              "$resposta": {
+                ".write": "!data.exists() && newData.exists() && root.child('urna/multiurna/site/formularios/' + $tipo + '/aberto').val() === true",
+                ".validate": "newData.hasChildren(['enviadoEm', 'respostas']) && newData.child('enviadoEm').val() === now"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

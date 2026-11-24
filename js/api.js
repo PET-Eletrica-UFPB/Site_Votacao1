@@ -4,6 +4,11 @@ window.API = (() => {
   // A chave web do Firebase é pública por natureza; quem protege os dados são as regras.
   const CHAVE_WEB = "AIzaSyA27dn6kUmDD_AtaKixZsFK-zE2DMfETP4";
   const UID_PET = "b2Ejyy4jJCYbx0edNZxB3QAnYuE2";
+  const CONTAS = "https://identitytoolkit.googleapis.com/v1/accounts";
+  // Cada professor ganha uma conta própria no Firebase Authentication. O e-mail é
+  // só um identificador interno (nunca recebe mensagens): o professor entra
+  // escolhendo o nome e digitando o código de acesso, que é a senha dessa conta.
+  const DOMINIO_PROFESSOR = "professores.feira-pet-ufpb.example.com";
 
   const { urnas, cursos } = window.FEIRA;
   const CORES = ["amber", "green", "navy"];
@@ -49,7 +54,7 @@ window.API = (() => {
     } catch (erro) {
       throw new Error(
         erro.status === 401
-          ? "Projeto não salvo: o Firebase ainda não liberou o cadastro. Publique as regras de firebase_rules.json."
+          ? "Projeto não salvo: o Firebase ainda não liberou o cadastro. Publique as regras de REGRAS_FIREBASE.md."
           : "Projeto não salvo: não consegui ler o cadastro. Confira a internet e tente de novo."
       );
     }
@@ -124,114 +129,146 @@ window.API = (() => {
     return { votos, urnas: situacao, aberta: controle.value?.votacao_aberta !== false, rodada };
   }
 
-  /* Login dos petianos: conta do Firebase Authentication, a senha nunca é guardada. */
-  const CHAVE_SESSAO = "feira-pet:sessao";
+  /* Contas do Firebase Authentication. A senha nunca é guardada, só os tokens da
+     sessão, e cada área (petianos e professores) tem a sua. */
   const MARGEM_TOKEN = 60000;
-  let sessao = null;
 
-  function gravarSessao(nova) {
-    sessao = nova;
-    try {
-      if (nova) sessionStorage.setItem(CHAVE_SESSAO, JSON.stringify(nova));
-      else sessionStorage.removeItem(CHAVE_SESSAO);
-    } catch {
-      // sem armazenamento, a sessão dura até recarregar a página
+  function criarConta(chave) {
+    let sessao = null;
+
+    function gravar(nova) {
+      sessao = nova;
+      try {
+        if (nova) sessionStorage.setItem(chave, JSON.stringify(nova));
+        else sessionStorage.removeItem(chave);
+      } catch {
+        // sem armazenamento, a sessão dura até recarregar a página
+      }
     }
+
+    function atual() {
+      if (sessao) return sessao;
+      try {
+        sessao = JSON.parse(sessionStorage.getItem(chave));
+      } catch {
+        sessao = null;
+      }
+      return sessao;
+    }
+
+    async function token() {
+      const s = atual();
+      if (!s) throw new Error("Sua sessão terminou. Entre de novo.");
+      if (Date.now() < s.expira - MARGEM_TOKEN) return s.idToken;
+
+      const resposta = await fetch(`https://securetoken.googleapis.com/v1/token?key=${CHAVE_WEB}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: s.refreshToken }),
+      });
+      if (!resposta.ok) {
+        gravar(null);
+        throw new Error("Sua sessão terminou. Entre de novo.");
+      }
+      const dados = await resposta.json();
+      gravar({
+        ...s,
+        idToken: dados.id_token,
+        refreshToken: dados.refresh_token,
+        expira: Date.now() + Number(dados.expires_in) * 1000,
+      });
+      return sessao.idToken;
+    }
+
+    return { gravar, atual, token, sair: () => gravar(null) };
   }
 
-  function sessaoAtual() {
-    if (sessao) return sessao;
-    try {
-      sessao = JSON.parse(sessionStorage.getItem(CHAVE_SESSAO));
-    } catch {
-      sessao = null;
-    }
-    return sessao;
-  }
+  const contaPet = criarConta("feira-pet:sessao");
+  const contaProfessor = criarConta("feira-pet:professor");
 
-  async function entrar(email, senha) {
+  async function chamarContas(acao, corpo) {
     let resposta;
     try {
-      resposta = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${CHAVE_WEB}`, {
+      resposta = await fetch(`${CONTAS}:${acao}?key=${CHAVE_WEB}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password: senha, returnSecureToken: true }),
+        body: JSON.stringify(corpo),
       });
     } catch {
       throw new Error("Sem conexão com o Firebase. Confira a internet e tente de novo.");
     }
-    const dados = await resposta.json();
+    const dados = await resposta.json().catch(() => ({}));
     if (!resposta.ok) {
-      const muitas = dados.error?.message?.startsWith("TOO_MANY_ATTEMPTS");
-      throw new Error(muitas ? "Muitas tentativas. Aguarde um pouco e tente de novo." : "E-mail ou senha incorretos.");
+      const codigo = dados.error?.message || "";
+      throw Object.assign(new Error(codigo || `Erro ${resposta.status}`), { codigo });
     }
-    if (dados.localId !== UID_PET) throw new Error("Esta conta não tem permissão para gerenciar a feira.");
-    gravarSessao({
-      email: dados.email,
-      idToken: dados.idToken,
-      refreshToken: dados.refreshToken,
-      expira: Date.now() + Number(dados.expiresIn) * 1000,
-    });
-    return sessao;
+    return dados;
   }
 
-  const sair = () => gravarSessao(null);
+  async function login(email, senha, msgErrada) {
+    try {
+      return await chamarContas("signInWithPassword", { email, password: senha, returnSecureToken: true });
+    } catch (erro) {
+      if (!erro.codigo) throw erro;
+      throw new Error(erro.codigo.startsWith("TOO_MANY_ATTEMPTS") ? "Muitas tentativas. Aguarde um pouco e tente de novo." : msgErrada);
+    }
+  }
+
+  const sessaoDe = (dados, extra = {}) => ({
+    ...extra,
+    email: dados.email,
+    idToken: dados.idToken,
+    refreshToken: dados.refreshToken,
+    expira: Date.now() + Number(dados.expiresIn) * 1000,
+  });
+
+  /* Login dos petianos */
+  async function entrar(email, senha) {
+    const dados = await login(email, senha, "E-mail ou senha incorretos.");
+    if (dados.localId !== UID_PET) throw new Error("Esta conta não tem permissão para gerenciar a feira.");
+    contaPet.gravar(sessaoDe(dados));
+    return contaPet.atual();
+  }
 
   // O Firebase envia um link para criar a nova senha, sempre para o e-mail do PET.
   async function esqueciSenha() {
-    let resposta;
     try {
-      resposta = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${CHAVE_WEB}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ requestType: "PASSWORD_RESET", email: window.FEIRA.emailPet }),
-      });
-    } catch {
-      throw new Error("Sem conexão com o Firebase. Confira a internet e tente de novo.");
-    }
-    if (!resposta.ok) {
-      const dados = await resposta.json().catch(() => ({}));
-      const limite = /LIMIT|TOO_MANY/.test(dados.error?.message || "");
-      throw new Error(limite ? "Muitos pedidos. Aguarde um pouco e tente de novo." : "Não consegui enviar o e-mail. Tente de novo.");
+      await chamarContas("sendOobCode", { requestType: "PASSWORD_RESET", email: window.FEIRA.emailPet });
+    } catch (erro) {
+      if (!erro.codigo) throw erro;
+      throw new Error(/LIMIT|TOO_MANY/.test(erro.codigo) ? "Muitos pedidos. Aguarde um pouco e tente de novo." : "Não consegui enviar o e-mail. Tente de novo.");
     }
     return window.FEIRA.emailPet;
   }
 
-  async function tokenValido() {
-    const atual = sessaoAtual();
-    if (!atual) throw new Error("Sua sessão terminou. Entre de novo.");
-    if (Date.now() < atual.expira - MARGEM_TOKEN) return atual.idToken;
-
-    const resposta = await fetch(`https://securetoken.googleapis.com/v1/token?key=${CHAVE_WEB}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: atual.refreshToken }),
-    });
-    if (!resposta.ok) {
-      sair();
-      throw new Error("Sua sessão terminou. Entre de novo.");
+  async function pedir(conta, metodo, caminho, corpo) {
+    const token = await conta.token();
+    let resposta;
+    try {
+      resposta = await fetch(`${BANCO}${caminho}.json?auth=${encodeURIComponent(token)}`, {
+        method: metodo,
+        headers: { "Content-Type": "application/json" },
+        body: corpo === undefined ? undefined : JSON.stringify(corpo),
+      });
+    } catch {
+      throw new Error("Sem conexão com o Firebase. Confira a internet e tente de novo.");
     }
-    const dados = await resposta.json();
-    gravarSessao({
-      ...atual,
-      idToken: dados.id_token,
-      refreshToken: dados.refresh_token,
-      expira: Date.now() + Number(dados.expires_in) * 1000,
-    });
-    return sessao.idToken;
+    if (resposta.status === 401) {
+      throw new Error("O Firebase recusou o acesso. Confira se as regras de REGRAS_FIREBASE.md já foram publicadas.");
+    }
+    if (!resposta.ok) throw new Error(`O Firebase recusou a alteração (erro ${resposta.status}).`);
+    return resposta.json();
   }
 
-  async function escrever(metodo, caminho, corpo) {
-    const token = await tokenValido();
-    const resposta = await fetch(`${BANCO}${caminho}.json?auth=${encodeURIComponent(token)}`, {
-      method: metodo,
-      headers: { "Content-Type": "application/json" },
-      body: corpo === undefined ? undefined : JSON.stringify(corpo),
-    });
-    if (!resposta.ok) throw new Error(`O Firebase recusou a alteração (erro ${resposta.status}).`);
-  }
+  const escrever = (metodo, caminho, corpo) => pedir(contaPet, metodo, caminho, corpo);
+  // Grava vários caminhos de /site de uma vez: ou tudo entra, ou nada muda.
+  const atualizarSite = (mudancas) => escrever("PATCH", "/site", mudancas);
 
   /* Cadastro */
+  // Limites das urnas, os mesmos conferidos ao gerar o .ino.
+  const GERADOR_MAX_POR_CURSO = 50;
+  const GERADOR_MAX_NUMERO = 99;
+
   function proximoNumero(lista, curso) {
     const usados = lista.filter((p) => p.curso === curso).map((p) => p.numero);
     if (usados.length >= GERADOR_MAX_POR_CURSO) {
@@ -243,9 +280,25 @@ window.API = (() => {
     throw new Error("Não há número livre para este curso.");
   }
 
-  // Limites das urnas, os mesmos conferidos ao gerar o .ino.
-  const GERADOR_MAX_POR_CURSO = 50;
-  const GERADOR_MAX_NUMERO = 99;
+  // Quando o código de um projeto muda (ou ele sai), leva junto as atribuições e notas.
+  async function mudancasDeCodigo(antigo, novo) {
+    const [professores, avaliacoes] = await Promise.all([
+      lerPublico("/site/professores").then((d) => d || {}),
+      escrever("GET", "/site/avaliacoes").then((d) => d || {}),
+    ]);
+    const mudancas = {};
+    for (const [uid, prof] of Object.entries(professores)) {
+      if (!prof?.projetos?.[antigo]) continue;
+      mudancas[`professores/${uid}/projetos/${antigo}`] = null;
+      if (novo) mudancas[`professores/${uid}/projetos/${novo}`] = true;
+    }
+    for (const [uid, notas] of Object.entries(avaliacoes)) {
+      if (!notas?.[antigo]) continue;
+      mudancas[`avaliacoes/${uid}/${antigo}`] = null;
+      if (novo) mudancas[`avaliacoes/${uid}/${novo}`] = notas[antigo];
+    }
+    return mudancas;
+  }
 
   // codigoAtual: projeto em edição. Trocar de curso muda o número na urna.
   async function salvarProjeto(dados, codigoAtual) {
@@ -254,42 +307,189 @@ window.API = (() => {
     const numero = atual && atual.curso === dados.curso ? atual.numero : proximoNumero(lista, dados.curso);
     const codigo = codigoDe(dados.curso, numero);
 
-    await escrever("PUT", `/site/projetos/${codigo}`, { ...dados, numero });
-    if (atual && atual.codigo !== codigo) await escrever("DELETE", `/site/projetos/${atual.codigo}`);
+    const mudancas = { [`projetos/${codigo}`]: { ...dados, numero } };
+    if (atual && atual.codigo !== codigo) {
+      mudancas[`projetos/${atual.codigo}`] = null;
+      Object.assign(mudancas, await mudancasDeCodigo(atual.codigo, codigo));
+    }
+    await atualizarSite(mudancas);
     return completarProjeto({ ...dados, numero });
   }
 
-  const removerProjeto = (codigo) => escrever("DELETE", `/site/projetos/${codigo}`);
+  async function removerProjeto(codigo) {
+    await atualizarSite({ [`projetos/${codigo}`]: null, ...(await mudancasDeCodigo(codigo, null)) });
+  }
 
-  /* Notas: ficam só neste navegador por enquanto. */
-  const CHAVE_NOTAS = "feira-pet:notas";
+  /* Professores (cadastrados pelos petianos) */
+  function listaDeProfessores(dados) {
+    return Object.entries(dados || {})
+      .filter(([, p]) => p?.nome && p?.login)
+      .map(([uid, p]) => ({ uid, nome: p.nome, login: p.login, projetos: Object.keys(p.projetos || {}) }))
+      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  }
 
-  function lerNotas() {
+  const listarProfessores = async () => listaDeProfessores(await lerPublico("/site/professores"));
+
+  // Só os petianos leem os códigos, para poder lembrar um professor que esqueceu o dele.
+  const codigosDosProfessores = async () => (await escrever("GET", "/site/professores_codigos")) || {};
+
+  function conferirCodigo(codigo) {
+    if (String(codigo).length < 6) throw new Error("O código de acesso precisa ter pelo menos 6 caracteres.");
+  }
+
+  const projetosComoObjeto = (codigos) => Object.fromEntries(codigos.map((c) => [c, true]));
+
+  async function cadastrarProfessor({ nome, codigo, projetos }) {
+    conferirCodigo(codigo);
+    const login = `prof-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}@${DOMINIO_PROFESSOR}`;
+    let conta;
     try {
-      return JSON.parse(localStorage.getItem(CHAVE_NOTAS)) || {};
+      conta = await chamarContas("signUp", { email: login, password: codigo, returnSecureToken: true });
+    } catch (erro) {
+      if (/OPERATION_NOT_ALLOWED|ADMIN_ONLY/.test(erro.codigo)) {
+        throw new Error("O Firebase não está deixando criar contas. Ative o login por e-mail/senha no Firebase Authentication.");
+      }
+      if (/WEAK_PASSWORD/.test(erro.codigo)) throw new Error("Código fraco demais: use pelo menos 6 caracteres.");
+      throw new Error(`Não consegui criar a conta do professor (${erro.message}).`);
+    }
+    try {
+      await atualizarSite({
+        [`professores/${conta.localId}`]: { nome, login, projetos: projetosComoObjeto(projetos) },
+        [`professores_codigos/${conta.localId}`]: codigo,
+      });
+    } catch (erro) {
+      // sem o cadastro no banco a conta não serve para nada: desfaz
+      chamarContas("delete", { idToken: conta.idToken }).catch(() => {});
+      throw erro;
+    }
+    return conta.localId;
+  }
+
+  // Entra na conta do professor com o código atual para trocar a senha ou apagá-la.
+  async function contaDoProfessor(uid) {
+    const [prof, codigo] = await Promise.all([lerPublico(`/site/professores/${uid}`), escrever("GET", `/site/professores_codigos/${uid}`)]);
+    if (!prof?.login || !codigo) return null;
+    try {
+      return await chamarContas("signInWithPassword", { email: prof.login, password: codigo, returnSecureToken: true });
     } catch {
-      return {};
+      return null;
     }
   }
 
-  function notasDoProfessor(professor) {
-    return lerNotas()[professor] || {};
+  async function atualizarProfessor(uid, { nome, codigo, projetos }) {
+    conferirCodigo(codigo);
+    const codigoAntigo = await escrever("GET", `/site/professores_codigos/${uid}`);
+    if (codigo !== codigoAntigo) {
+      const conta = await contaDoProfessor(uid);
+      if (!conta) throw new Error("Não consegui trocar o código deste professor. Exclua e cadastre de novo.");
+      await chamarContas("update", { idToken: conta.idToken, password: codigo, returnSecureToken: false });
+    }
+    await atualizarSite({
+      [`professores/${uid}/nome`]: nome,
+      [`professores/${uid}/projetos`]: projetosComoObjeto(projetos),
+      [`professores_codigos/${uid}`]: codigo,
+    });
   }
 
-  function salvarNota(professor, projetoId, avaliacao) {
-    const todas = lerNotas();
-    todas[professor] = { ...todas[professor], [projetoId]: avaliacao };
+  async function removerProfessor(uid) {
+    const conta = await contaDoProfessor(uid);
+    if (conta) await chamarContas("delete", { idToken: conta.idToken }).catch(() => {});
+    await atualizarSite({ [`professores/${uid}`]: null, [`professores_codigos/${uid}`]: null, [`avaliacoes/${uid}`]: null });
+  }
+
+  // Todas as notas: { uid: { "5A": { notas, comentario, media, salvoEm } } }
+  const lerAvaliacoes = async () => (await escrever("GET", "/site/avaliacoes")) || {};
+
+  /* Área do professor */
+  async function entrarProfessor(uid, codigo) {
+    const prof = await lerPublico(`/site/professores/${uid}`);
+    if (!prof?.login) throw new Error("Professor não encontrado. Fale com a organização.");
+    const dados = await login(prof.login, codigo, "Código de acesso incorreto.");
+    if (dados.localId !== uid) throw new Error("Código de acesso incorreto.");
+    contaProfessor.gravar(sessaoDe(dados, { uid, nome: prof.nome }));
+    return contaProfessor.atual();
+  }
+
+  // Dados do professor logado, sempre relidos (os petianos podem mudar a lista).
+  async function meuPerfil() {
+    const { uid } = contaProfessor.atual();
+    const prof = await lerPublico(`/site/professores/${uid}`);
+    if (!prof) throw new Error("Seu cadastro não foi encontrado. Fale com a organização.");
+    return { uid, nome: prof.nome, projetos: Object.keys(prof.projetos || {}) };
+  }
+
+  async function minhasAvaliacoes() {
+    const { uid } = contaProfessor.atual();
+    return (await pedir(contaProfessor, "GET", `/site/avaliacoes/${uid}`)) || {};
+  }
+
+  async function salvarAvaliacao(codigo, avaliacao) {
+    const { uid } = contaProfessor.atual();
+    await pedir(contaProfessor, "PUT", `/site/avaliacoes/${uid}/${codigo}`, avaliacao);
+  }
+
+  /* Inscrições: um formulário para alunos e outro para professores, montados pelos petianos. */
+  const TIPOS_FORMULARIO = ["alunos", "professores"];
+
+  function conferirTipo(tipo) {
+    if (!TIPOS_FORMULARIO.includes(tipo)) throw new Error(`Formulário desconhecido: ${tipo}`);
+  }
+
+  // Formulário como está no Firebase, ou o modelo de data.js se ainda não foi salvo.
+  async function lerFormulario(tipo) {
+    conferirTipo(tipo);
+    const salvo = await lerPublico(`/site/formularios/${tipo}`);
+    const base = salvo || { ...window.FEIRA.formulariosPadrao[tipo], aberto: false };
+    return { ...base, perguntas: (base.perguntas || []).filter(Boolean), salvo: !!salvo };
+  }
+
+  async function salvarFormulario(tipo, { titulo, descricao, aberto, perguntas }) {
+    conferirTipo(tipo);
+    await escrever("PUT", `/site/formularios/${tipo}`, { titulo, descricao, aberto: !!aberto, perguntas });
+  }
+
+  async function definirInscricoesAbertas(tipo, aberto) {
+    conferirTipo(tipo);
+    await escrever("PUT", `/site/formularios/${tipo}/aberto`, !!aberto);
+  }
+
+  // Envio público: ninguém precisa entrar para se inscrever, mas só se o formulário estiver aberto.
+  async function enviarInscricao(tipo, respostas) {
+    conferirTipo(tipo);
+    let resposta;
     try {
-      localStorage.setItem(CHAVE_NOTAS, JSON.stringify(todas));
-      return true;
+      resposta = await fetch(`${BANCO}/site/inscricoes/${tipo}.json`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enviadoEm: { ".sv": "timestamp" }, respostas }),
+      });
     } catch {
-      return false;
+      throw new Error("Sem conexão. Confira a internet e tente de novo; suas respostas continuam aqui.");
     }
+    if (resposta.status === 401) throw new Error("As inscrições foram fechadas pela organização.");
+    if (!resposta.ok) throw new Error(`Não consegui enviar (erro ${resposta.status}). Tente de novo.`);
+  }
+
+  // Respostas: { id: { enviadoEm, respostas: { idPergunta: { p: texto da pergunta, v: valor } } } }
+  async function lerInscricoes(tipo) {
+    conferirTipo(tipo);
+    const dados = (await escrever("GET", `/site/inscricoes/${tipo}`)) || {};
+    return Object.entries(dados)
+      .map(([id, r]) => ({ id, enviadoEm: Number(r?.enviadoEm) || 0, respostas: r?.respostas || {} }))
+      .sort((a, b) => a.enviadoEm - b.enviadoEm);
+  }
+
+  async function removerInscricao(tipo, id) {
+    conferirTipo(tipo);
+    await escrever("DELETE", `/site/inscricoes/${tipo}/${id}`);
   }
 
   return {
     esc, carregarProjetos, lerCadastro, listasGravadas, buscarVotos,
-    entrar, sair, esqueciSenha, sessaoAtual, salvarProjeto, removerProjeto,
-    notasDoProfessor, salvarNota,
+    entrar, sair: contaPet.sair, esqueciSenha, sessaoAtual: contaPet.atual, salvarProjeto, removerProjeto,
+    listarProfessores, codigosDosProfessores, cadastrarProfessor, atualizarProfessor, removerProfessor, lerAvaliacoes,
+    entrarProfessor, sairProfessor: contaProfessor.sair, sessaoProfessor: contaProfessor.atual,
+    meuPerfil, minhasAvaliacoes, salvarAvaliacao,
+    lerFormulario, salvarFormulario, definirInscricoesAbertas, enviarInscricao, lerInscricoes, removerInscricao,
   };
 })();
