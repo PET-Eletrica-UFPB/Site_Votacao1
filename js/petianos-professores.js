@@ -73,6 +73,7 @@ window.PainelProfessores = (() => {
                   <span>
                     <span class="item-nome">${esc(p.nome)}</span>
                     <span class="item-sub">${total ? `${total} projeto${total > 1 ? "s" : ""} · ${completo ? "tudo avaliado" : `${total - feitos} pendente${total - feitos > 1 ? "s" : ""}`}` : "Nenhum projeto atribuído"}</span>
+                    ${total ? `<span class="item-sub item-disciplinas">${disciplinasDoProfessor(p).map(esc).join(" · ")}</span>` : ""}
                   </span>
                 </button>
               </li>`;
@@ -122,14 +123,34 @@ window.PainelProfessores = (() => {
     $("feedback-prof").classList.toggle("erro", erro);
   }
 
-  // Quantos professores já avaliam cada projeto, sem contar o que está aberto.
+  // Quem mais avalia cada projeto, sem contar o professor que está aberto: { "5A": ["Prof. X", ...] }
   function avaliadoresPorProjeto() {
-    const conta = {};
+    const quem = {};
     for (const p of professores) {
       if (p.uid === editandoUid) continue;
-      for (const c of p.projetos) conta[c] = (conta[c] || 0) + 1;
+      for (const c of p.projetos) (quem[c] ||= []).push(p.nome);
     }
-    return conta;
+    return quem;
+  }
+
+  // Disciplinas de um professor, pelos projetos atribuídos a ele.
+  function disciplinasDoProfessor(prof) {
+    const nomes = new Set(projetos.filter((p) => prof.projetos.includes(p.codigo)).map(disciplinaDe));
+    return [...nomes].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }
+
+  // Projetos marcados que outro professor já avalia, agrupados por disciplina.
+  function sobreposicoes() {
+    const outros = avaliadoresPorProjeto();
+    const porDisciplina = new Map();
+    for (const p of projetos) {
+      if (!selecionados.has(p.codigo) || !outros[p.codigo]) continue;
+      const d = disciplinaDe(p);
+      if (!porDisciplina.has(d)) porDisciplina.set(d, { projetos: 0, nomes: new Set() });
+      porDisciplina.get(d).projetos++;
+      outros[p.codigo].forEach((n) => porDisciplina.get(d).nomes.add(n));
+    }
+    return porDisciplina;
   }
 
   function renderAtribuir() {
@@ -155,28 +176,44 @@ window.PainelProfessores = (() => {
       return;
     }
 
-    $("atribuir-lista").innerHTML = [...grupos.entries()]
+    const esconderCobertas = $("esconder-cobertas").checked;
+    const htmlGrupos = [...grupos.entries()]
       .sort(([a], [b]) => a.localeCompare(b, "pt-BR"))
       .map(([disciplina, lista]) => {
         const marcados = lista.filter((p) => selecionados.has(p.codigo)).length;
+        // Quem já avalia esta disciplina e em quantos dos projetos dela.
+        const porProfessor = new Map();
+        for (const p of lista) for (const nome of outros[p.codigo] || []) porProfessor.set(nome, (porProfessor.get(nome) || 0) + 1);
+        const cobertos = lista.filter((p) => outros[p.codigo]).length;
+        const situacao = !cobertos ? "livre" : cobertos === lista.length ? "coberta" : "parcial";
+        if (esconderCobertas && situacao === "coberta" && !marcados) return "";
+        const rotulo = { livre: "Livre", parcial: `${cobertos}/${lista.length} com avaliador`, coberta: "Já tem avaliador" }[situacao];
         return `
-          <fieldset class="grupo-atribuir">
+          <fieldset class="grupo-atribuir ${situacao}">
             <legend>
               <label class="marcar-grupo">
                 <input type="checkbox" data-grupo="${esc(disciplina)}" ${marcados === lista.length ? "checked" : ""} data-parcial="${marcados > 0 && marcados < lista.length}">
                 <span>${esc(disciplina)}</span>
               </label>
               <small>${marcados}/${lista.length}</small>
+              <span class="situacao-disciplina ${situacao}">${rotulo}</span>
             </legend>
+            ${
+              porProfessor.size
+                ? `<p class="ja-avaliam">Já avaliam esta disciplina: ${[...porProfessor.entries()]
+                    .map(([nome, n]) => `<b>${esc(nome)}</b> (${n}/${lista.length})`)
+                    .join(", ")}</p>`
+                : ""
+            }
             ${lista
               .map((p) => {
                 const nota = editandoUid && notaDe(editandoUid, p.codigo);
-                const n = outros[p.codigo] || 0;
+                const quem = outros[p.codigo] || [];
                 return `
-                  <label class="item-atribuir">
+                  <label class="item-atribuir ${quem.length ? "tem-outro" : ""}">
                     <input type="checkbox" value="${esc(p.codigo)}" ${selecionados.has(p.codigo) ? "checked" : ""}>
                     <span class="item-stand">${esc(p.codigo)}</span>
-                    <span class="item-atribuir-nome">${esc(p.nome)}<small>${n ? `${n} outro${n > 1 ? "s" : ""} avaliador${n > 1 ? "es" : ""}` : "Nenhum outro avaliador"}</small></span>
+                    <span class="item-atribuir-nome">${esc(p.nome)}<small>${quem.length ? `Já avaliado por ${quem.map(esc).join(", ")}` : "Nenhum outro avaliador"}</small></span>
                     ${nota ? `<span class="item-nota">${fmtNota(nota.media)}</span>` : selecionados.has(p.codigo) && editandoUid ? `<span class="item-nota pendente">Pendente</span>` : ""}
                   </label>`;
               })
@@ -184,6 +221,7 @@ window.PainelProfessores = (() => {
           </fieldset>`;
       })
       .join("");
+    $("atribuir-lista").innerHTML = htmlGrupos || `<p class="lista-vazia">Todas as disciplinas já têm avaliador. Desmarque “Esconder” para ver todas.</p>`;
 
     document.querySelectorAll('[data-parcial="true"]').forEach((c) => {
       c.indeterminate = true;
@@ -208,7 +246,7 @@ window.PainelProfessores = (() => {
   });
 
   $("form-prof").addEventListener("input", (e) => {
-    if (e.target.id === "atribuir-busca") return renderAtribuir();
+    if (e.target.id === "atribuir-busca" || e.target.id === "esconder-cobertas") return renderAtribuir();
     alterado = true;
     aviso("");
   });
@@ -243,6 +281,15 @@ window.PainelProfessores = (() => {
     if (codigo.length < 6) return aviso("O código de acesso precisa ter pelo menos 6 caracteres.", true);
     const repetido = professores.find((p) => p.uid !== editandoUid && p.nome.toLowerCase() === nome.toLowerCase());
     if (repetido) return aviso("Já existe um professor com esse nome. Use um nome diferente para não confundir na hora do login.", true);
+
+    // Avisa antes de pôr dois professores na mesma disciplina.
+    const repetidas = sobreposicoes();
+    if (repetidas.size) {
+      const lista = [...repetidas.entries()]
+        .map(([d, { projetos: n, nomes }]) => `• ${d} (${n} projeto${n > 1 ? "s" : ""}): já com ${[...nomes].join(", ")}`)
+        .join("\n");
+      if (!confirm(`Alguns projetos marcados já têm outro avaliador:\n\n${lista}\n\nSalvar mesmo assim?`)) return;
+    }
 
     const dados = { nome, codigo, projetos: [...selecionados].filter((c) => existentes().has(c)) };
     const eraNovo = !editandoUid;
