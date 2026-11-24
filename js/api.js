@@ -570,7 +570,14 @@ window.API = (() => {
       escrever("GET", "/site/inscricoes/escolas"),
     ]);
     const n = (o) => Object.keys(o || {}).length;
+    let votos = null;
+    try {
+      votos = Object.values((await buscarVotos()).votos).reduce((s, v) => s + v, 0);
+    } catch {
+      // sem o controle das urnas, a contagem fica em branco
+    }
     return {
+      votacao: votos,
       inscricoesAlunos: n(alunos),
       inscricoesProfessores: n(profs),
       inscricoesEscolas: n(escolas),
@@ -604,6 +611,25 @@ window.API = (() => {
       for (const p of await listarProfessores()) mudancas[`professores/${p.uid}/projetos`] = null;
     }
     if (Object.keys(mudancas).length) await atualizarSite(mudancas);
+    if (escolha.votacao) await zerarVotacao();
+  }
+
+  // Igual ao "Zerar votação" do modo operador: cria uma rodada nova em /controle.
+  // O site passa a ignorar os votos da rodada antiga na hora, e cada urna zera
+  // a própria contagem assim que sincroniza com o Firebase.
+  async function zerarVotacao() {
+    let aberta = true;
+    try {
+      aberta = (await lerPublico("/controle"))?.votacao_aberta !== false;
+    } catch {
+      // sem leitura, a rodada nova começa aberta, como na urna
+    }
+    await escrever("PUT", "/controle", {
+      rodada_id: `R_site_${Date.now().toString(36)}`,
+      votacao_aberta: aberta,
+      origem: "site",
+      ultima_alteracao: { ".sv": "timestamp" },
+    });
   }
 
   return {

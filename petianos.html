@@ -370,6 +370,11 @@
           <h2><span>2</span> Escolha o que apagar</h2>
           <div class="limpar-opcoes" id="limpar-opcoes">
             <label class="limpar-opcao">
+              <input type="checkbox" data-parte="votacao">
+              <span><b>Votação anterior</b><small>Zera o placar e o pódio, como o “Zerar votação” da urna. As urnas zeram sozinhas quando sincronizarem; as que estiverem desligadas, ao voltar.</small></span>
+              <em data-conta="votacao">–</em>
+            </label>
+            <label class="limpar-opcao">
               <input type="checkbox" data-parte="inscricoesAlunos" checked>
               <span><b>Respostas do formulário dos alunos</b><small>As inscrições de projetos recebidas pelo site.</small></span>
               <em data-conta="inscricoesAlunos">–</em>
@@ -400,7 +405,7 @@
               <em data-conta="professores">–</em>
             </label>
           </div>
-          <p class="limpar-nota">Os votos ficam nas urnas: para zerá-los, use "Zerar votação" no modo operador de uma urna.</p>
+          <p class="limpar-nota">A contagem de votos é a da rodada atual das urnas, somando as duas.</p>
         </section>
 
         <section class="passo">

@@ -2,6 +2,7 @@
 (() => {
   const PALAVRA = "APAGAR";
   const NOMES = {
+    votacao: "votação anterior",
     inscricoesAlunos: "respostas dos alunos",
     inscricoesProfessores: "respostas dos professores",
     inscricoesEscolas: "respostas das escolas",
@@ -42,7 +43,7 @@
       contagem = await API.contarDados();
       for (const [parte, n] of Object.entries(contagem)) {
         const el = document.querySelector(`[data-conta="${parte}"]`);
-        if (el) el.textContent = n;
+        if (el) el.textContent = n ?? "–";
       }
     } catch (erro) {
       $("limpar-feedback").textContent = `Não consegui contar os dados. ${erro.message}`;
