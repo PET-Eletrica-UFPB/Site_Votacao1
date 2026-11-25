@@ -270,6 +270,7 @@ $("urnas-ino").addEventListener("click", (e) => {
   urnaEscolhida = urnas.find((u) => u.id === botao.dataset.urna);
   $("baixar-titulo").textContent = `Baixar código da ${urnaEscolhida.nome}`;
   $("form-baixar").reset();
+  $("baixar-erro").textContent = "";
   $("baixar").showModal();
 });
 
@@ -277,6 +278,13 @@ $("baixar-cancelar").addEventListener("click", () => $("baixar").close());
 
 $("form-baixar").addEventListener("submit", async (e) => {
   e.preventDefault();
+  // A senha só fica dentro do arquivo: digitada duas vezes para não sair errada sem ninguém perceber.
+  if ($("baixar-operador").value !== $("baixar-operador2").value) {
+    $("baixar-erro").textContent = "As duas senhas do modo operador não são iguais. Digite de novo.";
+    $("baixar-operador2").focus();
+    return;
+  }
+  $("baixar-erro").textContent = "";
   const senhas = { senhaOperador: $("baixar-operador").value, senhaFirebase: $("baixar-firebase").value };
   $("form-baixar").reset();
   $("baixar").close();

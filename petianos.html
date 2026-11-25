@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20261126q">
+  <link rel="stylesheet" href="css/style.css?v=20261126r">
 </head>
 <body>
   <div class="login" id="tela-login">
@@ -690,6 +690,12 @@
         <input id="baixar-operador" type="password" inputmode="numeric" pattern="[0-9]{1,8}" maxlength="8" required autocomplete="off" placeholder="Só números, até 8 dígitos">
       </label>
       <label class="campo">
+        <span>Repita a senha do modo operador</span>
+        <input id="baixar-operador2" type="password" inputmode="numeric" pattern="[0-9]{1,8}" maxlength="8" required autocomplete="off" placeholder="A mesma senha de cima">
+        <small>Anote a senha antes de baixar: o site não guarda cópia dela. Use a mesma nas duas urnas.</small>
+      </label>
+      <p class="login-erro" id="baixar-erro" role="alert"></p>
+      <label class="campo">
         <span>Senha da conta do Firebase (opcional)</span>
         <input id="baixar-firebase" type="password" autocomplete="off" placeholder="Deixe em branco para preencher no Arduino IDE">
         <small>Em branco, a urna funciona offline até você preencher FIREBASE_PASSWORD no código.</small>
@@ -706,26 +712,26 @@
     </form>
   </dialog>
 
-  <script src="js/data.js?v=20261126q"></script>
-  <script src="js/api.js?v=20261126q"></script>
-  <script src="js/senha.js?v=20261126q"></script>
-  <script src="js/modelo-urna.js?v=20261126q"></script>
-  <script src="js/gerador-urna.js?v=20261126q"></script>
-  <script src="js/relatorio.js?v=20261126q"></script>
-  <script src="js/exportar.js?v=20261126q"></script>
-  <script src="js/planta.js?v=20261126q"></script>
-  <script src="js/placas.js?v=20261126q"></script>
-  <script src="js/petianos.js?v=20261126q"></script>
-  <script src="js/petianos-professores.js?v=20261126q"></script>
-  <script src="js/petianos-distribuir.js?v=20261126q"></script>
-  <script src="js/petianos-formularios.js?v=20261126q"></script>
-  <script src="js/nomes.js?v=20261126q"></script>
-  <script src="js/petianos-importar.js?v=20261126q"></script>
-  <script src="js/petianos-planilha.js?v=20261126q"></script>
-  <script src="js/petianos-limpar.js?v=20261126q"></script>
-  <script src="js/feiras-dados.js?v=20261126q"></script>
-  <script src="js/petianos-feiras.js?v=20261126q"></script>
-  <script src="js/petianos-frequencia.js?v=20261126q"></script>
-  <script src="js/petianos-planta.js?v=20261126q"></script>
+  <script src="js/data.js?v=20261126r"></script>
+  <script src="js/api.js?v=20261126r"></script>
+  <script src="js/senha.js?v=20261126r"></script>
+  <script src="js/modelo-urna.js?v=20261126r"></script>
+  <script src="js/gerador-urna.js?v=20261126r"></script>
+  <script src="js/relatorio.js?v=20261126r"></script>
+  <script src="js/exportar.js?v=20261126r"></script>
+  <script src="js/planta.js?v=20261126r"></script>
+  <script src="js/placas.js?v=20261126r"></script>
+  <script src="js/petianos.js?v=20261126r"></script>
+  <script src="js/petianos-professores.js?v=20261126r"></script>
+  <script src="js/petianos-distribuir.js?v=20261126r"></script>
+  <script src="js/petianos-formularios.js?v=20261126r"></script>
+  <script src="js/nomes.js?v=20261126r"></script>
+  <script src="js/petianos-importar.js?v=20261126r"></script>
+  <script src="js/petianos-planilha.js?v=20261126r"></script>
+  <script src="js/petianos-limpar.js?v=20261126r"></script>
+  <script src="js/feiras-dados.js?v=20261126r"></script>
+  <script src="js/petianos-feiras.js?v=20261126r"></script>
+  <script src="js/petianos-frequencia.js?v=20261126r"></script>
+  <script src="js/petianos-planta.js?v=20261126r"></script>
 </body>
 </html>
