@@ -1,6 +1,6 @@
 // Planta da feira, no modelo da planta 2026.2 (mesma disposição das mesas).
-// Os locais são numerados: salas 1 a 6 do prédio e os corredores 7 a 9 com mesas.
-// Cada disciplina vai para o automático, para um local escolhido ou fica fora (auditório).
+// As salas do prédio são numeradas de 1 a 6; o pátio não tem número (as cores separam as disciplinas).
+// Cada disciplina vai para o pátio, para uma sala escolhida ou fica fora (auditório).
 // O mesmo desenho sai no PDF (jsPDF) e na prévia da Área dos Petianos (canvas).
 window.Planta = (() => {
   const PAGINA = [1440, 810]; // pt, 16:9 como a original
@@ -57,7 +57,7 @@ window.Planta = (() => {
   ].map(([n, x0, y0, x1, y1, tx, ty, tamanho]) => ({ n, x0, y0, x1, y1, rotulo: { x: tx, topo: ty, tamanho } }));
   const MESA = new Map(MESAS.map((m) => [m.n, m]));
 
-  /* Locais numerados. curso: área a que pertencem (null = serve aos dois).
+  /* Locais: salas numeradas de 1 a 6 e as três partes do pátio. curso: área a que pertencem (null = serve aos dois).
      caixa: interior da sala (onde as mesas são desenhadas se ela não tem mesas fixas). selo: onde fica o número. */
   const LOCAIS = [
     { id: 1, nome: "Sala 1 (esquerda, em cima)", mesas: [29, 30, 31, 32, 33, 34, 35, 36, 37], curso: "renovaveis", caixa: [62.5, 44, 295, 218.7], selo: [78, 61] },
@@ -66,9 +66,10 @@ window.Planta = (() => {
     { id: 4, nome: "Sala 4 (esquerda, embaixo)", mesas: [], curso: null, porta: "dir", caixa: [62.5, 476.6, 295, 569.9], selo: [80, 495] },
     { id: 5, nome: "Sala 5 (direita, em cima)", mesas: [10, 11, 12, 13, 14], curso: "eletrica", caixa: [697, 44, 929.5, 130.4], selo: [717, 62] },
     { id: 6, nome: "Sala 6 (direita, embaixo)", mesas: [], curso: null, porta: "esq", caixa: [697, 389, 929.5, 569.9], selo: [711, 407] },
-    { id: 7, nome: "Corredor 7 (lado Renováveis)", mesas: [21, 22, 23, 24, 25, 26, 27, 28], curso: "renovaveis", selo: [393, 141] },
-    { id: 8, nome: "Fileira 8 (no alto do pátio)", mesas: [15, 16, 17, 18, 19, 20], curso: null, selo: [636, 96] },
-    { id: 9, nome: "Corredor 9 (lado Elétrica)", mesas: [1, 2, 3, 4, 5, 6, 7, 8, 9], curso: "eletrica", selo: [656, 170] },
+    // Pátio: sem número (as cores já separam as disciplinas); só o automático usa.
+    { id: 7, nome: "Pátio (lado Renováveis)", mesas: [21, 22, 23, 24, 25, 26, 27, 28], curso: "renovaveis", patio: true },
+    { id: 8, nome: "Pátio (fileira do alto)", mesas: [15, 16, 17, 18, 19, 20], curso: null, patio: true },
+    { id: 9, nome: "Pátio (lado Elétrica)", mesas: [1, 2, 3, 4, 5, 6, 7, 8, 9], curso: "eletrica", patio: true },
   ];
   const LOCAL = new Map(LOCAIS.map((l) => [l.id, l]));
   const TOTAL_MESAS = MESAS.length;
@@ -144,8 +145,8 @@ window.Planta = (() => {
      (uma disciplina com número ímpar de projetos deixa meia mesa livre).
      disciplinas: [{ nome, curso, local: "auto" | "fora" | 1..9, projetos: [{ codigo, nome }] }]
      1) as que têm local escolhido vão para ele: nas mesas fixas, ou em mesas desenhadas na sala;
-     2) as automáticas vão inteiras para um único local sempre que couber, maiores primeiro,
-        preferindo os corredores e salas da área do seu curso; depois as salas vazias;
+     2) as do pátio vão inteiras para uma única parte do pátio sempre que couber, maiores primeiro,
+        preferindo a área do seu curso; se o pátio lotar, as salas 1 e 5 e depois as salas vazias;
         só se nada couber, dividem entre locais.
      Mesas sem projeto não são desenhadas. */
   const emPares = (lista) => Array.from({ length: Math.ceil(lista.length / 2) }, (_, i) => lista.slice(2 * i, 2 * i + 2));
@@ -187,7 +188,8 @@ window.Planta = (() => {
       .sort((a, b) => b.projetos.length - a.projetos.length || a.nome.localeCompare(b.nome, "pt-BR"));
     for (const d of automaticas) {
       const pares = emPares(d.projetos);
-      const preferencia = (l) => (l.mesas.length ? 0 : 3) + (l.curso === lado(d.curso) ? 0 : l.curso === null ? 1 : 2);
+      // Primeiro o pátio; se lotar, as salas com mesas fixas (1 e 5); por último, as salas vazias.
+      const preferencia = (l) => (l.patio ? 0 : l.mesas.length ? 3 : 6) + (l.curso === lado(d.curso) ? 0 : l.curso === null ? 1 : 2);
       const cabe = LOCAIS.filter((l) => mesasLivres(l) >= pares.length).sort((a, b) => preferencia(a) - preferencia(b) || mesasLivres(a) - mesasLivres(b));
       if (cabe.length) {
         pares.forEach((par) => ocupar(d, par, cabe[0].id));
@@ -384,9 +386,9 @@ window.Planta = (() => {
     lado(x0, y1, x0, y0);
   }
 
-  // Número de cada local: círculo de contorno preto, no estilo preto e branco da original.
+  // Número de cada sala: círculo de contorno preto, no estilo preto e branco da original.
   function selos(doc) {
-    for (const l of LOCAIS) {
+    for (const l of LOCAIS.filter((x) => !x.patio)) {
       const [x, y] = l.selo;
       doc.setFillColor(255, 255, 255);
       doc.setDrawColor(...PRETO);
@@ -514,11 +516,11 @@ window.Planta = (() => {
       const locais = [...new Set(d.projetos.map((p) => m.localDe.get(p.codigo)).filter(Boolean))];
       const mesas = [...new Set(d.projetos.map((p) => m.mesaDe.get(p.codigo)).filter(Boolean))];
       const sem = d.projetos.filter((p) => !m.localDe.has(p.codigo)).length;
-      const partes = locais.map((id) => nomeCurto(LOCAL.get(id)));
+      const partes = [...new Set(locais.map((id) => nomeCurto(LOCAL.get(id))))]; // as partes do pátio contam como um lugar só
       let texto = partes.join(" + ");
       if (mesas.length) texto += ` · mesa${mesas.length === 1 ? "" : "s"} ${faixas(mesas)}`;
       if (sem) texto += `${texto ? " · " : ""}${sem} sem mesa`;
-      porDisciplina.set(d, { texto, dividida: locais.length > 1, sem });
+      porDisciplina.set(d, { texto, dividida: partes.length > 1, sem });
     }
     return porDisciplina;
   }
