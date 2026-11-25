@@ -768,6 +768,26 @@ dialog::backdrop { background: rgba(4, 2, 30, .72); backdrop-filter: blur(6px); 
 @media (min-width: 1041px) and (max-width: 1279px) {
   .nav-acao { padding: 10px 14px; font-size: 13px; }
 }
+/* Só no computador: em telas grandes tudo do topo cresce junto com a tela,
+   menos o título e a logo do PET. Em 1280px fica do tamanho de antes. */
+@media (min-width: 1280px) {
+  .nav-links a { padding: .52em 1.1em; font-size: clamp(13.5px, .92vw, 18px); }
+  .nav-acao { padding: .86em 1.55em; font-size: clamp(14px, .94vw, 18px); }
+  .etiqueta { padding: .4em .95em; gap: .65em; font-size: clamp(12.5px, .84vw, 16px); }
+  .etiqueta .ponto-vivo { width: .56em; height: .56em; }
+  .hero:not(.hero-curto) { min-height: calc(100svh - 24px); grid-template-columns: minmax(0, 1fr) clamp(190px, 13.5vw, 270px); }
+  .hero-rodape p { font-size: clamp(15px, 1.04vw, 20px); }
+  .hero-botoes { gap: clamp(10px, .7vw, 14px); }
+  .hero-botoes .btn { padding: .86em 1.6em; font-size: clamp(14px, .97vw, 18.5px); }
+  .ilustracao { width: min(56%, 900px); max-height: 86%; }
+  .stat { padding: clamp(22px, 1.7vw, 32px) 12px; }
+  .stat b { font-size: clamp(42px, 3vw, 58px); }
+  .stat span { font-size: clamp(13px, .9vw, 17px); }
+}
+/* No computador a página inicial já mostra tudo no topo: sem logo no rodapé */
+@media (min-width: 1041px) {
+  .rodape-inicio { display: none; }
+}
 @media (max-width: 960px) {
   .nav-podio { display: none; }
 }
