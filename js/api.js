@@ -344,6 +344,10 @@ window.API = (() => {
   const salvarFrequencia = (mudancas) =>
     atualizarSite(Object.fromEntries(Object.entries(mudancas).map(([k, v]) => [`frequencia/${k}`, v])));
 
+  /* Planta da feira: { edicao, disciplinas: { chave: { local, sala, ordem } } } */
+  const lerPlanta = async () => (await escrever("GET", "/site/planta")) || {};
+  const salvarPlanta = (planta) => escrever("PUT", "/site/planta", planta);
+
   /* Professores (cadastrados pelos petianos) */
   function listaDeProfessores(dados) {
     return Object.entries(dados || {})
@@ -569,13 +573,13 @@ window.API = (() => {
   }
 
   /* Nova feira: cópia de segurança e limpeza do que ficou da anterior. */
-  const PARTES_SITE = ["projetos", "professores", "professores_codigos", "avaliacoes", "formularios", "inscricoes", "feiras", "frequencia"];
+  const PARTES_SITE = ["projetos", "professores", "professores_codigos", "avaliacoes", "formularios", "inscricoes", "feiras", "frequencia", "planta"];
 
   // Tudo que o site guarda, num objeto só (para baixar em .json antes de apagar).
   async function copiaDeSeguranca() {
     // A frequência só pode ser lida depois que as regras novas forem publicadas; sem elas, a cópia sai sem ela.
     const partes = await Promise.all(
-      PARTES_SITE.map((p) => escrever("GET", `/site/${p}`).catch((erro) => (p === "frequencia" ? null : Promise.reject(erro))))
+      PARTES_SITE.map((p) => escrever("GET", `/site/${p}`).catch((erro) => (["frequencia", "planta"].includes(p) ? null : Promise.reject(erro))))
     );
     return { geradoEm: new Date().toISOString(), banco: "urna/multiurna/site", ...Object.fromEntries(PARTES_SITE.map((p, i) => [p, partes[i]])) };
   }
@@ -663,7 +667,7 @@ window.API = (() => {
     entrarProfessor, sairProfessor: contaProfessor.sair, sessaoProfessor: contaProfessor.atual,
     meuPerfil, minhasAvaliacoes, salvarAvaliacao,
     lerFormulario, salvarFormulario, definirInscricoesAbertas, enviarInscricao, lerInscricoes, removerInscricao, editarInscricao,
-    lerFrequencia, salvarFrequencia,
+    lerFrequencia, salvarFrequencia, lerPlanta, salvarPlanta,
     importarProjetos, copiaDeSeguranca, contarDados, limparDados, importarInscricoes, assinaturasImportadas,
     lerFeiras, salvarFeira, removerFeira, publicarFeirasIniciais,
   };

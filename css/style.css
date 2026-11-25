@@ -814,6 +814,34 @@ dialog::backdrop { background: rgba(4, 2, 30, .72); backdrop-filter: blur(6px); 
   .freq-tabela th, .freq-tabela td { padding: 8px 10px; }
 }
 
+/* Área dos petianos: planta da feira */
+.planta-modal { width: min(760px, calc(100vw - 32px)); }
+.planta-edicao { max-width: 200px; }
+.planta-resumo { margin: 14px 0 0 !important; font-size: 13.5px; color: var(--green-claro) !important; }
+.planta-resumo.alerta { color: var(--amber-claro) !important; }
+.planta-lista { margin-top: 8px; max-height: min(52vh, 520px); overflow-y: auto; padding-right: 4px; }
+.planta-curso { margin-top: 14px; }
+.planta-curso h3 { font-size: 15px; padding-bottom: 6px; border-bottom: 2px solid var(--amber); }
+.planta-curso h3 small { margin-left: 6px; font-weight: 500; font-size: 12px; color: var(--tinta-3); }
+.planta-curso ol { list-style: none; padding: 0; margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.planta-item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; border: 1px solid var(--borda); background: rgba(255, 255, 255, .025); }
+.planta-item.fora { opacity: .55; }
+.planta-ordem { display: flex; flex-direction: column; gap: 2px; }
+.planta-ordem button { width: 26px; height: 20px; padding: 0; border-radius: 6px; border: 1px solid var(--borda); background: var(--superficie); color: var(--tinta-2); font-size: 12px; line-height: 1; }
+.planta-ordem button:hover:not(:disabled) { background: var(--superficie-forte); color: var(--tinta); }
+.planta-ordem button:disabled { opacity: .3; }
+.planta-nome b { display: block; font-size: 14px; }
+.planta-nome small { display: block; margin-top: 2px; font-size: 12px; color: var(--tinta-3); }
+.planta-local { display: flex; gap: 6px; }
+.planta-local select, .planta-local input { padding: 7px 10px; border-radius: 10px; border: 1px solid var(--borda); background: rgba(255, 255, 255, .06); color: var(--tinta); font: inherit; font-size: 13px; }
+.planta-local select option { background: var(--fundo-2); }
+.planta-local input { width: 90px; }
+@media (max-width: 560px) {
+  .planta-item { grid-template-columns: auto minmax(0, 1fr); }
+  .planta-local { grid-column: 1 / -1; }
+  .planta-local select { flex: 1; }
+}
+
 /* Responsivo */
 /* Só no computador: botões do topo lado a lado e os do início um embaixo do outro */
 @media (min-width: 1041px) {

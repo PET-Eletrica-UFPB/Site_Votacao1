@@ -21,6 +21,7 @@ A conta do PET (`b2Ejyy4j…`) grava em tudo dentro de `urna`. Além disso:
 | `site/formularios` (perguntas e se está aberto) | todo mundo (página Inscrições) | ninguém |
 | `site/feiras` (edições da página Feiras) | todo mundo | ninguém |
 | `site/frequencia` (presença dos alunos e alunos acrescentados ou retirados na aba Frequência) | só o PET | ninguém |
+| `site/planta` (onde fica cada disciplina na planta da feira) | só o PET | ninguém |
 | `site/inscricoes/alunos`, `/professores` e `/escolas` (respostas) | só o PET | qualquer visitante pode **criar** uma resposta nova, só com o formulário aberto e com a data de agora; ninguém de fora edita nem apaga |
 
 Respostas importadas de planilha pela Área dos Petianos mantêm a data original: só a conta do PET pode gravar uma resposta com data diferente da atual.
