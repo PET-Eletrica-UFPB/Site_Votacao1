@@ -156,6 +156,8 @@
       $("planta").showModal();
       ajustarCanvas();
       render();
+      // Com a fonte da original carregada, redesenha a prévia com ela.
+      Planta.prepararFonte().then(() => $("planta").open && render());
     } catch (erro) {
       console.error(erro);
       aviso(`Não consegui abrir a planta. ${erro.message}`, true);
