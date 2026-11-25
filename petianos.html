@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20261126l">
+  <link rel="stylesheet" href="css/style.css?v=20261126n">
 </head>
 <body>
   <div class="login" id="tela-login">
@@ -517,6 +517,28 @@
     </div>
   </dialog>
 
+  <dialog id="freq-planilha" class="confirmar freq-planilha-modal">
+    <button class="fechar" id="freq-planilha-fechar" type="button" aria-label="Fechar">×</button>
+    <h2>Planilha dos alunos</h2>
+    <p>Alunos da lista de frequência com o grupo (projeto e código) de cada um.</p>
+    <button class="freq-planilha-opcao freq-planilha-todos" id="freq-planilha-todos" type="button">
+      <b>1. Todos os alunos</b>
+      <small id="freq-planilha-todos-info"></small>
+    </button>
+    <div class="freq-planilha-por">
+      <div class="freq-planilha-por-topo">
+        <b>Por disciplina</b>
+        <button class="botao-texto" id="freq-planilha-marcar" type="button">Marcar / desmarcar todas</button>
+      </div>
+      <ul class="freq-planilha-lista" id="freq-planilha-lista"></ul>
+      <div class="freq-planilha-botoes">
+        <button class="btn btn-vidro freq-planilha-opcao" id="freq-planilha-separadas" type="button">2. Uma planilha por disciplina marcada</button>
+        <button class="btn btn-amber freq-planilha-opcao" id="freq-planilha-zip" type="button">3. Baixar .zip com as marcadas</button>
+      </div>
+    </div>
+    <p class="feedback" id="freq-planilha-feedback" role="status"></p>
+  </dialog>
+
   <dialog id="freq-dialogo" class="confirmar">
     <button class="fechar" type="button" aria-label="Fechar" onclick="this.closest('dialog').close()">×</button>
     <h2 id="freq-dialogo-titulo">Acrescentar aluno</h2>
@@ -642,25 +664,25 @@
     </form>
   </dialog>
 
-  <script src="js/data.js?v=20261126l"></script>
-  <script src="js/api.js?v=20261126l"></script>
-  <script src="js/senha.js?v=20261126l"></script>
-  <script src="js/modelo-urna.js?v=20261126l"></script>
-  <script src="js/gerador-urna.js?v=20261126l"></script>
-  <script src="js/relatorio.js?v=20261126l"></script>
-  <script src="js/exportar.js?v=20261126l"></script>
-  <script src="js/planta.js?v=20261126l"></script>
-  <script src="js/placas.js?v=20261126l"></script>
-  <script src="js/petianos.js?v=20261126l"></script>
-  <script src="js/petianos-professores.js?v=20261126l"></script>
-  <script src="js/petianos-formularios.js?v=20261126l"></script>
-  <script src="js/nomes.js?v=20261126l"></script>
-  <script src="js/petianos-importar.js?v=20261126l"></script>
-  <script src="js/petianos-planilha.js?v=20261126l"></script>
-  <script src="js/petianos-limpar.js?v=20261126l"></script>
-  <script src="js/feiras-dados.js?v=20261126l"></script>
-  <script src="js/petianos-feiras.js?v=20261126l"></script>
-  <script src="js/petianos-frequencia.js?v=20261126l"></script>
-  <script src="js/petianos-planta.js?v=20261126l"></script>
+  <script src="js/data.js?v=20261126n"></script>
+  <script src="js/api.js?v=20261126n"></script>
+  <script src="js/senha.js?v=20261126n"></script>
+  <script src="js/modelo-urna.js?v=20261126n"></script>
+  <script src="js/gerador-urna.js?v=20261126n"></script>
+  <script src="js/relatorio.js?v=20261126n"></script>
+  <script src="js/exportar.js?v=20261126n"></script>
+  <script src="js/planta.js?v=20261126n"></script>
+  <script src="js/placas.js?v=20261126n"></script>
+  <script src="js/petianos.js?v=20261126n"></script>
+  <script src="js/petianos-professores.js?v=20261126n"></script>
+  <script src="js/petianos-formularios.js?v=20261126n"></script>
+  <script src="js/nomes.js?v=20261126n"></script>
+  <script src="js/petianos-importar.js?v=20261126n"></script>
+  <script src="js/petianos-planilha.js?v=20261126n"></script>
+  <script src="js/petianos-limpar.js?v=20261126n"></script>
+  <script src="js/feiras-dados.js?v=20261126n"></script>
+  <script src="js/petianos-feiras.js?v=20261126n"></script>
+  <script src="js/petianos-frequencia.js?v=20261126n"></script>
+  <script src="js/petianos-planta.js?v=20261126n"></script>
 </body>
 </html>

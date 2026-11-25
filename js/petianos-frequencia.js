@@ -514,57 +514,124 @@
   $("freq-curso").innerHTML =
     `<option value="">Selecione o curso</option>` + cursos.map((c) => `<option value="${c.id}">${esc(c.nome)}</option>`).join("");
 
-  /* Planilha (.xlsx) dos alunos com o grupo de cada um: uma aba com todos e uma por disciplina. */
-  async function baixarPlanilha() {
+  /* Planilha (.xlsx) dos alunos com o grupo de cada um. Três jeitos de baixar:
+     todos numa planilha só; uma planilha por disciplina marcada; ou um .zip com elas. */
+  let paraPlanilha = []; // [{ g, d, chave }]
+  const CABECALHO = ["Nº", "Aluno", "Grupo (projeto)", "Código do grupo", "Disciplina", "Curso", "Presença"];
+  const linhaPlanilha = (g, d, a, i) => [
+    i + 1,
+    a.nome,
+    a.grupos.map((x) => x.nome).join(" · ") || "–",
+    a.grupos.map((x) => x.codigo).filter(Boolean).join(" · ") || "–",
+    d.nome,
+    g.curso.nome,
+    presente(a) ? "Presente" : "",
+  ];
+  const tabelaDa = ({ g, d }) => [CABECALHO, ...d.alunos.map((a, i) => linhaPlanilha(g, d, a, i))];
+  const prefixoCurso = (g) => ({ eletrica: "eletrica", renovaveis: "renovaveis" })[g.curso.id] || "sem-curso";
+  const arquivoDa = ({ g, d }) => `alunos-${prefixoCurso(g)}-${nomeArquivo(d.nome) || "sem-disciplina"}`;
+
+  function avisoPlanilha(texto, erro = false) {
+    $("freq-planilha-feedback").textContent = texto;
+    $("freq-planilha-feedback").classList.toggle("erro", erro);
+  }
+
+  async function abrirPlanilha() {
     const botao = $("planilha-alunos");
     botao.disabled = true;
-    situacao("Gerando a planilha dos alunos…");
+    situacao("Lendo os alunos…");
     try {
       await lerDados();
-      const lista = montar(false);
-      if (!lista.length) return situacao("Nenhum aluno encontrado nas inscrições nem nos projetos cadastrados.", "alerta");
-      const cabecalho = ["Nº", "Aluno", "Grupo (projeto)", "Código do grupo", "Disciplina", "Curso", "Presença"];
-      const linha = (g, d, a, i) => [
-        i + 1,
-        a.nome,
-        a.grupos.map((x) => x.nome).join(" · ") || "–",
-        a.grupos.map((x) => x.codigo).filter(Boolean).join(" · ") || "–",
-        d.nome,
-        g.curso.nome,
-        presente(a) ? "Presente" : "",
-      ];
-      // Todos: curso, disciplina e nome, na mesma ordem da aba Frequência.
-      let n = 0;
-      const todos = [cabecalho, ...lista.flatMap((g) => g.disciplinas.flatMap((d) => d.alunos.map((a) => linha(g, d, a, n++))))];
-      const nomes = new Set(["Todos os alunos"]);
-      const abaDe = (g, d) => {
-        const curso = { eletrica: "Elét.", renovaveis: "Renov." }[g.curso.id] || "Sem curso";
-        const base = `${curso} ${d.nome}`.replace(/[\\/?*[\]:]/g, " ").slice(0, 28).trim();
-        let nome = base;
-        for (let i = 2; nomes.has(nome); i++) nome = `${base.slice(0, 26)} ${i}`;
-        nomes.add(nome);
-        return nome;
-      };
-      const abas = [
-        { nome: "Todos os alunos", linhas: todos },
-        ...lista.flatMap((g) => g.disciplinas.map((d) => ({ nome: abaDe(g, d), linhas: [cabecalho, ...d.alunos.map((a, i) => linha(g, d, a, i))] }))),
-      ];
-      const formato = await Exportar.planilha("alunos-por-grupo", abas);
-      situacao(
-        formato === "xlsx"
-          ? `Planilha baixada: ${n} alunos, com uma aba para cada disciplina.`
-          : "Sem internet para gerar o .xlsx: baixei a lista em .csv, que o Excel também abre.",
-        "ok"
-      );
+      paraPlanilha = montar(false).flatMap((g) => g.disciplinas.map((d) => ({ g, d, chave: `${g.curso.id}|${d.nome}` })));
+      if (!paraPlanilha.length) return situacao("Nenhum aluno encontrado nas inscrições nem nos projetos cadastrados.", "alerta");
+      situacao("");
+      const total = paraPlanilha.reduce((s, x) => s + x.d.alunos.length, 0);
+      $("freq-planilha-todos-info").textContent = `${plural(total, "aluno", "alunos")} de ${plural(paraPlanilha.length, "disciplina", "disciplinas")}, numa planilha só`;
+      let cursoAtual = null;
+      $("freq-planilha-lista").innerHTML = paraPlanilha
+        .map(({ g, d, chave }) => {
+          const titulo = g.curso.id !== cursoAtual ? `<li class="freq-planilha-curso">${esc(g.curso.nome)}</li>` : "";
+          cursoAtual = g.curso.id;
+          return `${titulo}<li><label><input type="checkbox" value="${esc(chave)}" checked> <span>${esc(d.nome)}</span> <small>${plural(d.alunos.length, "aluno", "alunos")}</small></label></li>`;
+        })
+        .join("");
+      avisoPlanilha("");
+      $("freq-planilha").showModal();
       if (carregado) atualizarTela();
     } catch (erro) {
       console.error(erro);
-      situacao(`Não consegui gerar a planilha. ${erro.message}`, "alerta");
+      situacao(`Não consegui ler os alunos. ${erro.message}`, "alerta");
     } finally {
       botao.disabled = false;
     }
   }
-  $("planilha-alunos").addEventListener("click", baixarPlanilha);
+
+  const marcadas = () => {
+    const chaves = new Set([...$("freq-planilha-lista").querySelectorAll("input:checked")].map((c) => c.value));
+    return paraPlanilha.filter((x) => chaves.has(x.chave));
+  };
+
+  // Desliga os botões enquanto gera, para não baixar duas vezes.
+  async function gerandoPlanilha(acao) {
+    const botoes = $("freq-planilha").querySelectorAll(".freq-planilha-opcao");
+    botoes.forEach((b) => (b.disabled = true));
+    try {
+      await acao();
+    } catch (erro) {
+      console.error(erro);
+      avisoPlanilha(`Não consegui gerar. ${erro.message}`, true);
+    } finally {
+      botoes.forEach((b) => (b.disabled = false));
+    }
+  }
+
+  // 1) Todo mundo numa planilha, na ordem da aba Frequência.
+  $("freq-planilha-todos").addEventListener("click", () =>
+    gerandoPlanilha(async () => {
+      avisoPlanilha("Gerando a planilha com todos…");
+      let n = 0;
+      const linhas = [CABECALHO, ...paraPlanilha.flatMap(({ g, d }) => d.alunos.map((a) => linhaPlanilha(g, d, a, n++)))];
+      const formato = await Exportar.planilha("alunos-todos", [{ nome: "Todos os alunos", linhas }]);
+      avisoPlanilha(formato === "xlsx" ? `Planilha baixada com ${plural(n, "aluno", "alunos")}.` : "Sem internet para o .xlsx: baixei em .csv, que o Excel também abre.");
+    })
+  );
+
+  // 2) Uma planilha para cada disciplina marcada.
+  $("freq-planilha-separadas").addEventListener("click", () =>
+    gerandoPlanilha(async () => {
+      const lista = marcadas();
+      if (!lista.length) return avisoPlanilha("Marque pelo menos uma disciplina.", true);
+      for (const [i, x] of lista.entries()) {
+        avisoPlanilha(`Baixando ${i + 1} de ${lista.length}: ${x.d.nome}…`);
+        await Exportar.planilha(arquivoDa(x), [{ nome: x.d.nome, linhas: tabelaDa(x) }]);
+        // Um respiro entre os arquivos, para o navegador não barrar os downloads seguidos.
+        if (i < lista.length - 1) await new Promise((ok) => setTimeout(ok, 600));
+      }
+      avisoPlanilha(
+        `${plural(lista.length, "planilha baixada", "planilhas baixadas")}.` +
+          (lista.length > 1 ? " Se o navegador perguntar, permita baixar vários arquivos." : "")
+      );
+    })
+  );
+
+  // 3) Um .zip com uma planilha por disciplina marcada.
+  $("freq-planilha-zip").addEventListener("click", () =>
+    gerandoPlanilha(async () => {
+      const lista = marcadas();
+      if (!lista.length) return avisoPlanilha("Marque pelo menos uma disciplina.", true);
+      avisoPlanilha("Montando o .zip…");
+      await Exportar.zip("alunos-por-disciplina", lista.map((x) => ({ nome: arquivoDa(x), abas: [{ nome: x.d.nome, linhas: tabelaDa(x) }] })));
+      avisoPlanilha(`.zip baixado com ${plural(lista.length, "planilha", "planilhas")}, uma por disciplina.`);
+    })
+  );
+
+  $("freq-planilha-marcar").addEventListener("click", () => {
+    const caixas = [...$("freq-planilha-lista").querySelectorAll("input")];
+    const todas = caixas.every((c) => c.checked);
+    caixas.forEach((c) => (c.checked = !todas));
+  });
+  $("freq-planilha-fechar").addEventListener("click", () => $("freq-planilha").close());
+  $("planilha-alunos").addEventListener("click", abrirPlanilha);
 
   // Relê a cada visita, para incluir inscrições e projetos novos.
   document.querySelector('.painel-topo [data-aba="frequencia"]').addEventListener("click", carregar);

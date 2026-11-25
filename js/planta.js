@@ -124,59 +124,63 @@ window.Planta = (() => {
   }
   const capacidadeDaSala = (l) => gradeDaSala(l, 999).length;
 
-  /* Distribuição.
+  /* Distribuição. Cada mesa é dividida ao meio entre dois projetos da mesma disciplina
+     (uma disciplina com número ímpar de projetos deixa meia mesa livre).
      disciplinas: [{ nome, curso, local: "auto" | "fora" | 1..9, projetos: [{ codigo, nome }] }]
      1) as que têm local escolhido vão para ele: nas mesas fixas, ou em mesas desenhadas na sala;
      2) as automáticas vão inteiras para um único local sempre que couber, maiores primeiro,
         preferindo os corredores e salas da área do seu curso; depois as salas vazias;
         só se nada couber, dividem entre locais.
      Mesas sem projeto não são desenhadas. */
+  const emPares = (lista) => Array.from({ length: Math.ceil(lista.length / 2) }, (_, i) => lista.slice(2 * i, 2 * i + 2));
+
   function distribuir(disciplinas) {
     const livres = new Map(LOCAIS.map((l) => [l.id, [...l.mesas]]));
     const mesaDe = new Map(); // código → nº da mesa fixa
     const localDe = new Map(); // código → id do local
-    const naSala = new Map(); // id da sala sem mesas fixas → [projeto]
+    const projetosDaMesa = new Map(); // nº da mesa fixa → [projeto, projeto?]
+    const naSala = new Map(); // id da sala sem mesas fixas → [[projeto, projeto?], ...]
     const semMesa = [];
-    const vagasNaSala = (l) => capacidadeDaSala(l) - (naSala.get(l.id)?.length || 0);
+    const mesasLivres = (l) => (l.mesas.length ? livres.get(l.id).length : capacidadeDaSala(l) - (naSala.get(l.id)?.length || 0));
     const pegar = (id, d) => {
       const fila = livres.get(id);
       // Na fileira 8, que é das duas áreas, Renováveis entra pela ponta do lado dela.
       return id === 8 && lado(d.curso) === "renovaveis" ? fila.pop() : fila.shift();
     };
-    const colocar = (d, p, id) => {
+    const ocupar = (d, par, id) => {
       const l = LOCAL.get(id);
-      if (!l.mesas.length) {
-        if (vagasNaSala(l) <= 0) return false;
-        if (!naSala.has(id)) naSala.set(id, []);
-        naSala.get(id).push(p);
-      } else {
+      if (mesasLivres(l) <= 0) return false;
+      if (l.mesas.length) {
         const n = pegar(id, d);
-        if (!n) return false;
-        mesaDe.set(p.codigo, n);
+        projetosDaMesa.set(n, par);
+        par.forEach((p) => mesaDe.set(p.codigo, n));
+      } else {
+        if (!naSala.has(id)) naSala.set(id, []);
+        naSala.get(id).push(par);
       }
-      localDe.set(p.codigo, id);
+      par.forEach((p) => localDe.set(p.codigo, id));
       return true;
     };
 
     for (const d of disciplinas.filter((x) => Number.isInteger(x.local))) {
-      for (const p of d.projetos) if (!colocar(d, p, d.local)) semMesa.push(p);
+      for (const par of emPares(d.projetos)) if (!ocupar(d, par, d.local)) semMesa.push(...par);
     }
 
     const automaticas = disciplinas
       .filter((x) => x.local === "auto" && x.projetos.length)
       .sort((a, b) => b.projetos.length - a.projetos.length || a.nome.localeCompare(b.nome, "pt-BR"));
-    const vagas = (l) => (l.mesas.length ? livres.get(l.id).length : vagasNaSala(l));
     for (const d of automaticas) {
+      const pares = emPares(d.projetos);
       const preferencia = (l) => (l.mesas.length ? 0 : 3) + (l.curso === lado(d.curso) ? 0 : l.curso === null ? 1 : 2);
-      const cabe = LOCAIS.filter((l) => vagas(l) >= d.projetos.length).sort((a, b) => preferencia(a) - preferencia(b) || vagas(a) - vagas(b));
+      const cabe = LOCAIS.filter((l) => mesasLivres(l) >= pares.length).sort((a, b) => preferencia(a) - preferencia(b) || mesasLivres(a) - mesasLivres(b));
       if (cabe.length) {
-        d.projetos.forEach((p) => colocar(d, p, cabe[0].id));
+        pares.forEach((par) => ocupar(d, par, cabe[0].id));
         continue;
       }
-      const ordem = [...LOCAIS].sort((a, b) => preferencia(a) - preferencia(b) || vagas(b) - vagas(a));
-      for (const p of d.projetos) if (!ordem.some((l) => colocar(d, p, l.id))) semMesa.push(p);
+      const ordem = [...LOCAIS].sort((a, b) => preferencia(a) - preferencia(b) || mesasLivres(b) - mesasLivres(a));
+      for (const par of pares) if (!ordem.some((l) => ocupar(d, par, l.id))) semMesa.push(...par);
     }
-    return { mesaDe, localDe, naSala, semMesa };
+    return { mesaDe, localDe, projetosDaMesa, naSala, semMesa };
   }
 
   /* Pintor para canvas com os mesmos métodos do jsPDF usados aqui. */
@@ -364,34 +368,54 @@ window.Planta = (() => {
     }
   }
 
-  /* Mesas com o código do projeto e a cor da disciplina. Só as ocupadas são desenhadas. */
-  function mesa(doc, m, p, cor) {
-    doc.setFillColor(...cor);
+  /* Mesa dividida ao meio entre dois projetos: em pé, metade de cima e de baixo; deitada,
+     metade da esquerda e da direita. Cada metade tem a cor da disciplina e o código. */
+  function mesa(doc, m, par, corDe) {
+    const emPe = m.y1 - m.y0 > m.x1 - m.x0;
+    const metades = emPe
+      ? [{ x0: m.x0, y0: m.y0, x1: m.x1, y1: (m.y0 + m.y1) / 2 }, { x0: m.x0, y0: (m.y0 + m.y1) / 2, x1: m.x1, y1: m.y1 }]
+      : [{ x0: m.x0, y0: m.y0, x1: (m.x0 + m.x1) / 2, y1: m.y1 }, { x0: (m.x0 + m.x1) / 2, y0: m.y0, x1: m.x1, y1: m.y1 }];
+    metades.forEach((h, i) => {
+      doc.setFillColor(...(par[i] ? corDe(par[i]) : [255, 255, 255]));
+      doc.rect(h.x0, h.y0, h.x1 - h.x0, h.y1 - h.y0, "F");
+    });
     doc.setDrawColor(...CINZA_MESA);
     doc.setLineWidth(1);
-    doc.rect(m.x0, m.y0, m.x1 - m.x0, m.y1 - m.y0, "FD");
-    const codigo = String(p.codigo);
-    const meioX = (m.x0 + m.x1) / 2;
-    const meioY = (m.y0 + m.y1) / 2;
-    if (m.lado === "dentro") {
-      const s = caber(doc, codigo, m.tamanho, m.x1 - m.x0 - 3, 5);
-      texto(doc, codigo, meioX, meioY, s, { align: "center", baseline: "middle", cor: escura(cor) ? [255, 255, 255] : PRETO });
-    } else if (m.lado === "cima") {
-      const s = caber(doc, codigo, m.tamanho, 42);
-      texto(doc, codigo, meioX, m.y0 - 4, s, { align: "center" });
-    } else if (m.lado === "esq") {
-      texto(doc, codigo, m.x0 - 5, meioY, m.tamanho, { align: "right", baseline: "middle" });
-    } else {
-      texto(doc, codigo, m.x1 + 3, meioY, m.tamanho, { baseline: "middle" });
+    doc.rect(m.x0, m.y0, m.x1 - m.x0, m.y1 - m.y0, "S");
+    doc.setLineWidth(0.8);
+    if (emPe) doc.line(m.x0, (m.y0 + m.y1) / 2, m.x1, (m.y0 + m.y1) / 2);
+    else doc.line((m.x0 + m.x1) / 2, m.y0, (m.x0 + m.x1) / 2, m.y1);
+
+    const codigos = par.map((p) => String(p.codigo));
+    if (m.lado === "cima") {
+      // Fileira do alto: os dois códigos acima da mesa, na ordem das metades.
+      const t = codigos.join(" | ");
+      const s = caber(doc, t, m.tamanho * 0.72, 43, 6);
+      texto(doc, t, (m.x0 + m.x1) / 2, m.y0 - 4, s, { align: "center" });
+      return;
     }
+    metades.forEach((h, i) => {
+      const c = codigos[i];
+      if (!c) return;
+      const meioX = (h.x0 + h.x1) / 2;
+      const meioY = (h.y0 + h.y1) / 2;
+      if (m.lado === "dentro") {
+        const s = caber(doc, c, m.tamanho * 0.8, h.x1 - h.x0 - 2, 5);
+        texto(doc, c, meioX, meioY, s, { align: "center", baseline: "middle", cor: escura(corDe(par[i])) ? [255, 255, 255] : PRETO });
+      } else if (m.lado === "esq") {
+        texto(doc, c, m.x0 - 4, meioY, m.tamanho * 0.75, { align: "right", baseline: "middle" });
+      } else {
+        texto(doc, c, m.x1 + 3, meioY, m.tamanho * 0.75, { baseline: "middle" });
+      }
+    });
   }
 
   function mesas(doc, m) {
     const cor = (p) => m.corDe.get(m.disciplinaDoProjeto.get(p.codigo));
-    for (const [n, p] of m.projetoDaMesa) mesa(doc, MESA.get(n), p, cor(p));
-    for (const [id, projetos] of m.naSala) {
-      const grade = gradeDaSala(LOCAL.get(id), projetos.length);
-      projetos.forEach((p, i) => grade[i] && mesa(doc, grade[i], p, cor(p)));
+    for (const [n, par] of m.projetosDaMesa) mesa(doc, MESA.get(n), par, cor);
+    for (const [id, pares] of m.naSala) {
+      const grade = gradeDaSala(LOCAL.get(id), pares.length);
+      pares.forEach((par, i) => grade[i] && mesa(doc, grade[i], par, cor));
     }
   }
 
@@ -428,9 +452,7 @@ window.Planta = (() => {
     const resultado = distribuir(incluidas);
     const corDe = new Map(incluidas.map((d, i) => [d, CORES[i % CORES.length]]));
     const disciplinaDoProjeto = new Map(incluidas.flatMap((d) => d.projetos.map((p) => [p.codigo, d])));
-    const projetoDaMesa = new Map();
-    for (const d of incluidas) for (const p of d.projetos) if (resultado.mesaDe.has(p.codigo)) projetoDaMesa.set(resultado.mesaDe.get(p.codigo), p);
-    return { ...resultado, incluidas, corDe, disciplinaDoProjeto, projetoDaMesa };
+    return { ...resultado, incluidas, corDe, disciplinaDoProjeto };
   }
 
   function desenharPlanta(doc, m, edicao) {
@@ -456,7 +478,7 @@ window.Planta = (() => {
     const porDisciplina = new Map();
     for (const d of m.incluidas) {
       const locais = [...new Set(d.projetos.map((p) => m.localDe.get(p.codigo)).filter(Boolean))];
-      const mesas = d.projetos.map((p) => m.mesaDe.get(p.codigo)).filter(Boolean);
+      const mesas = [...new Set(d.projetos.map((p) => m.mesaDe.get(p.codigo)).filter(Boolean))];
       const sem = d.projetos.filter((p) => !m.localDe.has(p.codigo)).length;
       const partes = locais.map((id) => nomeCurto(LOCAL.get(id)));
       let texto = partes.join(" + ");
