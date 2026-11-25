@@ -857,6 +857,41 @@ dialog::backdrop { background: rgba(4, 2, 30, .72); backdrop-filter: blur(6px); 
   .planta-lista { max-height: none; }
 }
 
+/* Área dos petianos: distribuir disciplinas entre os professores */
+.relatorio-dica { margin-top: 6px; font-size: 13px; color: var(--tinta-2); }
+.distribuir-modal { width: min(1040px, calc(100vw - 32px)); max-height: calc(100vh - 32px); }
+.distribuir-modal > p { max-width: 90ch; }
+.distribuir-corpo { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(0, 1.6fr); gap: 24px; align-items: start; }
+.distribuir-cadastrados { display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; padding: 10px 12px; border: 1px solid var(--borda); border-radius: 12px; background: rgba(255, 255, 255, .025); }
+.distribuir-cadastrados .lista-vazia { padding: 4px 0; }
+.distribuir-modal .campo input[type="number"] { max-width: 110px; }
+.distribuir-auto { width: 100%; margin-top: 16px; }
+.distribuir-cargas { margin-top: 18px; }
+.distribuir-cargas ul { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.distribuir-cargas li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; font-size: 13.5px; }
+.distribuir-cargas li small { margin-left: auto; font-family: var(--mono); font-size: 11.5px; color: var(--tinta-3); }
+.distribuir-cargas li.vazio small { color: var(--amber-claro); }
+.distribuir-novo { padding: 1px 7px; border-radius: 999px; font-size: 10.5px; font-weight: 700; background: rgba(70, 154, 69, .22); color: var(--green-claro); }
+.distribuir-lista { list-style: none; padding: 0 4px 0 0; margin: 0; display: flex; flex-direction: column; gap: 6px; max-height: min(58vh, 560px); overflow-y: auto; }
+.distribuir-item { display: flex; flex-direction: column; gap: 6px; padding: 9px 10px; border-radius: 12px; border: 1px solid var(--borda); background: rgba(255, 255, 255, .025); }
+.distribuir-item.alerta { border-color: rgba(238, 166, 20, .6); }
+.distribuir-nome b { display: block; font-size: 14px; }
+.distribuir-nome small { display: block; margin-top: 2px; font-size: 12px; color: var(--tinta-3); }
+.distribuir-item.alerta .distribuir-nome small { color: var(--amber-claro); }
+.distribuir-item select { width: 100%; padding: 7px 10px; border-radius: 10px; border: 1px solid var(--borda); background: rgba(255, 255, 255, .06); color: var(--tinta); font: inherit; font-size: 13px; }
+.distribuir-item select option { background: var(--fundo-2); }
+.distribuir-vagas { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 6px; }
+.distribuir-modal .feedback { white-space: pre-line; }
+.distribuir-resultado { margin-top: 12px; padding: 14px; border-radius: 14px; border: 1px solid rgba(70, 154, 69, .5); background: rgba(70, 154, 69, .1); }
+.distribuir-resultado ul { list-style: none; padding: 0; margin: 4px 0 8px; display: flex; flex-direction: column; gap: 4px; }
+.distribuir-resultado li { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+.distribuir-resultado code { font-family: var(--mono); font-size: 14px; color: var(--amber-claro); letter-spacing: .08em; }
+.distribuir-resultado small { font-size: 12.5px; color: var(--tinta-2); }
+@media (max-width: 900px) {
+  .distribuir-corpo { grid-template-columns: minmax(0, 1fr); }
+  .distribuir-lista { max-height: none; }
+}
+
 /* Responsivo */
 /* Só no computador: botões do topo lado a lado e os do início um embaixo do outro */
 @media (min-width: 1041px) {

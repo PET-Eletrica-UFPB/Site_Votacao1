@@ -363,5 +363,12 @@ window.PainelProfessores = (() => {
       if (iniciado) carregar();
     },
     podeDescartar,
+    disciplinaDe,
+    // Para a distribuição automática (petianos-distribuir.js).
+    estado: () => ({ professores, codigos, avaliacoes }),
+    async recarregar() {
+      await carregar();
+      if (editandoUid) preencher(professores.find((p) => p.uid === editandoUid));
+    },
   };
 })();

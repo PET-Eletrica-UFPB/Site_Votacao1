@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20261126p">
+  <link rel="stylesheet" href="css/style.css?v=20261126q">
 </head>
 <body>
   <div class="login" id="tela-login">
@@ -171,6 +171,11 @@
           <div class="barra"><i id="aval-barra" style="width:0"></i></div>
           <button class="btn btn-vidro" id="baixar-pdf" type="button">Baixar PDF das avaliações</button>
           <span class="urna-situacao" id="pdf-situacao"></span>
+        </div>
+        <div class="relatorio">
+          <p class="rotulo">Distribuição</p>
+          <p class="relatorio-dica">Digite os nomes dos professores e o site divide as disciplinas entre eles. Depois dá para trocar à mão.</p>
+          <button class="btn btn-vidro" id="abrir-distribuir" type="button">Distribuir disciplinas</button>
         </div>
         <p class="lista-aviso" id="aviso-prof" hidden></p>
         <ul class="lista-projetos" id="lista-prof"></ul>
@@ -539,6 +544,39 @@
     <p class="feedback" id="freq-planilha-feedback" role="status"></p>
   </dialog>
 
+  <dialog id="distribuir" class="confirmar distribuir-modal">
+    <button class="fechar" type="button" aria-label="Fechar" onclick="this.closest('dialog').close()">×</button>
+    <h2>Distribuir disciplinas</h2>
+    <p>Marque quem vai avaliar e acrescente os professores novos, um nome por linha. Em “Distribuir automaticamente” cada disciplina vai inteira para um professor, equilibrando o número de projetos. Depois é só trocar o professor de qualquer disciplina na lista ao lado.</p>
+    <div class="distribuir-corpo">
+      <div class="distribuir-esquerda">
+        <p class="campo-titulo">Professores cadastrados</p>
+        <div class="distribuir-cadastrados" id="distribuir-cadastrados"></div>
+        <label class="campo">
+          <span>Professores novos (um por linha)</span>
+          <textarea id="distribuir-novos" rows="5" maxlength="3000" placeholder="Ex.: Profa. Maria Silva&#10;Prof. João Lima"></textarea>
+          <small>Cada novo professor ganha um código de acesso gerado na hora.</small>
+        </label>
+        <label class="campo">
+          <span>Professores por disciplina</span>
+          <input id="distribuir-por" type="number" min="1" max="5" value="1" inputmode="numeric">
+        </label>
+        <button class="btn btn-amber distribuir-auto" id="distribuir-auto" type="button">Distribuir automaticamente</button>
+        <div class="distribuir-cargas" id="distribuir-cargas"></div>
+      </div>
+      <div class="distribuir-direita">
+        <p class="campo-titulo">Disciplinas</p>
+        <ol class="distribuir-lista" id="distribuir-lista"></ol>
+      </div>
+    </div>
+    <p class="feedback" id="distribuir-feedback" role="status"></p>
+    <div class="distribuir-resultado" id="distribuir-resultado" hidden></div>
+    <div class="ficha-acoes">
+      <button class="btn btn-vidro" id="distribuir-cancelar" type="button">Fechar</button>
+      <button class="btn btn-amber" id="distribuir-salvar" type="button">Salvar distribuição</button>
+    </div>
+  </dialog>
+
   <dialog id="freq-dialogo" class="confirmar">
     <button class="fechar" type="button" aria-label="Fechar" onclick="this.closest('dialog').close()">×</button>
     <h2 id="freq-dialogo-titulo">Acrescentar aluno</h2>
@@ -674,7 +712,8 @@
   <script src="js/planta.js?v=20261126p"></script>
   <script src="js/placas.js?v=20261126p"></script>
   <script src="js/petianos.js?v=20261126p"></script>
-  <script src="js/petianos-professores.js?v=20261126p"></script>
+  <script src="js/petianos-professores.js?v=20261126q"></script>
+  <script src="js/petianos-distribuir.js?v=20261126q"></script>
   <script src="js/petianos-formularios.js?v=20261126p"></script>
   <script src="js/nomes.js?v=20261126p"></script>
   <script src="js/petianos-importar.js?v=20261126p"></script>
