@@ -92,8 +92,8 @@
   }
 
   /* Monta os grupos: inscrições + projetos sem inscrição + alunos acrescentados à mão. */
-  function montar() {
-    const mostrarRetirados = $("freq-retirados").checked;
+  // Devolve os grupos; a aba mostra os retirados só se a caixinha estiver marcada.
+  function montar(mostrarRetirados = $("freq-retirados").checked) {
     const projetoDaInscricao = new Map(projetos.filter((p) => p.inscricao).map((p) => [p.inscricao, p]));
     // Disciplina → curso, aprendido dos projetos e das inscrições que informam o curso.
     const cursoDaDisciplina = new Map();
@@ -110,13 +110,13 @@
       const disciplina = p?.disciplina || resposta(r, "disciplina");
       const curso = p?.curso || acharCurso(resposta(r, "curso"));
       lembrar(disciplina, curso);
-      registros.push({ curso, disciplina, projeto: p?.nome || resposta(r, "projeto"), nomes: separarNomes(resposta(r, "equipe")) });
+      registros.push({ curso, disciplina, projeto: p?.nome || resposta(r, "projeto"), codigo: p?.codigo || "", nomes: separarNomes(resposta(r, "equipe")) });
     }
     const comInscricao = new Set(inscricoes.map((r) => r.id));
     for (const p of projetos) {
       lembrar(p.disciplina, p.curso);
       if (p.inscricao && comInscricao.has(p.inscricao)) continue;
-      registros.push({ curso: p.curso, disciplina: p.disciplina, projeto: p.nome, nomes: separarNomes(p.equipe) });
+      registros.push({ curso: p.curso, disciplina: p.disciplina, projeto: p.nome, codigo: p.codigo, nomes: separarNomes(p.equipe) });
     }
 
     // curso → disciplina normalizada → { grafias, alunos: Map }
@@ -141,21 +141,26 @@
         const k = normalizar(nome);
         if (!d.alunos.has(k)) {
           const chave = chaveDe(curso, reg.disciplina || SEM_DISCIPLINA, nome);
-          d.alunos.set(k, { chave, nome, projetos: [], extra: false, removido: !!estado.removidos[chave], curso, disciplina: reg.disciplina || "" });
+          d.alunos.set(k, { chave, nome, projetos: [], grupos: [], extra: false, removido: !!estado.removidos[chave], curso, disciplina: reg.disciplina || "" });
         }
         const aluno = d.alunos.get(k);
-        if (reg.projeto && !aluno.projetos.includes(reg.projeto)) aluno.projetos.push(reg.projeto);
+        if (reg.projeto && !aluno.projetos.includes(reg.projeto)) {
+          aluno.projetos.push(reg.projeto);
+          aluno.grupos.push({ nome: reg.projeto, codigo: reg.codigo });
+        }
       }
     }
 
+    // Alunos acrescentados à mão: o código do grupo sai do cadastro, pelo nome do projeto.
+    const projetoPorNome = new Map(projetos.map((p) => [normalizar(p.nome), p]));
     for (const [id, e] of Object.entries(estado.extras || {})) {
       if (!e?.nome) continue;
       const curso = cursos.some((c) => c.id === e.curso) ? e.curso : SEM_CURSO.id;
       const d = disciplinaEm(curso, e.disciplina);
-      d.alunos.set(`x:${id}`, { chave: id, nome: e.nome, projetos: e.projeto ? [e.projeto] : [], extra: true, editado: !!e.editado, removido: false, curso, disciplina: e.disciplina || "" });
+      d.alunos.set(`x:${id}`, { chave: id, nome: e.nome, projetos: e.projeto ? [e.projeto] : [], grupos: e.projeto ? [{ nome: projetoPorNome.get(normalizar(e.projeto))?.nome || e.projeto, codigo: projetoPorNome.get(normalizar(e.projeto))?.codigo || "" }] : [], extra: true, editado: !!e.editado, removido: false, curso, disciplina: e.disciplina || "" });
     }
 
-    grupos = [...cursos, SEM_CURSO]
+    return [...cursos, SEM_CURSO]
       .filter((c) => arvore.has(c.id))
       .map((c) => ({
         curso: c,
@@ -264,7 +269,7 @@
   }
 
   const atualizarTela = () => {
-    montar();
+    grupos = montar();
     render();
   };
 
@@ -313,23 +318,28 @@
     }
   }
 
+  // Lê inscrições, cadastro e frequência salva.
+  async function lerDados() {
+    const [lidas, cadastro, salvo] = await Promise.all([
+      API.lerInscricoes("alunos"),
+      API.lerCadastro(),
+      API.lerFrequencia().catch((erro) => {
+        if (erro.status !== 401) throw erro;
+        return null; // regras antigas: usa a cópia deste navegador
+      }),
+    ]);
+    inscricoes = lidas;
+    projetos = cadastro;
+    soNesteNavegador = salvo === null;
+    estado = completar(salvo ?? lerLocal());
+    if (!soNesteNavegador) guardarLocal();
+  }
+
   async function carregar() {
     $("freq-lista").innerHTML = `<p class="lista-vazia">Carregando os alunos…</p>`;
     situacao("");
     try {
-      const [lidas, cadastro, salvo] = await Promise.all([
-        API.lerInscricoes("alunos"),
-        API.lerCadastro(),
-        API.lerFrequencia().catch((erro) => {
-          if (erro.status !== 401) throw erro;
-          return null; // regras antigas: usa a cópia deste navegador
-        }),
-      ]);
-      inscricoes = lidas;
-      projetos = cadastro;
-      soNesteNavegador = salvo === null;
-      estado = completar(salvo ?? lerLocal());
-      if (!soNesteNavegador) guardarLocal();
+      await lerDados();
       carregado = true;
       atualizarTela();
     } catch (erro) {
@@ -503,6 +513,57 @@
 
   $("freq-curso").innerHTML =
     `<option value="">Selecione o curso</option>` + cursos.map((c) => `<option value="${c.id}">${esc(c.nome)}</option>`).join("");
+
+  /* Planilha (.xlsx) dos alunos com o grupo de cada um: uma aba com todos e uma por disciplina. */
+  async function baixarPlanilha() {
+    const botao = $("planilha-alunos");
+    botao.disabled = true;
+    aviso("Gerando a planilha dos alunos…");
+    try {
+      await lerDados();
+      const lista = montar(false);
+      if (!lista.length) return aviso("Nenhum aluno encontrado nas inscrições nem nos projetos cadastrados.", true);
+      const cabecalho = ["Nº", "Aluno", "Grupo (projeto)", "Código do grupo", "Disciplina", "Curso", "Presença"];
+      const linha = (g, d, a, i) => [
+        i + 1,
+        a.nome,
+        a.grupos.map((x) => x.nome).join(" · ") || "–",
+        a.grupos.map((x) => x.codigo).filter(Boolean).join(" · ") || "–",
+        d.nome,
+        g.curso.nome,
+        presente(a) ? "Presente" : "",
+      ];
+      // Todos: curso, disciplina e nome, na mesma ordem da aba Frequência.
+      let n = 0;
+      const todos = [cabecalho, ...lista.flatMap((g) => g.disciplinas.flatMap((d) => d.alunos.map((a) => linha(g, d, a, n++))))];
+      const nomes = new Set(["Todos os alunos"]);
+      const abaDe = (g, d) => {
+        const curso = { eletrica: "Elét.", renovaveis: "Renov." }[g.curso.id] || "Sem curso";
+        const base = `${curso} ${d.nome}`.replace(/[\\/?*[\]:]/g, " ").slice(0, 28).trim();
+        let nome = base;
+        for (let i = 2; nomes.has(nome); i++) nome = `${base.slice(0, 26)} ${i}`;
+        nomes.add(nome);
+        return nome;
+      };
+      const abas = [
+        { nome: "Todos os alunos", linhas: todos },
+        ...lista.flatMap((g) => g.disciplinas.map((d) => ({ nome: abaDe(g, d), linhas: [cabecalho, ...d.alunos.map((a, i) => linha(g, d, a, i))] }))),
+      ];
+      const formato = await Exportar.planilha("alunos-por-grupo", abas);
+      aviso(
+        formato === "xlsx"
+          ? `Planilha baixada: ${n} alunos, com uma aba para cada disciplina.`
+          : "Sem internet para gerar o .xlsx: baixei a lista em .csv, que o Excel também abre."
+      );
+      if (carregado) atualizarTela();
+    } catch (erro) {
+      console.error(erro);
+      aviso(`Não consegui gerar a planilha. ${erro.message}`, true);
+    } finally {
+      botao.disabled = false;
+    }
+  }
+  $("planilha-alunos").addEventListener("click", baixarPlanilha);
 
   // Relê a cada visita, para incluir inscrições e projetos novos.
   document.querySelector('.painel-topo [data-aba="frequencia"]').addEventListener("click", carregar);
