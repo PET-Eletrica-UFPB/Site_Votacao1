@@ -19,7 +19,7 @@
         <div class="nav-links">
           <a href="#inicio" aria-current="page">Início</a>
           <a href="projetos.html">Projetos</a>
-          <a href="#placar">Placar</a>
+          <a href="placar.html">Placar</a>
           <a href="feiras.html">Feiras</a>
           <a href="inscricoes.html">Inscrições</a>
         </div>
@@ -47,7 +47,7 @@
           <p>Projetos de estudantes, avaliados por professores e votados pelo público, com o placar atualizado direto das urnas.</p>
           <div class="hero-botoes">
             <a class="btn btn-claro" href="projetos.html">Ver os projetos</a>
-            <a class="btn btn-vidro" href="#placar">Acompanhar o placar</a>
+            <a class="btn btn-vidro" href="placar.html">Acompanhar o placar</a>
           </div>
         </div>
       </div>
@@ -118,36 +118,6 @@
       </aside>
     </header>
   </div>
-
-  <main>
-    <div class="placar-faixa">
-      <section class="secao" id="placar">
-        <div class="placar-topo">
-          <div>
-            <p class="rotulo">Voto popular</p>
-            <h2 class="titulo-secao">O placar, <em>em tempo real.</em></h2>
-            <p class="sub">Os votos chegam das urnas e o ranking se reorganiza sozinho.</p>
-            <p class="aviso-demo" id="aviso-placar" hidden>Sem conexão com o Firebase: mostrando o último resultado</p>
-          </div>
-          <div class="total">
-            <b id="total-votos">–</b>
-            <span class="rotulo">votos no total</span>
-            <a class="btn btn-amber" href="podio.html">Modo pódio</a>
-          </div>
-        </div>
-        <div class="placar-corpo">
-          <div class="ranking-caixa" id="ranking-caixa">
-            <ol class="ranking" id="ranking"></ol>
-            <button class="ver-mais" id="ver-mais" type="button" aria-controls="ranking" aria-expanded="false" hidden>
-              <span id="ver-mais-texto">Ver mais</span>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
-            </button>
-          </div>
-          <aside class="urnas" id="urnas" aria-label="Situação das urnas"></aside>
-        </div>
-      </section>
-    </div>
-  </main>
 
   <footer class="rodape">
     <span class="marca">

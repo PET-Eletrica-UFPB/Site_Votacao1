@@ -204,7 +204,6 @@ em { font-family: var(--serif); font-style: italic; }
 .grade-vazia { grid-column: 1 / -1; padding: 40px 16px; text-align: center; color: var(--tinta-3); }
 
 /* Placar */
-.placar-faixa { background: var(--fundo-2); border-block: 1px solid var(--borda); }
 .placar-topo { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 20px; }
 .placar-topo .sub { color: var(--tinta-2); margin-top: 10px; max-width: 48ch; }
 .total b { display: block; font-family: var(--serif); font-weight: 400; font-size: clamp(56px, 7vw, 88px); line-height: 1; text-align: right; font-variant-numeric: tabular-nums; }
@@ -251,7 +250,7 @@ em { font-family: var(--serif); font-style: italic; }
 .ver-mais[aria-expanded="true"] svg { transform: rotate(180deg); }
 .ranking-caixa.recolhido .ver-mais {
   position: absolute; inset: auto 0 0; height: 150px; padding-bottom: 10px;
-  background: linear-gradient(to bottom, rgba(12, 8, 72, 0), rgba(12, 8, 72, .7) 45%, var(--fundo-2) 85%);
+  background: linear-gradient(to bottom, rgba(7, 4, 51, 0), rgba(7, 4, 51, .7) 45%, var(--fundo) 85%);
   -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
   -webkit-mask-image: linear-gradient(to bottom, transparent, #000 35%); mask-image: linear-gradient(to bottom, transparent, #000 35%);
 }
@@ -515,6 +514,7 @@ dialog::backdrop { background: rgba(4, 2, 30, .72); backdrop-filter: blur(6px); 
 .hero-feiras p { margin-top: 20px; max-width: 52ch; color: var(--tinta-2); }
 .secao-feiras { padding-top: clamp(48px, 7vw, 88px); }
 .secao-projetos { padding-top: clamp(24px, 4vw, 48px); }
+.secao-placar { padding-top: clamp(40px, 6vw, 72px); }
 .secao-projetos .filtros { margin-top: 20px; }
 
 /* Busca de projetos */
