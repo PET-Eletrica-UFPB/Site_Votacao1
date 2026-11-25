@@ -759,28 +759,45 @@ dialog::backdrop { background: rgba(4, 2, 30, .72); backdrop-filter: blur(6px); 
 
 /* Área dos petianos: frequência */
 .freq-topo { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
-.freq-topo .campo { flex: 1 1 260px; margin-top: 0; }
-.freq-acoes { display: flex; gap: 8px; }
-.freq-acoes .btn { padding: 11px 18px; font-size: 13.5px; }
-.freq-resumo { margin-top: 14px; font-size: 13.5px; color: var(--tinta-2); }
-.freq-resumo:empty { display: none; }
+.freq-topo .campo { flex: 1 1 240px; margin-top: 0; }
+.freq-acoes { display: flex; flex-wrap: wrap; gap: 8px; }
+.freq-acoes .btn { padding: 11px 16px; font-size: 13.5px; }
+.freq-linha-info { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px; margin-top: 14px; }
+.freq-resumo { font-size: 13.5px; color: var(--tinta-2); }
+.freq-retirados { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--tinta-2); cursor: pointer; }
+.freq-retirados input { width: 16px; height: 16px; accent-color: var(--amber); }
 .freq-curso { margin-top: 28px; }
 .freq-curso h2 { font-family: var(--serif); font-weight: 400; font-size: clamp(26px, 2.6vw, 32px); line-height: 1.1; padding-bottom: 10px; border-bottom: 2px solid var(--amber); }
 .freq-disciplina { margin-top: 14px; border: 1px solid var(--borda); border-radius: 16px; overflow: hidden; background: rgba(255, 255, 255, .025); }
-.freq-disciplina-topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; background: var(--superficie); }
+.freq-disciplina-topo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 12px 14px; background: var(--superficie); }
 .freq-disciplina-topo h3 { font-size: 15.5px; }
-.freq-disciplina-topo h3 small { margin-left: 6px; font-weight: 500; font-size: 12.5px; color: var(--tinta-3); }
-.freq-disciplina-topo .btn { flex: none; padding: 7px 14px; font-size: 12.5px; }
+.freq-disciplina-topo h3 small { display: inline-block; margin-left: 6px; font-weight: 500; font-size: 12.5px; color: var(--tinta-3); }
+.freq-disciplina-acoes { display: flex; gap: 6px; }
+.freq-disciplina-acoes .btn { padding: 7px 14px; font-size: 12.5px; }
 .freq-tabela { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 14px; }
-.freq-tabela th:first-child { width: 52px; }
-.freq-tabela th:nth-child(2) { width: 48%; }
-.freq-tabela th, .freq-tabela td { padding: 9px 14px; text-align: left; border-top: 1px solid var(--borda); }
+.freq-tabela th, .freq-tabela td { padding: 8px 14px; text-align: left; vertical-align: middle; border-top: 1px solid var(--borda); }
 .freq-tabela th { font-size: 12px; font-weight: 700; color: var(--tinta-2); }
-.freq-tabela td.num { font-family: var(--mono); font-size: 12.5px; color: var(--tinta-3); }
-.freq-tabela td:last-child { color: var(--tinta-2); }
-@media (max-width: 560px) {
+.freq-tabela th:first-child { width: 84px; }
+.freq-tabela th:nth-child(2) { width: 40%; }
+.freq-tabela th:last-child { width: 150px; }
+.freq-tabela td:first-child { text-align: center; }
+.freq-tabela th:first-child { text-align: center; }
+.freq-tabela .col-projeto { color: var(--tinta-2); }
+.freq-check { width: 20px; height: 20px; accent-color: var(--green); cursor: pointer; vertical-align: middle; }
+.freq-check:disabled { cursor: default; }
+.freq-tag { margin-left: 6px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--borda); font-size: 11px; color: var(--tinta-3); white-space: nowrap; }
+.freq-linha-acoes { text-align: right; white-space: nowrap; }
+.freq-linha-acoes .botao-texto { display: inline-block; margin: 0; padding: 4px 6px; font-size: 12.5px; }
+.freq-tabela tr.retirado td:not(:last-child) { opacity: .45; }
+.freq-tabela tr.retirado td:nth-child(2) { text-decoration: line-through; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+#freq-dialogo .campo:first-of-type { margin-top: 14px; }
+@media (max-width: 640px) {
   .freq-tabela th:nth-child(2) { width: auto; }
-  .freq-tabela th:last-child, .freq-tabela td:last-child { display: none; }
+  .freq-tabela .col-projeto { display: none; }
+  .freq-tabela th:first-child { width: 64px; }
+  .freq-tabela th:last-child { width: 118px; }
+  .freq-tabela th, .freq-tabela td { padding: 8px 10px; }
 }
 
 /* Responsivo */

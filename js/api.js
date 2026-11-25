@@ -254,7 +254,7 @@ window.API = (() => {
       throw new Error("Sem conexão com o Firebase. Confira a internet e tente de novo.");
     }
     if (resposta.status === 401) {
-      throw new Error("O Firebase recusou o acesso. Confira se as regras de REGRAS_FIREBASE.md já foram publicadas.");
+      throw Object.assign(new Error("O Firebase recusou o acesso. Confira se as regras de REGRAS_FIREBASE.md já foram publicadas."), { status: 401 });
     }
     if (!resposta.ok) throw new Error(`O Firebase recusou a alteração (erro ${resposta.status}).`);
     return resposta.json();
@@ -337,6 +337,12 @@ window.API = (() => {
     if (criados.length) await atualizarSite(mudancas);
     return criados;
   }
+
+  /* Frequência dos alunos: { presenca: { chave: true }, extras: { id: aluno }, removidos: { chave: true } } */
+  const lerFrequencia = async () => (await escrever("GET", "/site/frequencia")) || {};
+  // mudancas: caminhos dentro de /site/frequencia (ex.: "presenca/abc": true)
+  const salvarFrequencia = (mudancas) =>
+    atualizarSite(Object.fromEntries(Object.entries(mudancas).map(([k, v]) => [`frequencia/${k}`, v])));
 
   /* Professores (cadastrados pelos petianos) */
   function listaDeProfessores(dados) {
@@ -563,11 +569,14 @@ window.API = (() => {
   }
 
   /* Nova feira: cópia de segurança e limpeza do que ficou da anterior. */
-  const PARTES_SITE = ["projetos", "professores", "professores_codigos", "avaliacoes", "formularios", "inscricoes", "feiras"];
+  const PARTES_SITE = ["projetos", "professores", "professores_codigos", "avaliacoes", "formularios", "inscricoes", "feiras", "frequencia"];
 
   // Tudo que o site guarda, num objeto só (para baixar em .json antes de apagar).
   async function copiaDeSeguranca() {
-    const partes = await Promise.all(PARTES_SITE.map((p) => escrever("GET", `/site/${p}`)));
+    // A frequência só pode ser lida depois que as regras novas forem publicadas; sem elas, a cópia sai sem ela.
+    const partes = await Promise.all(
+      PARTES_SITE.map((p) => escrever("GET", `/site/${p}`).catch((erro) => (p === "frequencia" ? null : Promise.reject(erro))))
+    );
     return { geradoEm: new Date().toISOString(), banco: "urna/multiurna/site", ...Object.fromEntries(PARTES_SITE.map((p, i) => [p, partes[i]])) };
   }
 
@@ -602,7 +611,10 @@ window.API = (() => {
   // escolha: { inscricoesAlunos, inscricoesProfessores, projetos, avaliacoes, professores } (true = apagar)
   async function limparDados(escolha) {
     const mudancas = {};
-    if (escolha.inscricoesAlunos) mudancas["inscricoes/alunos"] = null;
+    if (escolha.inscricoesAlunos) {
+      mudancas["inscricoes/alunos"] = null;
+      mudancas.frequencia = null; // a lista de frequência sai das respostas dos alunos
+    }
     if (escolha.inscricoesProfessores) mudancas["inscricoes/professores"] = null;
     if (escolha.inscricoesEscolas) mudancas["inscricoes/escolas"] = null;
     if (escolha.projetos) mudancas.projetos = null;
@@ -651,6 +663,7 @@ window.API = (() => {
     entrarProfessor, sairProfessor: contaProfessor.sair, sessaoProfessor: contaProfessor.atual,
     meuPerfil, minhasAvaliacoes, salvarAvaliacao,
     lerFormulario, salvarFormulario, definirInscricoesAbertas, enviarInscricao, lerInscricoes, removerInscricao, editarInscricao,
+    lerFrequencia, salvarFrequencia,
     importarProjetos, copiaDeSeguranca, contarDados, limparDados, importarInscricoes, assinaturasImportadas,
     lerFeiras, salvarFeira, removerFeira, publicarFeirasIniciais,
   };

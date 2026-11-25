@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20261126c">
+  <link rel="stylesheet" href="css/style.css?v=20261126d">
 </head>
 <body>
   <div class="login" id="tela-login">
@@ -130,7 +130,7 @@
         <div class="ficha-cabeca">
           <p class="rotulo">Alunos da feira</p>
           <h1>Frequência</h1>
-          <p>Alunos de cada disciplina, tirados das inscrições dos alunos e dos projetos cadastrados. Engenharia Elétrica vem primeiro, depois Energias Renováveis; as disciplinas e os nomes estão em ordem alfabética.</p>
+          <p>Alunos de cada disciplina, tirados das inscrições dos alunos e dos projetos cadastrados. Marque a presença na caixinha: fica salvo na hora. Use “Editar”, “Retirar” e “+ Aluno” para corrigir inscrições erradas ou incluir quem não se inscreveu.</p>
         </div>
         <div class="ficha-corpo">
           <div class="freq-topo">
@@ -139,11 +139,16 @@
               <input id="freq-busca" type="search" placeholder="Aluno, projeto ou disciplina" autocomplete="off">
             </label>
             <div class="freq-acoes">
-              <button class="btn btn-amber" id="freq-pdf" type="button" disabled>Baixar PDF</button>
+              <button class="btn btn-amber" id="freq-acrescentar" type="button">+ Acrescentar aluno</button>
+              <button class="btn btn-vidro" id="freq-pdf" type="button" disabled>Baixar PDF</button>
               <button class="btn btn-vidro" id="freq-atualizar" type="button">Atualizar</button>
             </div>
           </div>
-          <p class="freq-resumo" id="freq-resumo"></p>
+          <div class="freq-linha-info">
+            <p class="freq-resumo" id="freq-resumo"></p>
+            <label class="freq-retirados"><input type="checkbox" id="freq-retirados"> Mostrar retirados</label>
+          </div>
+          <p class="lista-aviso" id="freq-aviso" hidden>As marcações estão sendo gravadas no Firebase, mas só este navegador consegue lê-las até as regras novas de REGRAS_FIREBASE.md serem publicadas no console do Firebase.</p>
           <span class="urna-situacao" id="freq-situacao" role="status"></span>
           <div id="freq-lista"></div>
         </div>
@@ -434,7 +439,7 @@
             </label>
             <label class="limpar-opcao">
               <input type="checkbox" data-parte="inscricoesAlunos" checked>
-              <span><b>Respostas do formulário dos alunos</b><small>As inscrições de projetos recebidas pelo site.</small></span>
+              <span><b>Respostas do formulário dos alunos</b><small>As inscrições de projetos recebidas pelo site, junto com a lista de frequência (presenças e alunos acrescentados).</small></span>
               <em data-conta="inscricoesAlunos">–</em>
             </label>
             <label class="limpar-opcao">
@@ -484,6 +489,35 @@
     </main>
   </div>
   </div><!-- fim de #tela-painel -->
+
+  <dialog id="freq-dialogo" class="confirmar">
+    <button class="fechar" type="button" aria-label="Fechar" onclick="this.closest('dialog').close()">×</button>
+    <h2 id="freq-dialogo-titulo">Acrescentar aluno</h2>
+    <form id="freq-form" novalidate>
+      <label class="campo">
+        <span id="freq-nomes-rotulo">Nome do aluno</span>
+        <textarea id="freq-nomes" rows="4" maxlength="2000" placeholder="Ex.: Ana Souza"></textarea>
+      </label>
+      <label class="campo">
+        <span>Curso</span>
+        <select id="freq-curso"></select>
+      </label>
+      <label class="campo">
+        <span>Disciplina</span>
+        <input id="freq-disciplina" list="freq-disciplinas" maxlength="80" placeholder="Escolha ou digite" autocomplete="off">
+        <datalist id="freq-disciplinas"></datalist>
+      </label>
+      <label class="campo">
+        <span>Projeto (opcional)</span>
+        <input id="freq-projeto" maxlength="80" placeholder="Nome do projeto ou da equipe">
+      </label>
+      <p class="login-erro" id="freq-dialogo-erro" role="alert"></p>
+      <div class="ficha-acoes">
+        <button class="btn btn-vidro" id="freq-cancelar" type="button">Cancelar</button>
+        <button class="btn btn-amber" type="submit">Salvar</button>
+      </div>
+    </form>
+  </dialog>
 
   <dialog id="planilha" class="confirmar importar-modal">
     <button class="fechar" id="planilha-fechar" type="button" aria-label="Fechar">×</button>
@@ -581,22 +615,22 @@
     </form>
   </dialog>
 
-  <script src="js/data.js?v=20261126c"></script>
-  <script src="js/api.js?v=20261126c"></script>
-  <script src="js/senha.js?v=20261126c"></script>
-  <script src="js/modelo-urna.js?v=20261126c"></script>
-  <script src="js/gerador-urna.js?v=20261126c"></script>
-  <script src="js/relatorio.js?v=20261126c"></script>
-  <script src="js/exportar.js?v=20261126c"></script>
-  <script src="js/petianos.js?v=20261126c"></script>
-  <script src="js/petianos-professores.js?v=20261126c"></script>
-  <script src="js/petianos-formularios.js?v=20261126c"></script>
-  <script src="js/nomes.js?v=20261126c"></script>
-  <script src="js/petianos-importar.js?v=20261126c"></script>
-  <script src="js/petianos-planilha.js?v=20261126c"></script>
-  <script src="js/petianos-limpar.js?v=20261126c"></script>
-  <script src="js/feiras-dados.js?v=20261126c"></script>
-  <script src="js/petianos-feiras.js?v=20261126c"></script>
-  <script src="js/petianos-frequencia.js?v=20261126c"></script>
+  <script src="js/data.js?v=20261126d"></script>
+  <script src="js/api.js?v=20261126d"></script>
+  <script src="js/senha.js?v=20261126d"></script>
+  <script src="js/modelo-urna.js?v=20261126d"></script>
+  <script src="js/gerador-urna.js?v=20261126d"></script>
+  <script src="js/relatorio.js?v=20261126d"></script>
+  <script src="js/exportar.js?v=20261126d"></script>
+  <script src="js/petianos.js?v=20261126d"></script>
+  <script src="js/petianos-professores.js?v=20261126d"></script>
+  <script src="js/petianos-formularios.js?v=20261126d"></script>
+  <script src="js/nomes.js?v=20261126d"></script>
+  <script src="js/petianos-importar.js?v=20261126d"></script>
+  <script src="js/petianos-planilha.js?v=20261126d"></script>
+  <script src="js/petianos-limpar.js?v=20261126d"></script>
+  <script src="js/feiras-dados.js?v=20261126d"></script>
+  <script src="js/petianos-feiras.js?v=20261126d"></script>
+  <script src="js/petianos-frequencia.js?v=20261126d"></script>
 </body>
 </html>
