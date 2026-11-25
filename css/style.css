@@ -79,9 +79,6 @@ em { font-family: var(--serif); font-style: italic; }
 .nav-links a[aria-current] { color: var(--tinta); background: var(--superficie-forte); }
 .nav-acoes { justify-self: end; display: flex; align-items: flex-start; gap: 8px; }
 .nav-areas { display: flex; flex-direction: column; gap: 6px; }
-.ctas { display: flex; flex-direction: column; gap: 16px; }
-.cta.cta-petianos { background: linear-gradient(120deg, var(--amber), #c97f06); color: var(--navy); }
-.cta.cta-petianos p { color: rgba(12, 6, 92, .86); }
 
 /* Hero */
 .hero-moldura { padding: 12px; }
@@ -249,14 +246,7 @@ em { font-family: var(--serif); font-style: italic; }
 .status.off { color: var(--tinta-3); }
 .status.off::before { background: none; border: 1.5px solid currentColor; }
 
-/* Faixa professor + rodapé */
-.cta {
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px;
-  padding: clamp(28px, 4vw, 48px); border-radius: var(--raio);
-  background: linear-gradient(120deg, var(--green), #2a6f2f);
-}
-.cta h2 { font-family: var(--serif); font-weight: 400; font-size: clamp(30px, 3.6vw, 44px); line-height: 1.1; }
-.cta p { margin-top: 8px; max-width: 46ch; color: rgba(255, 255, 255, .88); }
+/* Rodapé */
 .rodape {
   display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;
   padding: 24px var(--gutter) 32px; color: var(--tinta-3); font-size: 13.5px;
@@ -498,6 +488,8 @@ dialog::backdrop { background: rgba(4, 2, 30, .72); backdrop-filter: blur(6px); 
 .hero-feiras h1 { margin-top: 16px; }
 .hero-feiras p { margin-top: 20px; max-width: 52ch; color: var(--tinta-2); }
 .secao-feiras { padding-top: clamp(48px, 7vw, 88px); }
+.secao-projetos { padding-top: clamp(24px, 4vw, 48px); }
+.secao-projetos .filtros { margin-top: 0; }
 .linha-tempo { list-style: none; padding: 0; display: flex; flex-direction: column; gap: clamp(40px, 6vw, 72px); }
 .edicao { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: clamp(20px, 3vw, 40px); align-items: start; }
 .edicao-marco { position: sticky; top: 24px; display: flex; flex-direction: column; gap: 4px; padding-top: 6px; border-top: 2px solid var(--amber); }

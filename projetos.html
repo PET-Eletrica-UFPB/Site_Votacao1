@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Projetos | PET Elétrica</title>
+  <meta name="description" content="Projetos em exposição na Feira de Engenharia e Energia, promovida pelo PET Elétrica.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="hero-moldura">
+    <header class="hero hero-curto">
+      <img class="hero-cena" src="img/cena.svg" alt="">
+
+      <nav class="nav" aria-label="Principal">
+        <div class="nav-links">
+          <a href="index.html">Início</a>
+          <a href="projetos.html" aria-current="page">Projetos</a>
+          <a href="index.html#placar">Placar</a>
+          <a href="feiras.html">Feiras</a>
+          <a href="inscricoes.html">Inscrições</a>
+        </div>
+        <a class="marca" href="index.html">
+          <img src="img/logo-pet-compacto.png" alt="PET Elétrica UFPB">
+        </a>
+        <div class="nav-acoes">
+          <a class="btn btn-amber nav-acao nav-podio" href="podio.html">Modo pódio</a>
+        </div>
+      </nav>
+
+      <div class="hero-feiras">
+        <span class="etiqueta"><span id="qtd-projetos">–</span>&nbsp;projetos na feira</span>
+        <h1>Da ideia ao protótipo, <em>a energia é dos estudantes.</em></h1>
+        <p>Conheça os projetos em exposição, visite os stands e deixe o seu voto na urna mais próxima.</p>
+      </div>
+    </header>
+  </div>
+
+  <main class="secao secao-projetos" id="projetos">
+    <div class="filtros" id="filtros" role="group" aria-label="Filtrar projetos por categoria"></div>
+    <div class="grade-projetos" id="grade"></div>
+  </main>
+
+  <footer class="rodape">
+    <span class="marca">
+      <img src="img/logo-pet-compacto.png" alt="PET Elétrica UFPB">
+    </span>
+    <span>Feira de Engenharia e Energia · <a class="link" href="feiras.html">Edições anteriores</a></span>
+  </footer>
+
+  <dialog id="modal">
+    <div class="cartao modal-capa" id="modal-capa"><div class="cartao-arte" id="modal-arte"></div></div>
+    <button class="fechar" id="modal-fechar" aria-label="Fechar">×</button>
+    <div class="modal-corpo">
+      <p class="rotulo" id="modal-cat"></p>
+      <h3 id="modal-nome"></h3>
+      <p id="modal-resumo"></p>
+      <p class="modal-voto" id="modal-voto"></p>
+      <div class="modal-meta" id="modal-meta"></div>
+    </div>
+  </dialog>
+
+  <script src="js/data.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/artes.js"></script>
+  <script src="js/projetos.js"></script>
+</body>
+</html>
