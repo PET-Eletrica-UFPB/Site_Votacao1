@@ -193,7 +193,7 @@ window.PDF = (() => {
     return p;
   }
 
-  return { criar, COR };
+  return { criar, bibliotecas, COR };
 })();
 
 /* Relatório das avaliações dos professores */
