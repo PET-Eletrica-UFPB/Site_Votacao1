@@ -21,7 +21,9 @@
     if (valor === "patio") return "auto";
     if (valor === "auditorio" || valor === "sala") return "fora";
     const n = Number(valor);
-    return Planta.LOCAIS.some((l) => l.id === n) ? n : null;
+    const local = Planta.LOCAIS.find((l) => l.id === n);
+    if (!local) return null;
+    return local.patio ? "auto" : n; // partes do pátio escolhidas antes viram "Pátio"
   }
 
   function lerNavegador() {
@@ -64,13 +66,13 @@
   const ordenadas = () => cursos.flatMap((c) => disciplinas.filter((d) => d.curso === c.id));
 
   function opcoes(d) {
-    const locais = Planta.LOCAIS.map((l) => {
+    const locais = Planta.LOCAIS.filter((l) => !l.patio).map((l) => {
       const mesas = l.mesas.length ? `${l.mesas.length} mesas` : "sem mesas";
       return `<option value="${l.id}" ${d.local === l.id ? "selected" : ""}>${l.id} · ${esc(l.nome)} · ${mesas}</option>`;
     }).join("");
     return `
-      <option value="auto" ${d.local === "auto" ? "selected" : ""}>Automático (pátio)</option>
-      <optgroup label="Locais da planta">${locais}</optgroup>
+      <option value="auto" ${d.local === "auto" ? "selected" : ""}>Pátio</option>
+      <optgroup label="Salas">${locais}</optgroup>
       <option value="fora" ${d.local === "fora" ? "selected" : ""}>Fora da planta / Auditório</option>`;
   }
 
@@ -156,6 +158,8 @@
       $("planta").showModal();
       ajustarCanvas();
       render();
+      // Com a fonte da original carregada, redesenha a prévia com ela.
+      Planta.prepararFonte().then(() => $("planta").open && render());
     } catch (erro) {
       console.error(erro);
       aviso(`Não consegui abrir a planta. ${erro.message}`, true);

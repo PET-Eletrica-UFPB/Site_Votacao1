@@ -1,48 +1,63 @@
 // Planta da feira, no modelo da planta 2026.2 (mesma disposição das mesas).
-// Os locais são numerados: salas 1 a 6 do prédio e os corredores 7 a 9 com mesas.
-// Cada disciplina vai para o automático, para um local escolhido ou fica fora (auditório).
+// As salas do prédio são numeradas de 1 a 6; o pátio não tem número (as cores separam as disciplinas).
+// Cada disciplina vai para o pátio, para uma sala escolhida ou fica fora (auditório).
 // O mesmo desenho sai no PDF (jsPDF) e na prévia da Área dos Petianos (canvas).
 window.Planta = (() => {
   const PAGINA = [1440, 810]; // pt, 16:9 como a original
   const PRETO = [0, 0, 0];
   const CINZA_MESA = [84, 84, 84];
   const CINZA_SALA = [166, 166, 166];
-  const AMBAR = [238, 166, 20];
   const AZUL = [12, 6, 92];
+  // Fonte da original (Open Sans Bold). Sem ela, usa Helvetica.
+  const ARQUIVO_FONTE = "fonts/OpenSans-Bold.ttf";
+  const FONTE_CANVAS = '"Open Sans PET", Helvetica, Arial, sans-serif';
+  const BASE = 0.705; // distância do topo do texto (como na original) até a linha de base, em tamanhos de fonte
 
-  // Cores das disciplinas, na ordem da legenda original e depois algumas a mais.
+  // Cores da legenda original para as disciplinas que já estavam nela.
+  const CORES_DA_ORIGINAL = [
+    [/introducao a engenharia eletrica/, [66, 156, 66]],
+    [/^integradora (i|1)$/, [56, 182, 255]],
+    [/profissional (iii|3)/, [249, 174, 20]],
+    [/projeto integrador (iii|3)/, [140, 82, 255]],
+    [/ciencia dos materiais/, [255, 87, 87]],
+    [/unidade curricular de extensao/, [5, 1, 93]],
+    [/eletronica digital/, [226, 169, 241]],
+    [/projeto integrador (i|1)$/, [255, 145, 77]],
+    [/projeto integrador (ii|2)$/, [193, 255, 114]],
+  ];
+  const semAcento = (t) => String(t ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+  // Demais disciplinas: cores que não se confundem com as da original.
   const CORES = [
-    [66, 156, 66], [56, 182, 255], [249, 174, 20], [140, 82, 255], [255, 87, 87], [5, 1, 93],
-    [226, 169, 241], [255, 145, 77], [193, 255, 114], [12, 192, 223], [150, 95, 50], [0, 150, 136],
-    [233, 30, 99], [120, 144, 156], [205, 220, 57], [63, 81, 181],
+    [12, 192, 223], [150, 95, 50], [0, 150, 136], [233, 30, 99], [120, 144, 156], [205, 220, 57],
+    [63, 81, 181], [121, 85, 72], [0, 96, 100], [255, 193, 7], [96, 125, 139], [156, 39, 176],
   ];
 
-  // Mesas: número, retângulo e onde vai o código ("esq"/"dir" fora da mesa, "cima" ou "dentro").
+  // Mesas da original: número, retângulo e o número escrito como na original (x, topo, tamanho).
   const MESAS = [
-    [1, 647.4, 536.7, 664.6, 566.3, "esq", 17], [2, 647.4, 493.0, 664.6, 522.7, "esq", 17],
-    [3, 647.4, 449.3, 664.6, 479.0, "esq", 17], [4, 647.4, 405.7, 664.6, 435.3, "esq", 17],
-    [5, 647.4, 362.0, 664.6, 391.7, "esq", 17], [6, 647.4, 318.3, 664.6, 348.0, "esq", 17],
-    [7, 647.4, 274.7, 664.6, 304.3, "esq", 17], [8, 647.4, 231.0, 664.6, 260.6, "esq", 17],
-    [9, 647.4, 187.3, 664.6, 217.0, "esq", 17],
-    [10, 755.3, 103.5, 791.0, 124.3, "dentro", 12], [11, 825.2, 103.5, 860.9, 124.3, "dentro", 12],
-    [12, 883.4, 68.6, 904.1, 104.3, "dir", 10], [13, 825.2, 48.7, 860.9, 69.4, "dentro", 12],
-    [14, 755.3, 48.7, 791.0, 69.4, "dentro", 12],
-    [15, 585.0, 87.0, 614.7, 104.3, "cima", 16], [16, 541.4, 87.0, 571.0, 104.3, "cima", 16],
-    [17, 497.7, 87.0, 527.3, 104.3, "cima", 16], [18, 454.0, 87.0, 483.7, 104.3, "cima", 16],
-    [19, 410.3, 87.0, 440.0, 104.3, "cima", 16], [20, 366.7, 87.0, 396.3, 104.3, "cima", 16],
-    [21, 349.4, 126.6, 366.6, 156.2, "esq", 19], [22, 349.4, 228.4, 366.6, 258.1, "esq", 19],
-    [23, 349.4, 272.1, 366.6, 301.8, "esq", 19], [24, 349.4, 315.8, 366.6, 345.4, "esq", 19],
-    [25, 349.4, 359.4, 366.6, 389.1, "esq", 19], [26, 349.4, 403.1, 366.6, 432.8, "esq", 19],
-    [27, 349.4, 446.8, 366.6, 476.4, "esq", 19], [28, 349.4, 490.5, 366.6, 520.1, "esq", 19],
-    [29, 171.6, 180.6, 207.3, 201.4, "dentro", 10.5], [30, 119.0, 180.6, 154.7, 201.4, "dentro", 10.5],
-    [31, 81.1, 144.9, 101.8, 180.6, "dir", 10.5], [32, 81.1, 92.3, 101.8, 128.0, "dir", 10.5],
-    [33, 107.1, 59.9, 142.8, 80.7, "dentro", 10.5], [34, 159.7, 59.9, 195.4, 80.7, "dentro", 10.5],
-    [35, 212.3, 59.9, 248.0, 80.7, "dentro", 10.5], [36, 252.2, 92.3, 273.0, 128.0, "esq", 10.5],
-    [37, 252.2, 144.9, 273.0, 180.6, "esq", 10.5],
-  ].map(([n, x0, y0, x1, y1, lado, tamanho]) => ({ n, x0, y0, x1, y1, lado, tamanho }));
+    [1, 647.4, 536.7, 664.6, 566.3, 672.4, 543.7, 24.35], [2, 647.4, 493.0, 664.6, 522.7, 672.4, 500.0, 24.35],
+    [3, 647.4, 449.3, 664.6, 479.0, 672.4, 456.3, 24.35], [4, 647.4, 405.7, 664.6, 435.3, 672.4, 412.6, 24.35],
+    [5, 647.4, 362.0, 664.6, 391.7, 672.4, 368.8, 24.35], [6, 647.4, 318.3, 664.6, 348.0, 672.4, 325.0, 24.35],
+    [7, 647.4, 274.7, 664.6, 304.3, 672.4, 281.1, 24.35], [8, 647.4, 231.0, 664.6, 260.6, 672.1, 237.3, 24.35],
+    [9, 647.4, 187.3, 664.6, 217.0, 672.4, 193.5, 24.35],
+    [10, 755.3, 103.5, 791.0, 124.3, 761.3, 108.1, 15.68], [11, 825.2, 103.5, 860.9, 124.3, 833.0, 108.1, 15.68],
+    [12, 883.4, 68.6, 904.1, 104.3, 906.0, 80.6, 15.68], [13, 825.2, 48.7, 860.9, 69.4, 833.0, 52.3, 15.68],
+    [14, 755.3, 48.7, 791.0, 69.4, 762.6, 52.3, 15.68],
+    [15, 585.0, 87.0, 614.7, 104.3, 585.9, 64.4, 24.35], [16, 541.4, 87.0, 571.0, 104.3, 542.3, 64.4, 24.35],
+    [17, 497.7, 87.0, 527.3, 104.3, 498.6, 64.4, 24.35], [18, 454.0, 87.0, 483.7, 104.3, 454.9, 64.4, 24.35],
+    [19, 410.3, 87.0, 440.0, 104.3, 411.3, 64.4, 24.35], [20, 366.7, 87.0, 396.3, 104.3, 367.6, 64.4, 24.35],
+    [21, 349.4, 126.6, 366.6, 156.2, 313.9, 133.9, 24.35], [22, 349.4, 228.4, 366.6, 258.1, 313.9, 235.7, 24.35],
+    [23, 349.4, 272.1, 366.6, 301.8, 313.9, 279.0, 24.35], [24, 349.4, 315.8, 366.6, 345.4, 313.9, 323.1, 24.35],
+    [25, 349.4, 359.4, 366.6, 389.1, 313.9, 367.2, 24.35], [26, 349.4, 403.1, 366.6, 432.8, 313.9, 411.3, 24.35],
+    [27, 349.4, 446.8, 366.6, 476.4, 313.9, 455.4, 24.35], [28, 349.4, 490.5, 366.6, 520.1, 313.9, 499.5, 24.35],
+    [29, 171.6, 180.6, 207.3, 201.4, 182.6, 183.3, 12.18], [30, 119.0, 180.6, 154.7, 201.4, 130.5, 183.3, 12.18],
+    [31, 81.1, 144.9, 101.8, 180.6, 106.2, 159.9, 12.18], [32, 81.1, 92.3, 101.8, 128.0, 106.2, 102.3, 12.18],
+    [33, 107.1, 59.9, 142.8, 80.7, 116.5, 63.2, 12.18], [34, 159.7, 59.9, 195.4, 80.7, 168.7, 65.5, 12.18],
+    [35, 212.3, 59.9, 248.0, 80.7, 220.8, 64.5, 12.18], [36, 252.2, 92.3, 273.0, 128.0, 227.8, 100.2, 12.18],
+    [37, 252.2, 144.9, 273.0, 180.6, 227.8, 159.5, 12.18],
+  ].map(([n, x0, y0, x1, y1, tx, ty, tamanho]) => ({ n, x0, y0, x1, y1, rotulo: { x: tx, topo: ty, tamanho } }));
   const MESA = new Map(MESAS.map((m) => [m.n, m]));
 
-  /* Locais numerados. curso: área a que pertencem (null = serve aos dois).
+  /* Locais: salas numeradas de 1 a 6 e as três partes do pátio. curso: área a que pertencem (null = serve aos dois).
      caixa: interior da sala (onde as mesas são desenhadas se ela não tem mesas fixas). selo: onde fica o número. */
   const LOCAIS = [
     { id: 1, nome: "Sala 1 (esquerda, em cima)", mesas: [29, 30, 31, 32, 33, 34, 35, 36, 37], curso: "renovaveis", caixa: [62.5, 44, 295, 218.7], selo: [78, 61] },
@@ -51,9 +66,10 @@ window.Planta = (() => {
     { id: 4, nome: "Sala 4 (esquerda, embaixo)", mesas: [], curso: null, porta: "dir", caixa: [62.5, 476.6, 295, 569.9], selo: [80, 495] },
     { id: 5, nome: "Sala 5 (direita, em cima)", mesas: [10, 11, 12, 13, 14], curso: "eletrica", caixa: [697, 44, 929.5, 130.4], selo: [717, 62] },
     { id: 6, nome: "Sala 6 (direita, embaixo)", mesas: [], curso: null, porta: "esq", caixa: [697, 389, 929.5, 569.9], selo: [711, 407] },
-    { id: 7, nome: "Corredor 7 (lado Renováveis)", mesas: [21, 22, 23, 24, 25, 26, 27, 28], curso: "renovaveis", selo: [393, 141] },
-    { id: 8, nome: "Fileira 8 (no alto do pátio)", mesas: [15, 16, 17, 18, 19, 20], curso: null, selo: [636, 96] },
-    { id: 9, nome: "Corredor 9 (lado Elétrica)", mesas: [1, 2, 3, 4, 5, 6, 7, 8, 9], curso: "eletrica", selo: [656, 170] },
+    // Pátio: sem número (as cores já separam as disciplinas); só o automático usa.
+    { id: 7, nome: "Pátio (lado Renováveis)", mesas: [21, 22, 23, 24, 25, 26, 27, 28], curso: "renovaveis", patio: true },
+    { id: 8, nome: "Pátio (fileira do alto)", mesas: [15, 16, 17, 18, 19, 20], curso: null, patio: true },
+    { id: 9, nome: "Pátio (lado Elétrica)", mesas: [1, 2, 3, 4, 5, 6, 7, 8, 9], curso: "eletrica", patio: true },
   ];
   const LOCAL = new Map(LOCAIS.map((l) => [l.id, l]));
   const TOTAL_MESAS = MESAS.length;
@@ -77,15 +93,16 @@ window.Planta = (() => {
     const xFundo = fundoEsq ? x0 + PAREDE : x1 - PAREDE - h;
     const xa = fundoEsq ? xFundo + h + g : x0 + LIVRE_PORTA;
     const xb = fundoEsq ? x1 - LIVRE_PORTA : xFundo - g;
-    const tamanho = 12 * escala;
+    // Número da mesa como nas salas da original: dentro da mesa deitada, ao lado da em pé.
+    const tamanho = (local.porta === "esq" ? 15.68 : 12.18) * Math.max(escala, 0.8);
     const daPortaProFundo = (xs) => (fundoEsq ? xs.reverse() : xs);
     return [
       { a: xa, b: xb, t: w, g, ordem: daPortaProFundo, // baixo: porta → fundo
-        mesa: (x) => ({ x0: x, y0: y1 - PAREDE - h, x1: x + w, y1: y1 - PAREDE, lado: "dentro", tamanho }) },
+        mesa: (x) => ({ x0: x, y0: y1 - PAREDE - h, x1: x + w, y1: y1 - PAREDE, rotulo: { lado: "dentro", tamanho } }) },
       { a: y0 + PAREDE + h + g, b: y1 - PAREDE - h, t: w, g, ordem: (ys) => ys.reverse(), // fundo: de baixo para cima, até a fileira de baixo
-        mesa: (y) => ({ x0: xFundo, y0: y, x1: xFundo + h, y1: y + w, lado: fundoEsq ? "dir" : "esq", tamanho: 10.5 * escala }) },
+        mesa: (y) => ({ x0: xFundo, y0: y, x1: xFundo + h, y1: y + w, rotulo: { lado: fundoEsq ? "dir" : "esq", tamanho } }) },
       { a: xa, b: xb, t: w, g, ordem: (xs) => (fundoEsq ? xs : xs.reverse()), // cima: fundo → porta
-        mesa: (x) => ({ x0: x, y0: y0 + PAREDE, x1: x + w, y1: y0 + PAREDE + h, lado: "dentro", tamanho }) },
+        mesa: (x) => ({ x0: x, y0: y0 + PAREDE, x1: x + w, y1: y0 + PAREDE + h, rotulo: { lado: "dentro", tamanho } }) },
     ].map((p) => ({ ...p, cabem: Math.max(0, Math.floor((p.b - p.a + p.g) / (p.t + p.g))) }));
   }
 
@@ -128,8 +145,8 @@ window.Planta = (() => {
      (uma disciplina com número ímpar de projetos deixa meia mesa livre).
      disciplinas: [{ nome, curso, local: "auto" | "fora" | 1..9, projetos: [{ codigo, nome }] }]
      1) as que têm local escolhido vão para ele: nas mesas fixas, ou em mesas desenhadas na sala;
-     2) as automáticas vão inteiras para um único local sempre que couber, maiores primeiro,
-        preferindo os corredores e salas da área do seu curso; depois as salas vazias;
+     2) as do pátio vão inteiras para uma única parte do pátio sempre que couber, maiores primeiro,
+        preferindo a área do seu curso; se o pátio lotar, as salas 1 e 5 e depois as salas vazias;
         só se nada couber, dividem entre locais.
      Mesas sem projeto não são desenhadas. */
   const emPares = (lista) => Array.from({ length: Math.ceil(lista.length / 2) }, (_, i) => lista.slice(2 * i, 2 * i + 2));
@@ -171,7 +188,8 @@ window.Planta = (() => {
       .sort((a, b) => b.projetos.length - a.projetos.length || a.nome.localeCompare(b.nome, "pt-BR"));
     for (const d of automaticas) {
       const pares = emPares(d.projetos);
-      const preferencia = (l) => (l.mesas.length ? 0 : 3) + (l.curso === lado(d.curso) ? 0 : l.curso === null ? 1 : 2);
+      // Primeiro o pátio; se lotar, as salas com mesas fixas (1 e 5); por último, as salas vazias.
+      const preferencia = (l) => (l.patio ? 0 : l.mesas.length ? 3 : 6) + (l.curso === lado(d.curso) ? 0 : l.curso === null ? 1 : 2);
       const cabe = LOCAIS.filter((l) => mesasLivres(l) >= pares.length).sort((a, b) => preferencia(a) - preferencia(b) || mesasLivres(a) - mesasLivres(b));
       if (cabe.length) {
         pares.forEach((par) => ocupar(d, par, cabe[0].id));
@@ -180,7 +198,17 @@ window.Planta = (() => {
       const ordem = [...LOCAIS].sort((a, b) => preferencia(a) - preferencia(b) || mesasLivres(b) - mesasLivres(a));
       for (const par of pares) if (!ordem.some((l) => ocupar(d, par, l.id))) semMesa.push(...par);
     }
-    return { mesaDe, localDe, projetosDaMesa, naSala, semMesa };
+    // Mesas desenhadas nas salas ganham números depois das 37 da original, sala por sala.
+    let proximo = MESAS.length + 1;
+    const numerosNaSala = new Map();
+    for (const l of LOCAIS.filter((x) => naSala.has(x.id))) {
+      numerosNaSala.set(l.id, naSala.get(l.id).map((par) => {
+        const n = proximo++;
+        par.forEach((p) => mesaDe.set(p.codigo, n));
+        return n;
+      }));
+    }
+    return { mesaDe, localDe, projetosDaMesa, naSala, numerosNaSala, semMesa };
   }
 
   /* Pintor para canvas com os mesmos métodos do jsPDF usados aqui. */
@@ -192,7 +220,7 @@ window.Planta = (() => {
     ctx.fillRect(0, 0, PAGINA[0], PAGINA[1]);
     const rgb = (c) => `rgb(${c[0]},${c[1]},${c[2]})`;
     let fonte = { estilo: "bold", tamanho: 12 };
-    const aplicarFonte = () => (ctx.font = `${fonte.estilo === "bold" ? "bold " : ""}${fonte.tamanho}px Helvetica, Arial, sans-serif`);
+    const aplicarFonte = () => (ctx.font = `${fonte.estilo === "bold" ? "bold " : ""}${fonte.tamanho}px ${FONTE_CANVAS}`);
     const desenhar = (estilo) => {
       if (estilo.includes("F")) ctx.fill();
       if (estilo.includes("D") || estilo === "S") ctx.stroke();
@@ -266,8 +294,10 @@ window.Planta = (() => {
 
   const escura = ([r, g, b]) => 0.299 * r + 0.587 * g + 0.114 * b < 140;
   
+  const familia = (doc) => (doc.fonteOriginal ? "OpenSans" : "helvetica");
+
   function texto(doc, t, x, y, tamanho, opcoes = {}) {
-    doc.setFont("helvetica", opcoes.normal ? "normal" : "bold");
+    doc.setFont(opcoes.normal ? "helvetica" : familia(doc), opcoes.normal ? "normal" : "bold");
     doc.setFontSize(tamanho);
     doc.setTextColor(...(opcoes.cor || PRETO));
     doc.text(t, x, y, { align: opcoes.align || "left", baseline: opcoes.baseline || "alphabetic" });
@@ -275,7 +305,7 @@ window.Planta = (() => {
 
   // Diminui a fonte até o texto caber na largura.
   function caber(doc, t, tamanho, largura, minimo = 7) {
-    doc.setFont("helvetica", "bold");
+    doc.setFont(familia(doc), "bold");
     let s = tamanho;
     doc.setFontSize(s);
     while (s > minimo && doc.getTextWidth(t) > largura) doc.setFontSize((s -= 0.5));
@@ -317,9 +347,9 @@ window.Planta = (() => {
     doc.setDrawColor(...CINZA_MESA);
     doc.setLineWidth(1);
     doc.rect(314.1, 711.6, 20.8, 74.9, "FD");
-    texto(doc, "urnas", 354.1, 757, 21.6);
-    texto(doc, "Entrada", 223.3, 623.5, 14.7);
-    texto(doc, "LABFILM", 742.8, 273.5, 32.3);
+    texto(doc, "urnas", 354.1, 740.7 + 21.6 * BASE, 21.6);
+    texto(doc, "Entrada", 223.3, 612.3 + 14.7 * BASE, 14.7);
+    texto(doc, "LABFILM", 742.8, 248.6 + 32.3 * BASE, 32.3);
 
     tracejado(doc, [49.5, 35, 536, 582], [137, 217, 87], [204, 227, 102], 3, 11.5, 3.5);
     tracejado(doc, [541, 34, 943, 582], [92, 223, 230], [1, 75, 173], 4.5, 13.5, 4.5);
@@ -356,83 +386,77 @@ window.Planta = (() => {
     lado(x0, y1, x0, y0);
   }
 
-  // Número de cada local num círculo âmbar.
+  // Número de cada sala: círculo de contorno preto, no estilo preto e branco da original.
   function selos(doc) {
-    for (const l of LOCAIS) {
+    for (const l of LOCAIS.filter((x) => !x.patio)) {
       const [x, y] = l.selo;
-      doc.setFillColor(...AMBAR);
-      doc.setDrawColor(...AZUL);
-      doc.setLineWidth(1.2);
-      doc.circle(x, y, 11, "FD");
-      texto(doc, String(l.id), x, y + 0.5, 13, { align: "center", baseline: "middle", cor: AZUL });
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(...PRETO);
+      doc.setLineWidth(1.4);
+      doc.circle(x, y, 10, "FD");
+      texto(doc, String(l.id), x, y + 13 * 0.36, 13, { align: "center" });
     }
   }
 
-  /* Mesa dividida ao meio entre dois projetos: em pé, metade de cima e de baixo; deitada,
-     metade da esquerda e da direita. Cada metade tem a cor da disciplina e o código. */
-  function mesa(doc, m, par, corDe) {
+  /* Mesa como na original (cor da disciplina, contorno cinza e o número da mesa),
+     com uma linha no meio: cada metade é de um projeto. Meia mesa sem projeto fica branca. */
+  function mesa(doc, m, numero, par, corDe) {
     const emPe = m.y1 - m.y0 > m.x1 - m.x0;
+    const meioX = (m.x0 + m.x1) / 2;
+    const meioY = (m.y0 + m.y1) / 2;
     const metades = emPe
-      ? [{ x0: m.x0, y0: m.y0, x1: m.x1, y1: (m.y0 + m.y1) / 2 }, { x0: m.x0, y0: (m.y0 + m.y1) / 2, x1: m.x1, y1: m.y1 }]
-      : [{ x0: m.x0, y0: m.y0, x1: (m.x0 + m.x1) / 2, y1: m.y1 }, { x0: (m.x0 + m.x1) / 2, y0: m.y0, x1: m.x1, y1: m.y1 }];
-    metades.forEach((h, i) => {
+      ? [[m.x0, m.y0, m.x1, meioY], [m.x0, meioY, m.x1, m.y1]]
+      : [[m.x0, m.y0, meioX, m.y1], [meioX, m.y0, m.x1, m.y1]];
+    metades.forEach(([a, b, c, d], i) => {
       doc.setFillColor(...(par[i] ? corDe(par[i]) : [255, 255, 255]));
-      doc.rect(h.x0, h.y0, h.x1 - h.x0, h.y1 - h.y0, "F");
+      doc.rect(a, b, c - a, d - b, "F");
     });
     doc.setDrawColor(...CINZA_MESA);
-    doc.setLineWidth(1);
+    doc.setLineWidth(0.9);
     doc.rect(m.x0, m.y0, m.x1 - m.x0, m.y1 - m.y0, "S");
-    doc.setLineWidth(0.8);
-    if (emPe) doc.line(m.x0, (m.y0 + m.y1) / 2, m.x1, (m.y0 + m.y1) / 2);
-    else doc.line((m.x0 + m.x1) / 2, m.y0, (m.x0 + m.x1) / 2, m.y1);
-
-    const codigos = par.map((p) => String(p.codigo));
-    if (m.lado === "cima") {
-      // Fileira do alto: os dois códigos acima da mesa, na ordem das metades.
-      const t = codigos.join(" | ");
-      const s = caber(doc, t, m.tamanho * 0.72, 43, 6);
-      texto(doc, t, (m.x0 + m.x1) / 2, m.y0 - 4, s, { align: "center" });
-      return;
+    const r = m.rotulo;
+    // Com o número dentro da mesa, a divisão vira dois tracinhos nas bordas para não cortar o número.
+    const numeroDentro = r.lado === "dentro" || (r.x != null && r.x >= m.x0 && r.x <= m.x1);
+    if (emPe) doc.line(m.x0, meioY, m.x1, meioY);
+    else if (!numeroDentro) doc.line(meioX, m.y0, meioX, m.y1);
+    else {
+      const traco = (m.y1 - m.y0) * 0.2;
+      doc.line(meioX, m.y0, meioX, m.y0 + traco);
+      doc.line(meioX, m.y1 - traco, meioX, m.y1);
     }
-    metades.forEach((h, i) => {
-      const c = codigos[i];
-      if (!c) return;
-      const meioX = (h.x0 + h.x1) / 2;
-      const meioY = (h.y0 + h.y1) / 2;
-      if (m.lado === "dentro") {
-        const s = caber(doc, c, m.tamanho * 0.8, h.x1 - h.x0 - 2, 5);
-        texto(doc, c, meioX, meioY, s, { align: "center", baseline: "middle", cor: escura(corDe(par[i])) ? [255, 255, 255] : PRETO });
-      } else if (m.lado === "esq") {
-        texto(doc, c, m.x0 - 4, meioY, m.tamanho * 0.75, { align: "right", baseline: "middle" });
-      } else {
-        texto(doc, c, m.x1 + 3, meioY, m.tamanho * 0.75, { baseline: "middle" });
-      }
-    });
+
+    const t = String(numero);
+    if (r.x != null) return texto(doc, t, r.x, r.topo + r.tamanho * BASE, r.tamanho); // mesas da original
+    if (r.lado === "dentro") return texto(doc, t, meioX, meioY + r.tamanho * 0.36, r.tamanho, { align: "center" });
+    if (r.lado === "dir") return texto(doc, t, m.x1 + 4, meioY + r.tamanho * 0.36, r.tamanho);
+    texto(doc, t, m.x0 - 4, meioY + r.tamanho * 0.36, r.tamanho, { align: "right" });
   }
 
   function mesas(doc, m) {
     const cor = (p) => m.corDe.get(m.disciplinaDoProjeto.get(p.codigo));
-    for (const [n, par] of m.projetosDaMesa) mesa(doc, MESA.get(n), par, cor);
+    for (const [n, par] of m.projetosDaMesa) mesa(doc, MESA.get(n), n, par, cor);
     for (const [id, pares] of m.naSala) {
       const grade = gradeDaSala(LOCAL.get(id), pares.length);
-      pares.forEach((par, i) => grade[i] && mesa(doc, grade[i], par, cor));
+      const numeros = m.numerosNaSala.get(id);
+      pares.forEach((par, i) => grade[i] && mesa(doc, grade[i], numeros[i], par, cor));
     }
   }
 
+  // Legenda como a original: quadrados de 22,5 a cada 38,6 pt, texto de 18,5 e o título embaixo.
   function legenda(doc, itens, edicao) {
     const x = 969.1;
-    const topo = 72.3;
-    const fim = 500;
+    const topo = 80.2;
+    const fim = 515;
     const passo = Math.min(38.6, (fim - topo) / (itens.length + 2));
     const quadrado = Math.min(22.5, passo * 0.6);
-    const tamanho = Math.min(18.5, passo * 0.5);
-    texto(doc, "Legenda:", x, 54.2, 19.1);
+    const tamanho = Math.min(18.5, passo * 0.48);
+    texto(doc, "Legenda:", x, 39 + 19.1 * BASE, 19.1);
     const largura = PAGINA[0] - (x + 44) - 18;
     const linha = (i, desenhar, rotulo) => {
       const y = topo + i * passo;
       desenhar(y);
       const s = caber(doc, rotulo, tamanho, largura);
-      texto(doc, rotulo, x + 44, y + quadrado / 2, s, { baseline: "middle" });
+      texto(doc, rotulo, x + 43.9, y + quadrado / 2 + s * 0.36, s);
     };
     itens.forEach((item, i) =>
       linha(i, (y) => {
@@ -440,17 +464,23 @@ window.Planta = (() => {
         doc.rect(x, y, quadrado, quadrado, "F");
       }, item.rotulo)
     );
-    linha(itens.length, (y) => tracejado(doc, [x + 1, y + 1, x + quadrado + 6, y + quadrado], [137, 217, 87], [204, 227, 102], 2.5, 7, 3), "Área Renováveis");
-    linha(itens.length + 1, (y) => tracejado(doc, [x + 1, y + 1, x + quadrado + 6, y + quadrado], [92, 223, 230], [1, 75, 173], 2.5, 7, 3), "Área Elétrica");
-    texto(doc, "Planta da", x, 556.2, 34.9);
-    texto(doc, `Feira - ${edicao}`, x, 590.7, 34.9);
+    const area = (corA, corB) => (y) => tracejado(doc, [x + 1.5, y + 1.5, x + quadrado + 9, y + quadrado + 2], corA, corB, 2.6, 6, 2.6);
+    linha(itens.length, area([137, 217, 87], [204, 227, 102]), "Área Renováveis");
+    linha(itens.length + 1, area([92, 223, 230], [1, 75, 173]), "Área Elétrica");
+    texto(doc, "Planta da", x, 529.1 + 34.9 * BASE, 34.9);
+    texto(doc, `Feira - ${edicao}`, x, 563.6 + 34.9 * BASE, 34.9);
   }
 
   /* Tudo da primeira página. Devolve a distribuição para a lista. */
   function montar(disciplinas) {
     const incluidas = disciplinas.filter((d) => d.local !== "fora" && d.projetos.length);
     const resultado = distribuir(incluidas);
-    const corDe = new Map(incluidas.map((d, i) => [d, CORES[i % CORES.length]]));
+    const corDe = new Map();
+    let extra = 0;
+    for (const d of incluidas) {
+      const conhecida = CORES_DA_ORIGINAL.find(([r]) => r.test(semAcento(d.nome)));
+      corDe.set(d, conhecida ? conhecida[1] : CORES[extra++ % CORES.length]);
+    }
     const disciplinaDoProjeto = new Map(incluidas.flatMap((d) => d.projetos.map((p) => [p.codigo, d])));
     return { ...resultado, incluidas, corDe, disciplinaDoProjeto };
   }
@@ -459,7 +489,13 @@ window.Planta = (() => {
     estrutura(doc);
     mesas(doc, m);
     selos(doc);
-    legenda(doc, m.incluidas.map((d) => ({ cor: m.corDe.get(d), rotulo: d.nome })), edicao);
+    // Legenda na ordem da original; disciplinas novas no fim.
+    const posicao = (d) => {
+      const i = CORES_DA_ORIGINAL.findIndex(([r]) => r.test(semAcento(d.nome)));
+      return i < 0 ? 99 : i;
+    };
+    const itens = [...m.incluidas].sort((a, b) => posicao(a) - posicao(b));
+    legenda(doc, itens.map((d) => ({ cor: m.corDe.get(d), rotulo: d.nome })), edicao);
   }
 
   // Onde cada disciplina ficou, para mostrar na lista: { disciplina → "Corredor 9 · mesas 1–6" }
@@ -480,13 +516,46 @@ window.Planta = (() => {
       const locais = [...new Set(d.projetos.map((p) => m.localDe.get(p.codigo)).filter(Boolean))];
       const mesas = [...new Set(d.projetos.map((p) => m.mesaDe.get(p.codigo)).filter(Boolean))];
       const sem = d.projetos.filter((p) => !m.localDe.has(p.codigo)).length;
-      const partes = locais.map((id) => nomeCurto(LOCAL.get(id)));
+      const partes = [...new Set(locais.map((id) => nomeCurto(LOCAL.get(id))))]; // as partes do pátio contam como um lugar só
       let texto = partes.join(" + ");
       if (mesas.length) texto += ` · mesa${mesas.length === 1 ? "" : "s"} ${faixas(mesas)}`;
       if (sem) texto += `${texto ? " · " : ""}${sem} sem mesa`;
-      porDisciplina.set(d, { texto, dividida: locais.length > 1, sem });
+      porDisciplina.set(d, { texto, dividida: partes.length > 1, sem });
     }
     return porDisciplina;
+  }
+
+  /* Fonte da original: no PDF entra no arquivo; na prévia, é carregada uma vez no navegador. */
+  let fonteBytes = null;
+  async function bytesDaFonte() {
+    if (!fonteBytes) {
+      const resposta = await fetch(ARQUIVO_FONTE);
+      if (!resposta.ok) throw new Error("fonte indisponível");
+      fonteBytes = new Uint8Array(await resposta.arrayBuffer());
+    }
+    return fonteBytes;
+  }
+  async function usarFonteNoPdf(doc) {
+    try {
+      const bytes = await bytesDaFonte();
+      let binario = "";
+      for (let i = 0; i < bytes.length; i += 0x8000) binario += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+      doc.addFileToVFS("OpenSans-Bold.ttf", btoa(binario));
+      doc.addFont("OpenSans-Bold.ttf", "OpenSans", "bold");
+      doc.fonteOriginal = true;
+    } catch (erro) {
+      console.warn("Planta sem a fonte original:", erro.message);
+    }
+  }
+  let fonteDaPrevia = null;
+  function prepararFonte() {
+    if (!fonteDaPrevia) {
+      fonteDaPrevia = new FontFace("Open Sans PET", `url(${ARQUIVO_FONTE})`, { weight: "700" })
+        .load()
+        .then((f) => document.fonts.add(f))
+        .catch(() => null);
+    }
+    return fonteDaPrevia;
   }
 
   /* Prévia no canvas (só a planta). */
@@ -500,11 +569,12 @@ window.Planta = (() => {
     const m = montar(disciplinas);
     const jsPDF = await PDF.bibliotecas();
     const doc = new jsPDF({ unit: "pt", format: PAGINA, orientation: "landscape" });
+    await usarFonteNoPdf(doc);
     desenharPlanta(doc, m, edicao);
 
     // Página 2: onde fica cada projeto
     doc.addPage(PAGINA, "landscape");
-    texto(doc, `Onde fica cada projeto  ·  Feira - ${edicao}`, 48, 64, 26);
+    texto(doc, `Mesas e projetos  ·  Feira - ${edicao}`, 48, 64, 26);
     const fora = disciplinas.filter((d) => d.local === "fora" && d.projetos.length).map((d) => d.nome);
     const nota = [
       `${m.localDe.size} projeto(s) com lugar na planta.`,
@@ -518,21 +588,21 @@ window.Planta = (() => {
 
     const linhas = m.incluidas
       .flatMap((d) => d.projetos.map((p) => ({ d, p, local: m.localDe.get(p.codigo), mesa: m.mesaDe.get(p.codigo) })))
-      .sort((a, b) => (a.local ?? 99) - (b.local ?? 99) || (a.mesa ?? 99) - (b.mesa ?? 99) || m.incluidas.indexOf(a.d) - m.incluidas.indexOf(b.d));
-    const onde = ({ local, mesa }) => (local ? `${nomeCurto(LOCAL.get(local))}${mesa ? ` · mesa ${mesa}` : ""}` : "Sem mesa");
+      .sort((a, b) => (a.mesa ?? 999) - (b.mesa ?? 999) || m.incluidas.indexOf(a.d) - m.incluidas.indexOf(b.d));
+    const onde = ({ local }) => (local ? nomeCurto(LOCAL.get(local)) : "Sem mesa");
     doc.autoTable({
       startY: 112,
       margin: { left: 48, right: 48, bottom: 40 },
       theme: "grid",
-      head: [["", "Código", "Projeto", "Disciplina", "Curso", "Local"]],
-      body: linhas.map((l) => ["", l.p.codigo, l.p.nome, l.d.nome, cursos.find((c) => c.id === l.d.curso)?.curto || "–", onde(l)]),
+      head: [["", "Mesa", "Código", "Projeto", "Disciplina", "Curso", "Local"]],
+      body: linhas.map((l) => ["", l.mesa ?? "–", l.p.codigo, l.p.nome, l.d.nome, cursos.find((c) => c.id === l.d.curso)?.curto || "–", onde(l)]),
       styles: { font: "helvetica", fontSize: 12, cellPadding: 6, textColor: [30, 30, 46], lineColor: [222, 222, 232], lineWidth: 0.5, valign: "middle" },
       headStyles: { fillColor: AZUL, textColor: 255, fontStyle: "bold" },
-      columnStyles: { 0: { cellWidth: 16 }, 1: { cellWidth: 70, fontStyle: "bold" }, 4: { cellWidth: 110 }, 5: { cellWidth: 170 } },
+      columnStyles: { 0: { cellWidth: 16 }, 1: { cellWidth: 56, fontStyle: "bold", halign: "center" }, 2: { cellWidth: 70, fontStyle: "bold" }, 5: { cellWidth: 110 }, 6: { cellWidth: 150 } },
       didParseCell: (c) => {
         if (c.section !== "body") return;
         if (c.column.index === 0) c.cell.styles.fillColor = m.corDe.get(linhas[c.row.index].d);
-        if (c.column.index === 5 && !linhas[c.row.index].local) c.cell.styles.textColor = [190, 110, 0];
+        if (c.column.index === 6 && !linhas[c.row.index].local) c.cell.styles.textColor = [190, 110, 0];
       },
     });
 
@@ -541,5 +611,5 @@ window.Planta = (() => {
     return { ocupadas: m.localDe.size, semMesa: m.semMesa.length };
   }
 
-  return { baixar, previa, LOCAIS, TOTAL_MESAS, PAGINA };
+  return { baixar, previa, prepararFonte, LOCAIS, TOTAL_MESAS, PAGINA };
 })();
