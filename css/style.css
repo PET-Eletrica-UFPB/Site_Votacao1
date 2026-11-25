@@ -113,7 +113,12 @@ em { font-family: var(--serif); font-style: italic; }
 }
 .rabisco { display: block; width: clamp(130px, 15vw, 220px); height: auto; margin-top: 10px; color: var(--amber); }
 .hero-rodape p { max-width: 34ch; color: var(--tinta-2); margin-bottom: 18px; font-size: 15px; }
-.hero-botoes { display: flex; flex-wrap: wrap; gap: 10px; }
+.hero-botoes { display: grid; grid-template-columns: repeat(2, max-content); gap: 10px; }
+.hero-botoes .hero-edicoes { grid-column: 2; }
+@media (max-width: 420px) {
+  .hero-botoes { grid-template-columns: minmax(0, 1fr); }
+  .hero-botoes .hero-edicoes { grid-column: auto; }
+}
 
 .ilustracao {
   position: absolute; z-index: 1; left: 52%; bottom: 3%;
@@ -273,7 +278,7 @@ em { font-family: var(--serif); font-style: italic; }
 
 /* Rodapé */
 .rodape {
-  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;
+  display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center;
   padding: 24px var(--gutter) 32px; color: var(--tinta-3); font-size: 13.5px;
   max-width: 1320px; margin-inline: auto;
 }
