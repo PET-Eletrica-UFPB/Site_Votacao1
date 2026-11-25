@@ -4,6 +4,7 @@ const INTERVALO_VOTOS = 10000;
 
 const $ = (id) => document.getElementById(id);
 const fmt = (n) => n.toLocaleString("pt-BR");
+const TOP_VISIVEL = 5;
 let projetos = [];
 
 /* Placar */
@@ -17,6 +18,22 @@ function criarLinhasRanking() {
         <div class="barra"><i style="width:0"></i></div>
       </li>`)
     .join("");
+}
+
+/* Mostra só o top 5; o resto aparece ao clicar em "ver mais" */
+function prepararVerMais() {
+  const caixa = $("ranking-caixa");
+  const botao = $("ver-mais");
+  const temMais = projetos.length > TOP_VISIVEL;
+  botao.hidden = !temMais;
+  caixa.classList.toggle("recolhido", temMais);
+  botao.addEventListener("click", () => {
+    const recolher = !caixa.classList.contains("recolhido");
+    caixa.classList.toggle("recolhido", recolher);
+    botao.setAttribute("aria-expanded", String(!recolher));
+    $("ver-mais-texto").textContent = recolher ? "Ver mais" : "Ver menos";
+    if (recolher) caixa.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  });
 }
 
 function atualizarRanking(votosRecebidos, total) {
@@ -95,6 +112,7 @@ async function iniciar() {
   }
   $("stat-projetos").textContent = projetos.length;
   criarLinhasRanking();
+  prepararVerMais();
   await atualizarVotos();
   setInterval(atualizarVotos, INTERVALO_VOTOS);
 }

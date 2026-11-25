@@ -4,6 +4,11 @@ const { esc } = API;
 const $ = (id) => document.getElementById(id);
 const cursoDe = (id) => cursos.find((c) => c.id === id);
 let projetos = [];
+let cursoAtual = "todos";
+let termoBusca = "";
+
+// Compara sem acentos e sem diferenciar maiúsculas
+const normalizar = (t) => String(t ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 
 /* Projetos */
 function renderFiltros() {
@@ -15,12 +20,24 @@ function renderFiltros() {
     const botao = e.target.closest(".filtro");
     if (!botao) return;
     $("filtros").querySelectorAll(".filtro").forEach((b) => b.setAttribute("aria-pressed", b === botao));
-    renderProjetos(botao.dataset.curso);
+    cursoAtual = botao.dataset.curso;
+    renderProjetos();
   });
 }
 
-function renderProjetos(curso = "todos") {
-  const visiveis = projetos.filter((p) => curso === "todos" || p.curso === curso);
+function combinaBusca(p) {
+  if (!termoBusca) return true;
+  const campos = [p.nome, p.numero, p.codigo, p.disciplina, p.equipe, p.stand && `stand ${p.stand}`, cursoDe(p.curso)?.curto];
+  return normalizar(campos.filter(Boolean).join(" ")).includes(termoBusca);
+}
+
+$("busca").addEventListener("input", (e) => {
+  termoBusca = normalizar(e.target.value);
+  renderProjetos();
+});
+
+function renderProjetos() {
+  const visiveis = projetos.filter((p) => (cursoAtual === "todos" || p.curso === cursoAtual) && combinaBusca(p));
   $("grade").innerHTML = visiveis.length
     ? visiveis
         .map((p) => `
@@ -36,7 +53,7 @@ function renderProjetos(curso = "todos") {
             </div>
           </button>`)
         .join("")
-    : `<p class="grade-vazia">Nenhum projeto inscrito aqui ainda.</p>`;
+    : `<p class="grade-vazia">${termoBusca ? "Nenhum projeto encontrado para essa busca." : "Nenhum projeto inscrito aqui ainda."}</p>`;
 }
 
 function abrirProjeto(id) {
