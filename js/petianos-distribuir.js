@@ -10,6 +10,8 @@
   let marcados = new Set(); // uids dos cadastrados que entram na distribuição
   let escolhas = new Map(); // disciplina -> [chave do professor ou ""]
   let salvando = false;
+  // Depois da lista automática, só as disciplinas repetidas mostram a segunda vaga.
+  let vagasExtras = false;
 
   const chaveNovo = (nome) => `novo:${nome.toLowerCase()}`;
   const plural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
@@ -71,7 +73,8 @@
     const n = porDisciplina();
     const atual = new Map();
     for (const d of disciplinas().keys()) {
-      const vagas = (escolhas.get(d) || []).map((c) => (validas.has(c) ? c : "")).slice(0, n);
+      const atuais = (escolhas.get(d) || []).map((c) => (validas.has(c) ? c : ""));
+      const vagas = atuais.slice(0, vagasExtras ? Math.max(n, atuais.filter(Boolean).length) : n);
       while (vagas.length < n) vagas.push("");
       atual.set(d, vagas);
     }
@@ -118,6 +121,136 @@
     feedback(`Disciplinas distribuídas entre ${plural(profs.length, "professor", "professores")}. Troque o que quiser antes de salvar.`);
   }
 
+  /* Lista automática com as regras da banca: cada professor avalia 2 disciplinas, nunca duas
+     com mais de 12 projetos, com a carga de projetos equilibrada e sem repetir disciplina
+     (só repete se houver mais vagas que disciplinas, e aí repete as menores). */
+  const POR_PROFESSOR = 2;
+  const GRANDE = 12;
+
+  // Custo de uma divisão em pares: regras quebradas pesam muito; depois, a maior carga e o desequilíbrio.
+  function custo(pares) {
+    let c = 0;
+    let maior = 0;
+    let quadrados = 0;
+    for (const par of pares) {
+      if (par.length === 2 && par[0].d === par[1].d) c += 1e9;
+      if (par.length === 2 && par[0].total > GRANDE && par[1].total > GRANDE) c += 1e7;
+      const soma = par.reduce((s, x) => s + x.total, 0);
+      maior = Math.max(maior, soma);
+      quadrados += soma * soma;
+    }
+    return c + maior * 1000 + quadrados;
+  }
+
+  // Melhora trocando disciplinas entre pares enquanto o custo cair.
+  function melhorar(pares) {
+    let atual = custo(pares);
+    for (let melhorou = true; melhorou; ) {
+      melhorou = false;
+      for (let i = 0; i < pares.length; i++) {
+        for (let j = i + 1; j < pares.length; j++) {
+          for (let a = 0; a < pares[i].length; a++) {
+            for (let b = 0; b < pares[j].length; b++) {
+              [pares[i][a], pares[j][b]] = [pares[j][b], pares[i][a]];
+              const novo = custo(pares);
+              if (novo < atual) {
+                atual = novo;
+                melhorou = true;
+              } else [pares[i][a], pares[j][b]] = [pares[j][b], pares[i][a]];
+            }
+          }
+        }
+      }
+    }
+    return atual;
+  }
+
+  function duasPorProfessor() {
+    const profs = participantes();
+    if (!profs.length) return feedback("Marque ou digite pelo menos um professor.", true);
+    const lista = [...disciplinas().entries()].map(([d, l]) => ({ d, total: l.length }));
+    if (!lista.length) return feedback("Cadastre os projetos na aba Projetos primeiro.", true);
+
+    const vagas = profs.length * POR_PROFESSOR;
+    // Quais disciplinas entram: todas, uma vez; se sobrar vaga, repete as menores; se faltar, ficam de fora as menores.
+    const porTamanho = [...lista].sort((a, b) => b.total - a.total || a.d.localeCompare(b.d, "pt-BR"));
+    const itens = porTamanho.slice(0, vagas);
+    const semProfessor = porTamanho.slice(vagas).map((x) => x.d);
+    for (let i = 0; itens.length < vagas; i++) itens.push(porTamanho[porTamanho.length - 1 - (i % porTamanho.length)]);
+
+    // Várias tentativas a partir de pares diferentes; fica a de menor custo (com sorteio entre as empatadas).
+    let melhor = null;
+    for (let t = 0; t < 60; t++) {
+      const ordem = [...itens].sort((a, b) => b.total - a.total || Math.random() - 0.5);
+      // Ponto de partida: a maior com a menor, a segunda maior com a segunda menor...
+      const pares = profs.map((_, i) => [ordem[i], ordem[ordem.length - 1 - i]]);
+      for (let k = 0; t > 0 && k < 3; k++) {
+        const i = Math.floor(Math.random() * pares.length);
+        const j = Math.floor(Math.random() * pares.length);
+        [pares[i][0], pares[j][1]] = [pares[j][1], pares[i][0]];
+      }
+      const c = melhorar(pares) + Math.random() * 0.5;
+      if (!melhor || c < melhor.custo) melhor = { custo: c, pares };
+    }
+
+    // Quem já tinha uma das disciplinas do par fica com ele, para mexer o mínimo.
+    const atuais = escolhasAtuais();
+    const temHoje = (prof, par) => par.filter((x) => (atuais.get(x.d) || []).includes(prof.chave)).length;
+    const livres = [...profs].sort(() => Math.random() - 0.5);
+    const paresOrdenados = [...melhor.pares].sort((a, b) => b.reduce((s, x) => s + x.total, 0) - a.reduce((s, x) => s + x.total, 0));
+    const dono = new Map();
+    for (const par of paresOrdenados) {
+      livres.sort((a, b) => temHoje(b, par) - temHoje(a, par));
+      dono.set(par, livres.shift());
+    }
+
+    escolhas = new Map(lista.map(({ d }) => [d, []]));
+    for (const [par, prof] of dono) for (const x of new Set(par)) escolhas.get(x.d).push(prof.chave);
+    $("distribuir-por").value = 1;
+    vagasExtras = true;
+    ajustarEscolhas();
+    render();
+
+    const avisos = [];
+    const grandes = melhor.pares.filter((p) => p.length === 2 && p[0].total > GRANDE && p[1].total > GRANDE).length;
+    if (grandes) avisos.push(`há mais disciplinas grandes (mais de ${GRANDE} projetos) do que professores: ${plural(grandes, "professor ficou", "professores ficaram")} com duas delas`);
+    const repetidas = [...escolhas.entries()].filter(([, v]) => v.filter(Boolean).length > 1).map(([d]) => d);
+    if (repetidas.length) avisos.push(`como há mais vagas que disciplinas, ${repetidas.join(", ")} ${repetidas.length === 1 ? "ficou" : "ficaram"} com dois professores`);
+    if (semProfessor.length) avisos.push(`faltam professores: ${semProfessor.join(", ")} ${semProfessor.length === 1 ? "ficou" : "ficaram"} sem avaliador`);
+    feedback(
+      `Lista montada: ${plural(profs.length, "professor", "professores")}, ${POR_PROFESSOR} disciplinas para cada.` +
+        (avisos.length ? ` Atenção: ${avisos.join("; ")}.` : " Nenhuma disciplina repetida.") +
+        " Use de novo para outra combinação, ou troque à mão.",
+      avisos.length > 0
+    );
+  }
+
+  /* Lista em PDF: quem avalia o quê. */
+  async function baixarLista() {
+    const grupos = disciplinas();
+    const profs = participantes();
+    const deCada = new Map(profs.map((p) => [p.chave, []]));
+    for (const [d, vagas] of escolhas) for (const c of new Set(vagas.filter(Boolean))) deCada.get(c)?.push(d);
+    const linhas = profs.map((p) => {
+      const ds = deCada.get(p.chave).sort((a, b) => a.localeCompare(b, "pt-BR"));
+      return [p.nome, ds.map((d) => `${d} (${grupos.get(d).length})`).join("\n") || "–", ds.reduce((s, d) => s + grupos.get(d).length, 0)];
+    });
+    const semNinguem = [...escolhas].filter(([, v]) => !v.some(Boolean)).map(([d]) => d);
+    const doc = await PDF.criar({
+      rotulo: "PET ELÉTRICA UFPB  ·  BANCA AVALIADORA",
+      titulo: "Quem avalia o quê",
+      subtitulo: "Disciplinas de cada professor",
+      cabecalho: "Banca avaliadora",
+    });
+    doc.tabela({
+      head: [["Professor", "Disciplinas (projetos)", "Projetos"]],
+      body: linhas,
+      columnStyles: { 0: { cellWidth: 55, fontStyle: "bold" }, 2: { cellWidth: 22, halign: "center" } },
+    });
+    if (semNinguem.length) doc.paragrafo(`Sem professor: ${semNinguem.join(", ")}.`, 9, PDF.COR.alerta);
+    doc.salvar("quem-avalia-o-que");
+  }
+
   /* Tela */
   function render() {
     const { professores } = PainelProfessores.estado();
@@ -137,12 +270,14 @@
       : `<p class="lista-vazia">Nenhum professor cadastrado ainda. Digite os nomes abaixo.</p>`;
 
     // Carga de cada professor com as escolhas da tela.
-    const carga = new Map(profs.map((p) => [p.chave, { projetos: 0, disciplinas: 0 }]));
+    const carga = new Map(profs.map((p) => [p.chave, { projetos: 0, disciplinas: 0, nomes: [], grandes: 0 }]));
     for (const [d, vagas] of escolhas) {
       for (const c of new Set(vagas)) {
         if (!carga.has(c)) continue;
         carga.get(c).projetos += grupos.get(d).length;
         carga.get(c).disciplinas++;
+        carga.get(c).nomes.push(d);
+        if (grupos.get(d).length > GRANDE) carga.get(c).grandes++;
       }
     }
     $("distribuir-cargas").innerHTML = profs.length
@@ -150,7 +285,8 @@
          <ul>${profs
            .map((p) => {
              const c = carga.get(p.chave);
-             return `<li class="${c.disciplinas ? "" : "vazio"}"><b>${esc(p.nome)}</b>${p.uid ? "" : ` <span class="distribuir-novo">novo</span>`}<small>${c.disciplinas ? `${plural(c.disciplinas, "disciplina", "disciplinas")} · ${plural(c.projetos, "projeto", "projetos")}` : "Sem disciplina"}</small></li>`;
+             const alerta = c.grandes > 1 ? `<small class="distribuir-alerta">duas disciplinas com mais de ${GRANDE} projetos</small>` : "";
+             return `<li class="${c.disciplinas ? "" : "vazio"} ${c.grandes > 1 ? "alerta" : ""}"><b>${esc(p.nome)}</b>${p.uid ? "" : ` <span class="distribuir-novo">novo</span>`}<small>${c.disciplinas ? `${plural(c.disciplinas, "disciplina", "disciplinas")} · ${plural(c.projetos, "projeto", "projetos")}` : "Sem disciplina"}</small>${c.nomes.length ? `<small class="distribuir-quais">${c.nomes.sort((a, b) => a.localeCompare(b, "pt-BR")).map((d) => `${esc(d)} (${grupos.get(d).length})`).join(" · ")}</small>` : ""}${alerta}</li>`;
            })
            .join("")}</ul>`
       : "";
@@ -166,7 +302,7 @@
     $("distribuir-lista").innerHTML = [...grupos.entries()]
       .map(([d, lista]) => {
         const vagas = escolhas.get(d) || [];
-        const vazia = vagas.some((c) => !c);
+        const vazia = !vagas.some(Boolean);
         const repetida = new Set(vagas.filter(Boolean)).size < vagas.filter(Boolean).length;
         return `
         <li class="distribuir-item ${vazia || repetida ? "alerta" : ""}" data-disciplina="${esc(d)}">
@@ -185,10 +321,11 @@
   }
 
   function abrir() {
-    if (!PainelProfessores.podeDescartar()) return;
+    if (!PainelProfessores.podeDescartar()) return false;
     const { professores } = PainelProfessores.estado();
     marcados = new Set(professores.map((p) => p.uid));
     escolhas = escolhasAtuais();
+    vagasExtras = false;
     const maior = Math.max(1, ...[...escolhas.values()].map((v) => v.length));
     $("distribuir-por").value = Math.min(MAX_POR_DISCIPLINA, maior);
     $("distribuir-novos").value = "";
@@ -289,6 +426,22 @@
   $("abrir-distribuir").addEventListener("click", abrir);
   $("distribuir-cancelar").addEventListener("click", () => $("distribuir").close());
   $("distribuir-auto").addEventListener("click", distribuir);
+  $("distribuir-duas").addEventListener("click", duasPorProfessor);
+  $("distribuir-pdf").addEventListener("click", async () => {
+    try {
+      feedback("Gerando o PDF da lista…");
+      await baixarLista();
+      feedback("PDF da lista baixado.");
+    } catch (erro) {
+      console.error(erro);
+      feedback(`Não consegui gerar o PDF. ${erro.message}`, true);
+    }
+  });
+  // Botão da aba: abre a janela já com a lista automática de 2 disciplinas por professor.
+  $("lista-banca").addEventListener("click", () => {
+    if (!$("distribuir").open && abrir() === false) return;
+    duasPorProfessor();
+  });
   $("distribuir-salvar").addEventListener("click", salvar);
 
   $("distribuir-cadastrados").addEventListener("change", (e) => {
@@ -307,6 +460,7 @@
   });
 
   $("distribuir-por").addEventListener("input", () => {
+    vagasExtras = false;
     ajustarEscolhas();
     render();
   });

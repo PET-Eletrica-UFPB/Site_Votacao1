@@ -175,6 +175,7 @@
         <div class="relatorio">
           <p class="rotulo">Distribuição</p>
           <p class="relatorio-dica">Digite os nomes dos professores e o site divide as disciplinas entre eles. Depois dá para trocar à mão.</p>
+          <button class="btn btn-amber" id="lista-banca" type="button">Lista automática (2 disciplinas por professor)</button>
           <button class="btn btn-vidro" id="abrir-distribuir" type="button">Distribuir disciplinas</button>
         </div>
         <p class="lista-aviso" id="aviso-prof" hidden></p>
@@ -547,7 +548,7 @@
   <dialog id="distribuir" class="confirmar distribuir-modal">
     <button class="fechar" type="button" aria-label="Fechar" onclick="this.closest('dialog').close()">×</button>
     <h2>Distribuir disciplinas</h2>
-    <p>Marque quem vai avaliar e acrescente os professores novos, um nome por linha. Em “Distribuir automaticamente” cada disciplina vai inteira para um professor, equilibrando o número de projetos. Depois é só trocar o professor de qualquer disciplina na lista ao lado.</p>
+    <p>Marque quem vai avaliar e acrescente os professores novos, um nome por linha. “2 disciplinas por professor” monta a lista da banca: cada professor com 2 disciplinas inteiras, nunca duas com mais de 12 projetos, carga equilibrada e sem repetir disciplina. Clique de novo para outra combinação. Depois é só trocar o professor de qualquer disciplina na lista ao lado e salvar.</p>
     <div class="distribuir-corpo">
       <div class="distribuir-esquerda">
         <p class="campo-titulo">Professores cadastrados</p>
@@ -561,7 +562,9 @@
           <span>Professores por disciplina</span>
           <input id="distribuir-por" type="number" min="1" max="5" value="1" inputmode="numeric">
         </label>
-        <button class="btn btn-amber distribuir-auto" id="distribuir-auto" type="button">Distribuir automaticamente</button>
+        <button class="btn btn-amber distribuir-auto" id="distribuir-duas" type="button">2 disciplinas por professor</button>
+        <small class="distribuir-regra">Cada professor fica com 2 disciplinas, nunca duas com mais de 12 projetos, equilibrando a carga e sem repetir disciplina.</small>
+        <button class="btn btn-vidro distribuir-auto" id="distribuir-auto" type="button">Distribuir por carga (sem limite de disciplinas)</button>
         <div class="distribuir-cargas" id="distribuir-cargas"></div>
       </div>
       <div class="distribuir-direita">
@@ -573,6 +576,7 @@
     <div class="distribuir-resultado" id="distribuir-resultado" hidden></div>
     <div class="ficha-acoes">
       <button class="btn btn-vidro" id="distribuir-cancelar" type="button">Fechar</button>
+      <button class="btn btn-vidro" id="distribuir-pdf" type="button">Baixar lista (PDF)</button>
       <button class="btn btn-amber" id="distribuir-salvar" type="button">Salvar distribuição</button>
     </div>
   </dialog>
@@ -702,26 +706,26 @@
     </form>
   </dialog>
 
-  <script src="js/data.js?v=20261126p"></script>
-  <script src="js/api.js?v=20261126p"></script>
-  <script src="js/senha.js?v=20261126p"></script>
-  <script src="js/modelo-urna.js?v=20261126p"></script>
-  <script src="js/gerador-urna.js?v=20261126p"></script>
-  <script src="js/relatorio.js?v=20261126p"></script>
-  <script src="js/exportar.js?v=20261126p"></script>
-  <script src="js/planta.js?v=20261126p"></script>
-  <script src="js/placas.js?v=20261126p"></script>
-  <script src="js/petianos.js?v=20261126p"></script>
+  <script src="js/data.js?v=20261126q"></script>
+  <script src="js/api.js?v=20261126q"></script>
+  <script src="js/senha.js?v=20261126q"></script>
+  <script src="js/modelo-urna.js?v=20261126q"></script>
+  <script src="js/gerador-urna.js?v=20261126q"></script>
+  <script src="js/relatorio.js?v=20261126q"></script>
+  <script src="js/exportar.js?v=20261126q"></script>
+  <script src="js/planta.js?v=20261126q"></script>
+  <script src="js/placas.js?v=20261126q"></script>
+  <script src="js/petianos.js?v=20261126q"></script>
   <script src="js/petianos-professores.js?v=20261126q"></script>
   <script src="js/petianos-distribuir.js?v=20261126q"></script>
-  <script src="js/petianos-formularios.js?v=20261126p"></script>
-  <script src="js/nomes.js?v=20261126p"></script>
-  <script src="js/petianos-importar.js?v=20261126p"></script>
-  <script src="js/petianos-planilha.js?v=20261126p"></script>
-  <script src="js/petianos-limpar.js?v=20261126p"></script>
-  <script src="js/feiras-dados.js?v=20261126p"></script>
-  <script src="js/petianos-feiras.js?v=20261126p"></script>
-  <script src="js/petianos-frequencia.js?v=20261126p"></script>
-  <script src="js/petianos-planta.js?v=20261126p"></script>
+  <script src="js/petianos-formularios.js?v=20261126q"></script>
+  <script src="js/nomes.js?v=20261126q"></script>
+  <script src="js/petianos-importar.js?v=20261126q"></script>
+  <script src="js/petianos-planilha.js?v=20261126q"></script>
+  <script src="js/petianos-limpar.js?v=20261126q"></script>
+  <script src="js/feiras-dados.js?v=20261126q"></script>
+  <script src="js/petianos-feiras.js?v=20261126q"></script>
+  <script src="js/petianos-frequencia.js?v=20261126q"></script>
+  <script src="js/petianos-planta.js?v=20261126q"></script>
 </body>
 </html>
