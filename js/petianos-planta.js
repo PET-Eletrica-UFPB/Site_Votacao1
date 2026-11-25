@@ -81,7 +81,7 @@
     const naPlanta = m.incluidas.reduce((s, d) => s + d.projetos.length, 0);
     const divididas = [...m.porDisciplina.entries()].filter(([, r]) => r.dividida).map(([d]) => d.nome);
     $("planta-resumo").textContent =
-      `${naPlanta} projeto${naPlanta === 1 ? "" : "s"} na planta · ${m.mesaDe.size} de ${Planta.TOTAL_MESAS} mesas ocupadas` +
+      `${naPlanta} projeto${naPlanta === 1 ? "" : "s"} na planta · ${m.localDe.size} com mesa` +
       (m.semMesa.length ? ` · ${m.semMesa.length} sem mesa: escolha outro local ou mande alguma disciplina para o auditório.` : ".") +
       (divididas.length ? ` Divididas em mais de um local por falta de espaço: ${divididas.join(", ")}.` : "");
     $("planta-resumo").classList.toggle("alerta", m.semMesa.length > 0 || divididas.length > 0);
@@ -203,7 +203,7 @@
         salvo = false;
       }
       feedback(
-        `Planta baixada: ${ocupadas} de ${Planta.TOTAL_MESAS} mesas ocupadas` +
+        `Planta baixada: ${ocupadas} projeto${ocupadas === 1 ? "" : "s"} com mesa` +
           (semMesa ? `, ${semMesa} projeto(s) sem mesa.` : ".") +
           (salvo ? "" : " As escolhas ficaram só neste navegador (o Firebase não aceitou salvar)."),
         !!semMesa || !salvo

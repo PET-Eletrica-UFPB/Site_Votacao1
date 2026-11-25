@@ -43,7 +43,7 @@ window.Planta = (() => {
   const MESA = new Map(MESAS.map((m) => [m.n, m]));
 
   /* Locais numerados. curso: área a que pertencem (null = serve aos dois).
-     caixa: interior da sala, onde vão os nomes quando ela não tem mesas. selo: onde fica o número. */
+     caixa: interior da sala (onde as mesas são desenhadas se ela não tem mesas fixas). selo: onde fica o número. */
   const LOCAIS = [
     { id: 1, nome: "Sala 1 (esquerda, em cima)", mesas: [29, 30, 31, 32, 33, 34, 35, 36, 37], curso: "renovaveis", caixa: [62.5, 44, 295, 218.7], selo: [78, 61] },
     { id: 2, nome: "Sala 2 (esquerda)", mesas: [], curso: null, caixa: [62.5, 218.7, 295, 388.8], selo: [80, 237] },
@@ -60,55 +60,89 @@ window.Planta = (() => {
   const lado = (curso) => (curso === "renovaveis" ? "renovaveis" : "eletrica");
   const nomeCurto = (l) => l.nome.replace(/\s*\(.*\)$/, "");
 
+  /* Mesas desenhadas dentro de uma sala sem mesas fixas: grade centralizada, do tamanho das
+     mesas das salas da original e diminuindo se não couber. Devolve [{ x0, y0, x1, y1 }]. */
+  const MARGEM_SALA = { esq: 40, dir: 12, cima: 14, baixo: 12 }; // à esquerda fica o número da sala
+  function gradeDaSala(caixa, quantidade) {
+    const [x0, y0, x1, y1] = caixa;
+    const largura = x1 - x0 - MARGEM_SALA.esq - MARGEM_SALA.dir;
+    const altura = y1 - y0 - MARGEM_SALA.cima - MARGEM_SALA.baixo;
+    for (let passo = 0; passo <= 9; passo++) {
+      const escala = 1 - passo * 0.05; // de 100% até 55%
+      const w = 36 * escala;
+      const h = 21 * escala;
+      const gx = 16 * escala;
+      const gy = 14 * escala;
+      const colunas = Math.floor((largura + gx) / (w + gx));
+      const linhas = Math.floor((altura + gy) / (h + gy));
+      if (colunas * linhas < quantidade && passo < 9) continue;
+      const n = Math.min(quantidade, colunas * linhas);
+      const usadasLinhas = Math.ceil(n / colunas);
+      const usadasColunas = Math.min(colunas, n);
+      const ox = x0 + MARGEM_SALA.esq + (largura - (usadasColunas * w + (usadasColunas - 1) * gx)) / 2;
+      const oy = y0 + MARGEM_SALA.cima + (altura - (usadasLinhas * h + (usadasLinhas - 1) * gy)) / 2;
+      return Array.from({ length: n }, (_, i) => {
+        const c = i % colunas;
+        const l = Math.floor(i / colunas);
+        const x = ox + c * (w + gx);
+        const y = oy + l * (h + gy);
+        return { x0: x, y0: y, x1: x + w, y1: y + h, lado: "dentro", tamanho: 12 * escala };
+      });
+    }
+    return [];
+  }
+  const capacidadeDaSala = (l) => gradeDaSala(l.caixa, 999).length;
+
   /* Distribuição.
      disciplinas: [{ nome, curso, local: "auto" | "fora" | 1..9, projetos: [{ codigo, nome }] }]
-     1) as que têm local escolhido ocupam as mesas dele (ou ficam escritas na sala, se ela não tem mesas);
+     1) as que têm local escolhido vão para ele: nas mesas fixas, ou em mesas desenhadas na sala;
      2) as automáticas vão inteiras para um único local sempre que couber, maiores primeiro,
-        preferindo os locais da área do seu curso; só se nenhum couber, dividem entre locais. */
+        preferindo os corredores e salas da área do seu curso; depois as salas vazias;
+        só se nada couber, dividem entre locais.
+     Mesas sem projeto não são desenhadas. */
   function distribuir(disciplinas) {
     const livres = new Map(LOCAIS.map((l) => [l.id, [...l.mesas]]));
-    const mesaDe = new Map(); // código → nº da mesa
+    const mesaDe = new Map(); // código → nº da mesa fixa
     const localDe = new Map(); // código → id do local
-    const naSala = new Map(); // id da sala sem mesas → [disciplina]
+    const naSala = new Map(); // id da sala sem mesas fixas → [projeto]
     const semMesa = [];
+    const vagasNaSala = (l) => capacidadeDaSala(l) - (naSala.get(l.id)?.length || 0);
     const pegar = (id, d) => {
       const fila = livres.get(id);
       // Na fileira 8, que é das duas áreas, Renováveis entra pela ponta do lado dela.
       return id === 8 && lado(d.curso) === "renovaveis" ? fila.pop() : fila.shift();
     };
     const colocar = (d, p, id) => {
-      const n = pegar(id, d);
-      if (!n) return false;
-      mesaDe.set(p.codigo, n);
+      const l = LOCAL.get(id);
+      if (!l.mesas.length) {
+        if (vagasNaSala(l) <= 0) return false;
+        if (!naSala.has(id)) naSala.set(id, []);
+        naSala.get(id).push(p);
+      } else {
+        const n = pegar(id, d);
+        if (!n) return false;
+        mesaDe.set(p.codigo, n);
+      }
       localDe.set(p.codigo, id);
       return true;
     };
 
     for (const d of disciplinas.filter((x) => Number.isInteger(x.local))) {
-      const l = LOCAL.get(d.local);
-      if (!l.mesas.length) {
-        if (!naSala.has(l.id)) naSala.set(l.id, []);
-        naSala.get(l.id).push(d);
-        d.projetos.forEach((p) => localDe.set(p.codigo, l.id));
-        continue;
-      }
-      for (const p of d.projetos) if (!colocar(d, p, l.id)) semMesa.push(p);
+      for (const p of d.projetos) if (!colocar(d, p, d.local)) semMesa.push(p);
     }
 
     const automaticas = disciplinas
       .filter((x) => x.local === "auto" && x.projetos.length)
       .sort((a, b) => b.projetos.length - a.projetos.length || a.nome.localeCompare(b.nome, "pt-BR"));
+    const vagas = (l) => (l.mesas.length ? livres.get(l.id).length : vagasNaSala(l));
     for (const d of automaticas) {
-      const preferencia = (l) => (l.curso === lado(d.curso) ? 0 : l.curso === null ? 1 : 2);
-      const comMesas = LOCAIS.filter((l) => l.mesas.length);
-      const cabe = comMesas
-        .filter((l) => livres.get(l.id).length >= d.projetos.length)
-        .sort((a, b) => preferencia(a) - preferencia(b) || livres.get(a.id).length - livres.get(b.id).length);
+      const preferencia = (l) => (l.mesas.length ? 0 : 3) + (l.curso === lado(d.curso) ? 0 : l.curso === null ? 1 : 2);
+      const cabe = LOCAIS.filter((l) => vagas(l) >= d.projetos.length).sort((a, b) => preferencia(a) - preferencia(b) || vagas(a) - vagas(b));
       if (cabe.length) {
         d.projetos.forEach((p) => colocar(d, p, cabe[0].id));
         continue;
       }
-      const ordem = comMesas.sort((a, b) => preferencia(a) - preferencia(b) || livres.get(b.id).length - livres.get(a.id).length);
+      const ordem = [...LOCAIS].sort((a, b) => preferencia(a) - preferencia(b) || vagas(b) - vagas(a));
       for (const p of d.projetos) if (!ordem.some((l) => colocar(d, p, l.id))) semMesa.push(p);
     }
     return { mesaDe, localDe, naSala, semMesa };
@@ -196,8 +230,7 @@ window.Planta = (() => {
   }
 
   const escura = ([r, g, b]) => 0.299 * r + 0.587 * g + 0.114 * b < 140;
-  const clara = (c, t = 0.8) => c.map((v) => Math.round(v + (255 - v) * t));
-
+  
   function texto(doc, t, x, y, tamanho, opcoes = {}) {
     doc.setFont("helvetica", opcoes.normal ? "normal" : "bold");
     doc.setFontSize(tamanho);
@@ -288,38 +321,6 @@ window.Planta = (() => {
     lado(x0, y1, x0, y0);
   }
 
-  /* Salas sem mesas que receberam disciplinas: fundo na cor e os nomes escritos dentro. */
-  function fundosDasSalas(doc, naSala, corDe) {
-    for (const [id, lista] of naSala) {
-      const [x0, y0, x1, y1] = LOCAL.get(id).caixa;
-      doc.setFillColor(...clara(corDe.get(lista[0]), 0.82));
-      doc.rect(x0, y0, x1 - x0, y1 - y0, "F");
-    }
-  }
-
-  function textosDasSalas(doc, naSala) {
-    for (const [id, lista] of naSala) {
-      const [x0, y0, x1, y1] = LOCAL.get(id).caixa;
-      const largura = x1 - x0 - 48;
-      let y = y0 + 26;
-      for (const d of lista) {
-        if (y > y1 - 14) break;
-        const s = caber(doc, d.nome, 14, largura, 9);
-        texto(doc, d.nome, x0 + 34, y, s);
-        y += 15;
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(11);
-        const linhas = doc.splitTextToSize(d.projetos.map((p) => p.codigo).join(", "), largura);
-        for (const linha of linhas) {
-          if (y > y1 - 8) break;
-          texto(doc, linha, x0 + 34, y, 11, { normal: true });
-          y += 13;
-        }
-        y += 8;
-      }
-    }
-  }
-
   // Número de cada local num círculo âmbar.
   function selos(doc) {
     for (const l of LOCAIS) {
@@ -332,30 +333,34 @@ window.Planta = (() => {
     }
   }
 
-  /* Mesas com o código do projeto e a cor da disciplina. */
-  function mesas(doc, projetoDaMesa, corDoProjeto) {
-    for (const m of MESAS) {
-      const p = projetoDaMesa.get(m.n);
-      const cor = p ? corDoProjeto(p) : [255, 255, 255];
-      doc.setFillColor(...cor);
-      doc.setDrawColor(...CINZA_MESA);
-      doc.setLineWidth(1);
-      doc.rect(m.x0, m.y0, m.x1 - m.x0, m.y1 - m.y0, "FD");
-      if (!p) continue;
-      const codigo = String(p.codigo);
-      const meioX = (m.x0 + m.x1) / 2;
-      const meioY = (m.y0 + m.y1) / 2;
-      if (m.lado === "dentro") {
-        const s = caber(doc, codigo, m.tamanho, m.x1 - m.x0 - 4);
-        texto(doc, codigo, meioX, meioY, s, { align: "center", baseline: "middle", cor: escura(cor) ? [255, 255, 255] : PRETO });
-      } else if (m.lado === "cima") {
-        const s = caber(doc, codigo, m.tamanho, 42);
-        texto(doc, codigo, meioX, m.y0 - 4, s, { align: "center" });
-      } else if (m.lado === "esq") {
-        texto(doc, codigo, m.x0 - 5, meioY, m.tamanho, { align: "right", baseline: "middle" });
-      } else {
-        texto(doc, codigo, m.x1 + 3, meioY, m.tamanho, { baseline: "middle" });
-      }
+  /* Mesas com o código do projeto e a cor da disciplina. Só as ocupadas são desenhadas. */
+  function mesa(doc, m, p, cor) {
+    doc.setFillColor(...cor);
+    doc.setDrawColor(...CINZA_MESA);
+    doc.setLineWidth(1);
+    doc.rect(m.x0, m.y0, m.x1 - m.x0, m.y1 - m.y0, "FD");
+    const codigo = String(p.codigo);
+    const meioX = (m.x0 + m.x1) / 2;
+    const meioY = (m.y0 + m.y1) / 2;
+    if (m.lado === "dentro") {
+      const s = caber(doc, codigo, m.tamanho, m.x1 - m.x0 - 3, 5);
+      texto(doc, codigo, meioX, meioY, s, { align: "center", baseline: "middle", cor: escura(cor) ? [255, 255, 255] : PRETO });
+    } else if (m.lado === "cima") {
+      const s = caber(doc, codigo, m.tamanho, 42);
+      texto(doc, codigo, meioX, m.y0 - 4, s, { align: "center" });
+    } else if (m.lado === "esq") {
+      texto(doc, codigo, m.x0 - 5, meioY, m.tamanho, { align: "right", baseline: "middle" });
+    } else {
+      texto(doc, codigo, m.x1 + 3, meioY, m.tamanho, { baseline: "middle" });
+    }
+  }
+
+  function mesas(doc, m) {
+    const cor = (p) => m.corDe.get(m.disciplinaDoProjeto.get(p.codigo));
+    for (const [n, p] of m.projetoDaMesa) mesa(doc, MESA.get(n), p, cor(p));
+    for (const [id, projetos] of m.naSala) {
+      const grade = gradeDaSala(LOCAL.get(id).caixa, projetos.length);
+      projetos.forEach((p, i) => grade[i] && mesa(doc, grade[i], p, cor(p)));
     }
   }
 
@@ -398,10 +403,8 @@ window.Planta = (() => {
   }
 
   function desenharPlanta(doc, m, edicao) {
-    fundosDasSalas(doc, m.naSala, m.corDe);
     estrutura(doc);
-    mesas(doc, m.projetoDaMesa, (p) => m.corDe.get(m.disciplinaDoProjeto.get(p.codigo)));
-    textosDasSalas(doc, m.naSala);
+    mesas(doc, m);
     selos(doc);
     legenda(doc, m.incluidas.map((d) => ({ cor: m.corDe.get(d), rotulo: d.nome })), edicao);
   }
@@ -451,7 +454,7 @@ window.Planta = (() => {
     texto(doc, `Onde fica cada projeto  ·  Feira - ${edicao}`, 48, 64, 26);
     const fora = disciplinas.filter((d) => d.local === "fora" && d.projetos.length).map((d) => d.nome);
     const nota = [
-      `${m.mesaDe.size} de ${TOTAL_MESAS} mesas ocupadas.`,
+      `${m.localDe.size} projeto(s) com lugar na planta.`,
       m.semMesa.length ? `${m.semMesa.length} projeto(s) ficaram sem mesa.` : "",
       fora.length ? `Fora da planta (auditório ou não participam): ${fora.join(", ")}.` : "",
     ].filter(Boolean).join("  ");
@@ -482,7 +485,7 @@ window.Planta = (() => {
 
     doc.setProperties({ title: `Planta da Feira - ${edicao}`, creator: "PET Elétrica UFPB" });
     doc.save(`planta-da-feira-${String(edicao).replace(/[^\w.-]+/g, "-")}.pdf`);
-    return { ocupadas: m.mesaDe.size, semMesa: m.semMesa.length };
+    return { ocupadas: m.localDe.size, semMesa: m.semMesa.length };
   }
 
   return { baixar, previa, LOCAIS, TOTAL_MESAS, PAGINA };
