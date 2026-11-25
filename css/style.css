@@ -523,19 +523,19 @@ dialog::backdrop { background: rgba(4, 2, 30, .72); backdrop-filter: blur(6px); 
 .secao-projetos .filtros { margin-top: 20px; }
 
 /* Busca de projetos */
-.busca {
+.busca-projetos {
   display: flex; align-items: center; gap: 12px; max-width: 560px; margin-inline: auto;
   padding: 0 18px; border-radius: 999px; background: var(--superficie); border: 1px solid var(--borda);
   transition: border-color .15s, background .15s;
 }
-.busca:focus-within { border-color: var(--amber); background: var(--superficie-forte); }
-.busca svg { flex: none; width: 18px; height: 18px; fill: none; stroke: var(--tinta-3); stroke-width: 2; stroke-linecap: round; }
-.busca input {
+.busca-projetos:focus-within { border-color: var(--amber); background: var(--superficie-forte); }
+.busca-projetos svg { flex: none; width: 18px; height: 18px; fill: none; stroke: var(--tinta-3); stroke-width: 2; stroke-linecap: round; }
+.busca-projetos input {
   flex: 1; min-width: 0; padding: 14px 0; border: 0; outline: 0; background: none;
   color: var(--tinta); font: inherit; font-size: 15px;
 }
-.busca input::placeholder { color: var(--tinta-3); }
-.busca input::-webkit-search-cancel-button { filter: invert(1); opacity: .6; cursor: pointer; }
+.busca-projetos input::placeholder { color: var(--tinta-3); }
+.busca-projetos input::-webkit-search-cancel-button { filter: invert(1); opacity: .6; cursor: pointer; }
 .linha-tempo { list-style: none; padding: 0; display: flex; flex-direction: column; gap: clamp(40px, 6vw, 72px); }
 .edicao { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: clamp(20px, 3vw, 40px); align-items: start; }
 .edicao-marco { position: sticky; top: 24px; display: flex; flex-direction: column; gap: 4px; padding-top: 6px; border-top: 2px solid var(--amber); }
@@ -756,6 +756,32 @@ dialog::backdrop { background: rgba(4, 2, 30, .72); backdrop-filter: blur(6px); 
 .limpar-opcao em { font-style: normal; font-family: var(--serif); font-size: 26px; line-height: 1; font-variant-numeric: tabular-nums; }
 .limpar-nota { margin-top: 12px; font-size: 13px; color: var(--tinta-3); }
 #limpar-confirmacao { max-width: 260px; font-family: var(--mono); letter-spacing: .1em; }
+
+/* Área dos petianos: frequência */
+.freq-topo { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
+.freq-topo .campo { flex: 1 1 260px; margin-top: 0; }
+.freq-acoes { display: flex; gap: 8px; }
+.freq-acoes .btn { padding: 11px 18px; font-size: 13.5px; }
+.freq-resumo { margin-top: 14px; font-size: 13.5px; color: var(--tinta-2); }
+.freq-resumo:empty { display: none; }
+.freq-curso { margin-top: 28px; }
+.freq-curso h2 { font-family: var(--serif); font-weight: 400; font-size: clamp(26px, 2.6vw, 32px); line-height: 1.1; padding-bottom: 10px; border-bottom: 2px solid var(--amber); }
+.freq-disciplina { margin-top: 14px; border: 1px solid var(--borda); border-radius: 16px; overflow: hidden; background: rgba(255, 255, 255, .025); }
+.freq-disciplina-topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; background: var(--superficie); }
+.freq-disciplina-topo h3 { font-size: 15.5px; }
+.freq-disciplina-topo h3 small { margin-left: 6px; font-weight: 500; font-size: 12.5px; color: var(--tinta-3); }
+.freq-disciplina-topo .btn { flex: none; padding: 7px 14px; font-size: 12.5px; }
+.freq-tabela { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 14px; }
+.freq-tabela th:first-child { width: 52px; }
+.freq-tabela th:nth-child(2) { width: 48%; }
+.freq-tabela th, .freq-tabela td { padding: 9px 14px; text-align: left; border-top: 1px solid var(--borda); }
+.freq-tabela th { font-size: 12px; font-weight: 700; color: var(--tinta-2); }
+.freq-tabela td.num { font-family: var(--mono); font-size: 12.5px; color: var(--tinta-3); }
+.freq-tabela td:last-child { color: var(--tinta-2); }
+@media (max-width: 560px) {
+  .freq-tabela th:nth-child(2) { width: auto; }
+  .freq-tabela th:last-child, .freq-tabela td:last-child { display: none; }
+}
 
 /* Responsivo */
 /* Só no computador: botões do topo lado a lado e os do início um embaixo do outro */
