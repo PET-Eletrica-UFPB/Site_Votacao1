@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20261126g">
+  <link rel="stylesheet" href="css/style.css?v=20261126h">
 </head>
 <body>
   <div class="login" id="tela-login">
@@ -495,13 +495,20 @@
   <dialog id="planta" class="confirmar planta-modal">
     <button class="fechar" id="planta-fechar" type="button" aria-label="Fechar">×</button>
     <h2>Planta da feira</h2>
-    <p>Marque onde cada disciplina vai ficar. As do pátio ocupam as mesas da planta, na área do seu curso e na ordem desta lista (use ↑ ↓ para mudar quem fica em cada lugar). Auditório e salas aparecem na legenda e na lista da segunda página.</p>
-    <label class="campo planta-edicao">
-      <span>Edição</span>
-      <input id="planta-edicao" maxlength="20" placeholder="Ex.: 2026.2">
-    </label>
-    <p class="planta-resumo" id="planta-resumo"></p>
-    <div class="planta-lista" id="planta-lista"></div>
+    <p>Escolha o local de cada disciplina pelo número que aparece na prévia. No automático, cada disciplina vai inteira para um mesmo local sempre que couber, de preferência na área do seu curso. Auditório conta como fora da planta.</p>
+    <div class="planta-corpo">
+      <div class="planta-esquerda">
+        <canvas id="planta-previa" class="planta-previa" aria-label="Prévia da planta"></canvas>
+        <p class="planta-resumo" id="planta-resumo"></p>
+      </div>
+      <div class="planta-direita">
+        <label class="campo planta-edicao">
+          <span>Edição</span>
+          <input id="planta-edicao" maxlength="20" placeholder="Ex.: 2026.2">
+        </label>
+        <div class="planta-lista" id="planta-lista"></div>
+      </div>
+    </div>
     <p class="feedback" id="planta-feedback" role="status"></p>
     <div class="ficha-acoes">
       <button class="btn btn-vidro" id="planta-cancelar" type="button">Fechar</button>
@@ -634,25 +641,25 @@
     </form>
   </dialog>
 
-  <script src="js/data.js?v=20261126g"></script>
-  <script src="js/api.js?v=20261126g"></script>
-  <script src="js/senha.js?v=20261126g"></script>
-  <script src="js/modelo-urna.js?v=20261126g"></script>
-  <script src="js/gerador-urna.js?v=20261126g"></script>
-  <script src="js/relatorio.js?v=20261126g"></script>
-  <script src="js/exportar.js?v=20261126g"></script>
-  <script src="js/planta.js?v=20261126g"></script>
-  <script src="js/placas.js?v=20261126g"></script>
-  <script src="js/petianos.js?v=20261126g"></script>
-  <script src="js/petianos-professores.js?v=20261126g"></script>
-  <script src="js/petianos-formularios.js?v=20261126g"></script>
-  <script src="js/nomes.js?v=20261126g"></script>
-  <script src="js/petianos-importar.js?v=20261126g"></script>
-  <script src="js/petianos-planilha.js?v=20261126g"></script>
-  <script src="js/petianos-limpar.js?v=20261126g"></script>
-  <script src="js/feiras-dados.js?v=20261126g"></script>
-  <script src="js/petianos-feiras.js?v=20261126g"></script>
-  <script src="js/petianos-frequencia.js?v=20261126g"></script>
-  <script src="js/petianos-planta.js?v=20261126g"></script>
+  <script src="js/data.js?v=20261126h"></script>
+  <script src="js/api.js?v=20261126h"></script>
+  <script src="js/senha.js?v=20261126h"></script>
+  <script src="js/modelo-urna.js?v=20261126h"></script>
+  <script src="js/gerador-urna.js?v=20261126h"></script>
+  <script src="js/relatorio.js?v=20261126h"></script>
+  <script src="js/exportar.js?v=20261126h"></script>
+  <script src="js/planta.js?v=20261126h"></script>
+  <script src="js/placas.js?v=20261126h"></script>
+  <script src="js/petianos.js?v=20261126h"></script>
+  <script src="js/petianos-professores.js?v=20261126h"></script>
+  <script src="js/petianos-formularios.js?v=20261126h"></script>
+  <script src="js/nomes.js?v=20261126h"></script>
+  <script src="js/petianos-importar.js?v=20261126h"></script>
+  <script src="js/petianos-planilha.js?v=20261126h"></script>
+  <script src="js/petianos-limpar.js?v=20261126h"></script>
+  <script src="js/feiras-dados.js?v=20261126h"></script>
+  <script src="js/petianos-feiras.js?v=20261126h"></script>
+  <script src="js/petianos-frequencia.js?v=20261126h"></script>
+  <script src="js/petianos-planta.js?v=20261126h"></script>
 </body>
 </html>

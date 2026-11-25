@@ -1,19 +1,12 @@
-// "Planta da feira" (aba Projetos): marca onde cada disciplina fica (pátio, auditório, sala ou fora)
-// e gera o PDF da planta com Planta.baixar. A escolha fica salva em /site/planta.
-// Usa $, esc, cursos e aviso de petianos.js.
+// "Planta da feira" (aba Projetos): para cada disciplina, escolhe o local numerado da planta
+// (ou automático, ou fora/auditório), mostra a prévia na hora e gera o PDF com Planta.baixar.
+// A escolha fica salva em /site/planta. Usa $, esc, cursos e aviso de petianos.js.
 (() => {
   const CHAVE_LOCAL = "feira-pet:planta";
-  const LOCAIS = [
-    ["patio", "Pátio (mesas da planta)"],
-    ["auditorio", "Auditório"],
-    ["sala", "Sala"],
-    ["fora", "Fora da planta"],
-  ];
   // Estas ficam fora da planta, a não ser que alguém mude.
   const FORA_POR_PADRAO = [/\bintegradora\s+(iii|3)\b/, /\bmanutencao\s+industrial\b/];
 
-  let disciplinas = []; // [{ chave, nome, curso, projetos, local, sala, ordem }]
-  let edicaoSalva = "";
+  let disciplinas = []; // [{ chave, nome, curso, projetos, local: "auto" | "fora" | 1..9 }]
 
   const normalizar = (t) => String(t ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
   const chaveDe = (nome) => normalizar(nome).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "sem-disciplina";
@@ -22,7 +15,16 @@
     return `${d.getFullYear()}.${d.getMonth() < 6 ? 1 : 2}`;
   };
 
-  function lerLocal() {
+  // Valor salvo → local. Aceita o formato antigo (pátio, auditório, sala).
+  function lerLocal(valor) {
+    if (valor === "auto" || valor === "fora") return valor;
+    if (valor === "patio") return "auto";
+    if (valor === "auditorio" || valor === "sala") return "fora";
+    const n = Number(valor);
+    return Planta.LOCAIS.some((l) => l.id === n) ? n : null;
+  }
+
+  function lerNavegador() {
     try {
       return JSON.parse(localStorage.getItem(CHAVE_LOCAL)) || {};
     } catch {
@@ -43,47 +45,46 @@
       g.projetos.push(p);
     }
     const maisComum = (mapa) => [...mapa.entries()].sort((a, b) => b[1] - a[1])[0][0];
-    const lista = [...grupos.values()]
-      .map((g) => ({
-        chave: g.chave,
-        nome: maisComum(g.grafias),
-        curso: maisComum(g.cursos),
-        projetos: g.projetos.sort((a, b) => a.numero - b.numero).map((p) => ({ codigo: p.codigo, nome: p.nome })),
-      }))
+    return [...grupos.values()]
+      .map((g) => {
+        const nome = maisComum(g.grafias);
+        const padrao = FORA_POR_PADRAO.some((r) => r.test(normalizar(nome))) ? "fora" : "auto";
+        return {
+          chave: g.chave,
+          nome,
+          curso: maisComum(g.cursos),
+          projetos: g.projetos.sort((a, b) => a.numero - b.numero).map((p) => ({ codigo: p.codigo, nome: p.nome })),
+          local: lerLocal(salvo.disciplinas?.[g.chave]?.local) ?? padrao,
+        };
+      })
       .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
-    lista.forEach((d, i) => {
-      const s = salvo.disciplinas?.[d.chave];
-      d.local = s?.local || (FORA_POR_PADRAO.some((r) => r.test(normalizar(d.nome))) ? "fora" : "patio");
-      d.sala = s?.sala || "";
-      d.ordem = Number.isFinite(s?.ordem) ? s.ordem : 1000 + i;
-    });
-    return lista;
   }
 
-  // Na ordem que a planta usa: Elétrica, depois Renováveis; dentro de cada curso, a ordem da lista.
-  const ordenadas = () =>
-    cursos.flatMap((c) => disciplinas.filter((d) => d.curso === c.id).sort((a, b) => a.ordem - b.ordem));
+  // Elétrica primeiro, depois Renováveis (é a ordem das cores na legenda).
+  const ordenadas = () => cursos.flatMap((c) => disciplinas.filter((d) => d.curso === c.id));
 
-  function faixas(numeros) {
-    const n = [...numeros].sort((a, b) => a - b);
-    const partes = [];
-    for (let i = 0; i < n.length; i++) {
-      let j = i;
-      while (j + 1 < n.length && n[j + 1] === n[j] + 1) j++;
-      partes.push(i === j ? `${n[i]}` : `${n[i]}–${n[j]}`);
-      i = j;
-    }
-    return partes.join(", ");
+  function opcoes(d) {
+    const locais = Planta.LOCAIS.map((l) => {
+      const mesas = l.mesas.length ? `${l.mesas.length} mesas` : "sem mesas";
+      return `<option value="${l.id}" ${d.local === l.id ? "selected" : ""}>${l.id} · ${esc(l.nome)} · ${mesas}</option>`;
+    }).join("");
+    return `
+      <option value="auto" ${d.local === "auto" ? "selected" : ""}>Automático (pátio)</option>
+      <optgroup label="Locais da planta">${locais}</optgroup>
+      <option value="fora" ${d.local === "fora" ? "selected" : ""}>Fora da planta / Auditório</option>`;
   }
 
+  // Redesenha a prévia e a lista a cada mudança.
   function render() {
     const lista = ordenadas();
-    const { mesaDe, semMesa } = Planta.distribuir(lista);
-    const noPatio = lista.filter((d) => d.local === "patio").reduce((s, d) => s + d.projetos.length, 0);
+    const m = Planta.previa($("planta-previa"), lista, { edicao: $("planta-edicao").value.trim() || edicaoPadrao() });
+    const naPlanta = m.incluidas.reduce((s, d) => s + d.projetos.length, 0);
+    const divididas = [...m.porDisciplina.entries()].filter(([, r]) => r.dividida).map(([d]) => d.nome);
     $("planta-resumo").textContent =
-      `Pátio: ${noPatio} projeto${noPatio === 1 ? "" : "s"} para ${Planta.TOTAL_MESAS} mesas` +
-      (semMesa.length ? ` · ${semMesa.length} sem mesa: mande alguma disciplina para o auditório ou uma sala.` : ".");
-    $("planta-resumo").classList.toggle("alerta", semMesa.length > 0);
+      `${naPlanta} projeto${naPlanta === 1 ? "" : "s"} na planta · ${m.mesaDe.size} de ${Planta.TOTAL_MESAS} mesas ocupadas` +
+      (m.semMesa.length ? ` · ${m.semMesa.length} sem mesa: escolha outro local ou mande alguma disciplina para o auditório.` : ".") +
+      (divididas.length ? ` Divididas em mais de um local por falta de espaço: ${divididas.join(", ")}.` : "");
+    $("planta-resumo").classList.toggle("alerta", m.semMesa.length > 0 || divididas.length > 0);
 
     $("planta-lista").innerHTML = cursos
       .map((c) => {
@@ -91,30 +92,16 @@
         if (!doCurso.length) return "";
         return `
         <section class="planta-curso">
-          <h3>${esc(c.nome)} <small>mesas ${faixas(Planta.MESAS_DO_CURSO[c.id])}</small></h3>
+          <h3>${esc(c.nome)}</h3>
           <ol>
             ${doCurso
-              .map((d, i) => {
-                const mesas = d.projetos.map((p) => mesaDe.get(p.codigo)).filter(Boolean);
-                const onde =
-                  d.local === "patio"
-                    ? mesas.length
-                      ? `Mesa${mesas.length === 1 ? "" : "s"} ${faixas(mesas)}${mesas.length < d.projetos.length ? ` · ${d.projetos.length - mesas.length} sem mesa` : ""}`
-                      : "Sem mesa livre"
-                    : "";
+              .map((d) => {
+                const r = m.porDisciplina.get(d);
+                const onde = d.local === "fora" ? "fora da planta" : r?.texto || "";
                 return `
-              <li class="planta-item ${d.local === "fora" ? "fora" : ""}" data-chave="${esc(d.chave)}">
-                <span class="planta-ordem">
-                  <button type="button" data-mover="-1" aria-label="Subir ${esc(d.nome)}" ${i === 0 ? "disabled" : ""}>↑</button>
-                  <button type="button" data-mover="1" aria-label="Descer ${esc(d.nome)}" ${i === doCurso.length - 1 ? "disabled" : ""}>↓</button>
-                </span>
-                <span class="planta-nome"><b>${esc(d.nome)}</b><small>${d.projetos.length} projeto${d.projetos.length === 1 ? "" : "s"}${onde ? ` · ${onde}` : ""}</small></span>
-                <span class="planta-local">
-                  <select data-local aria-label="Local de ${esc(d.nome)}">
-                    ${LOCAIS.map(([v, t]) => `<option value="${v}" ${d.local === v ? "selected" : ""}>${t}</option>`).join("")}
-                  </select>
-                  ${d.local === "sala" ? `<input data-sala value="${esc(d.sala)}" placeholder="Ex.: T07" maxlength="30" aria-label="Sala de ${esc(d.nome)}">` : ""}
-                </span>
+              <li class="planta-item ${d.local === "fora" ? "fora" : ""} ${r?.sem || r?.dividida ? "alerta" : ""}" data-chave="${esc(d.chave)}">
+                <span class="planta-nome"><b>${esc(d.nome)}</b><small>${d.projetos.length} projeto${d.projetos.length === 1 ? "" : "s"} · ${esc(onde)}</small></span>
+                <select data-local aria-label="Local de ${esc(d.nome)}">${opcoes(d)}</select>
               </li>`;
               })
               .join("")}
@@ -124,14 +111,12 @@
       .join("");
   }
 
-  function estadoParaSalvar() {
-    return {
-      edicao: $("planta-edicao").value.trim() || edicaoPadrao(),
-      disciplinas: Object.fromEntries(disciplinas.map((d) => [d.chave, { local: d.local, sala: d.sala, ordem: d.ordem }])),
-    };
-  }
+  const estadoParaSalvar = () => ({
+    edicao: $("planta-edicao").value.trim() || edicaoPadrao(),
+    disciplinas: Object.fromEntries(disciplinas.map((d) => [d.chave, { local: String(d.local) }])),
+  });
 
-  function guardarLocal() {
+  function guardarNavegador() {
     try {
       localStorage.setItem(CHAVE_LOCAL, JSON.stringify(estadoParaSalvar()));
     } catch {
@@ -142,6 +127,15 @@
   function feedback(texto, erro = false) {
     $("planta-feedback").textContent = texto;
     $("planta-feedback").classList.toggle("erro", erro);
+  }
+
+  // O canvas acompanha a largura da janela, com a nitidez da tela.
+  function ajustarCanvas() {
+    const canvas = $("planta-previa");
+    const largura = canvas.clientWidth || 800;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(largura * dpr);
+    canvas.height = Math.round((largura * dpr * Planta.PAGINA[1]) / Planta.PAGINA[0]);
   }
 
   async function abrir() {
@@ -155,13 +149,13 @@
         }),
       ]);
       if (!projetos.length) return aviso("Cadastre os projetos antes de montar a planta.", true);
-      const base = salvo ?? lerLocal();
+      const base = salvo ?? lerNavegador();
       disciplinas = montar(projetos, base);
-      edicaoSalva = base.edicao || edicaoPadrao();
-      $("planta-edicao").value = edicaoSalva;
+      $("planta-edicao").value = base.edicao || edicaoPadrao();
       feedback("");
-      render();
       $("planta").showModal();
+      ajustarCanvas();
+      render();
     } catch (erro) {
       console.error(erro);
       aviso(`Não consegui abrir a planta. ${erro.message}`, true);
@@ -174,46 +168,31 @@
   $("planta-abrir").addEventListener("click", abrir);
   $("planta-cancelar").addEventListener("click", () => $("planta").close());
   $("planta-fechar").addEventListener("click", () => $("planta").close());
+  $("planta-edicao").addEventListener("input", () => {
+    render();
+    guardarNavegador();
+  });
+  addEventListener("resize", () => {
+    if (!$("planta").open) return;
+    ajustarCanvas();
+    render();
+  });
 
   $("planta-lista").addEventListener("change", (e) => {
-    const item = e.target.closest("[data-chave]");
-    const d = item && disciplinas.find((x) => x.chave === item.dataset.chave);
-    if (!d) return;
-    if (e.target.matches("[data-local]")) {
-      d.local = e.target.value;
-      render();
-      if (d.local === "sala") $("planta-lista").querySelector(`[data-chave="${CSS.escape(d.chave)}"] [data-sala]`)?.focus();
-    }
-    guardarLocal();
-  });
-  $("planta-lista").addEventListener("input", (e) => {
-    if (!e.target.matches("[data-sala]")) return;
+    if (!e.target.matches("[data-local]")) return;
     const d = disciplinas.find((x) => x.chave === e.target.closest("[data-chave]").dataset.chave);
-    d.sala = e.target.value.trim();
-  });
-  $("planta-lista").addEventListener("click", (e) => {
-    const botao = e.target.closest("[data-mover]");
-    if (!botao) return;
-    const d = disciplinas.find((x) => x.chave === botao.closest("[data-chave]").dataset.chave);
-    const doCurso = ordenadas().filter((x) => x.curso === d.curso);
-    doCurso.forEach((x, i) => (x.ordem = i));
-    const i = doCurso.indexOf(d);
-    const outro = doCurso[i + Number(botao.dataset.mover)];
-    if (!outro) return;
-    [d.ordem, outro.ordem] = [outro.ordem, d.ordem];
+    d.local = lerLocal(e.target.value);
     render();
-    guardarLocal();
-    $("planta-lista").querySelector(`[data-chave="${CSS.escape(d.chave)}"] [data-mover="${botao.dataset.mover}"]`)?.focus();
+    guardarNavegador();
+    $("planta-lista").querySelector(`[data-chave="${CSS.escape(d.chave)}"] select`)?.focus();
   });
 
   $("planta-gerar").addEventListener("click", async () => {
     const botao = $("planta-gerar");
-    const semSala = disciplinas.find((d) => d.local === "sala" && !d.sala);
-    if (semSala) return feedback(`Escreva qual é a sala de ${semSala.nome}.`, true);
     botao.disabled = true;
     feedback("Gerando a planta…");
     const estado = estadoParaSalvar();
-    guardarLocal();
+    guardarNavegador();
     try {
       const { ocupadas, semMesa } = await Planta.baixar(ordenadas(), { edicao: estado.edicao, cursos });
       let salvo = true;
