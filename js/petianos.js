@@ -286,6 +286,7 @@ $("form-baixar").addEventListener("submit", async (e) => {
   }
   $("baixar-erro").textContent = "";
   const senhas = { senhaOperador: $("baixar-operador").value, senhaFirebase: $("baixar-firebase").value };
+  const semSenha = !senhas.senhaOperador;
   $("form-baixar").reset();
   $("baixar").close();
   try {
@@ -295,7 +296,7 @@ $("form-baixar").addEventListener("submit", async (e) => {
     const problema = GeradorUrna.problemaNaLista(projetos);
     if (problema) return aviso(problema, true);
     GeradorUrna.baixar(urnaEscolhida.arquivo, GeradorUrna.gerarIno(urnaEscolhida, projetos, senhas));
-    aviso(`${urnaEscolhida.arquivo} baixado com ${projetos.length} projetos.`);
+    aviso(`${urnaEscolhida.arquivo} baixado com ${projetos.length} projetos${semSenha ? ", sem senha no modo operador" : ""}.`);
   } catch (erro) {
     aviso("Não consegui ler o cadastro para gerar o arquivo. Tente de novo.", true);
   }

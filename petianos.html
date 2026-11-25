@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20261126r">
+  <link rel="stylesheet" href="css/style.css?v=20261126s">
 </head>
 <body>
   <div class="login" id="tela-login">
@@ -686,13 +686,13 @@
       <h2 id="baixar-titulo"></h2>
       <p>As senhas entram só no arquivo baixado. O site não guarda nem envia nenhuma delas.</p>
       <label class="campo">
-        <span>Senha do modo operador da urna</span>
-        <input id="baixar-operador" type="password" inputmode="numeric" pattern="[0-9]{1,8}" maxlength="8" required autocomplete="off" placeholder="Só números, até 8 dígitos">
+        <span>Senha do modo operador da urna (opcional)</span>
+        <input id="baixar-operador" type="password" inputmode="numeric" pattern="[0-9]{1,8}" maxlength="8" autocomplete="off" placeholder="Só números, até 8 dígitos">
       </label>
       <label class="campo">
         <span>Repita a senha do modo operador</span>
-        <input id="baixar-operador2" type="password" inputmode="numeric" pattern="[0-9]{1,8}" maxlength="8" required autocomplete="off" placeholder="A mesma senha de cima">
-        <small>Anote a senha antes de baixar: o site não guarda cópia dela. Use a mesma nas duas urnas.</small>
+        <input id="baixar-operador2" type="password" inputmode="numeric" pattern="[0-9]{1,8}" maxlength="8" autocomplete="off" placeholder="A mesma senha de cima">
+        <small>Deixe os dois em branco para a urna entrar no modo operador (e zerar a votação) sem pedir senha. Se usar senha, anote: o site não guarda cópia dela. Use a mesma nas duas urnas.</small>
       </label>
       <p class="login-erro" id="baixar-erro" role="alert"></p>
       <label class="campo">
@@ -712,26 +712,26 @@
     </form>
   </dialog>
 
-  <script src="js/data.js?v=20261126r"></script>
-  <script src="js/api.js?v=20261126r"></script>
-  <script src="js/senha.js?v=20261126r"></script>
-  <script src="js/modelo-urna.js?v=20261126r"></script>
-  <script src="js/gerador-urna.js?v=20261126r"></script>
-  <script src="js/relatorio.js?v=20261126r"></script>
-  <script src="js/exportar.js?v=20261126r"></script>
-  <script src="js/planta.js?v=20261126r"></script>
-  <script src="js/placas.js?v=20261126r"></script>
-  <script src="js/petianos.js?v=20261126r"></script>
-  <script src="js/petianos-professores.js?v=20261126r"></script>
-  <script src="js/petianos-distribuir.js?v=20261126r"></script>
-  <script src="js/petianos-formularios.js?v=20261126r"></script>
-  <script src="js/nomes.js?v=20261126r"></script>
-  <script src="js/petianos-importar.js?v=20261126r"></script>
-  <script src="js/petianos-planilha.js?v=20261126r"></script>
-  <script src="js/petianos-limpar.js?v=20261126r"></script>
-  <script src="js/feiras-dados.js?v=20261126r"></script>
-  <script src="js/petianos-feiras.js?v=20261126r"></script>
-  <script src="js/petianos-frequencia.js?v=20261126r"></script>
-  <script src="js/petianos-planta.js?v=20261126r"></script>
+  <script src="js/data.js?v=20261126s"></script>
+  <script src="js/api.js?v=20261126s"></script>
+  <script src="js/senha.js?v=20261126s"></script>
+  <script src="js/modelo-urna.js?v=20261126s"></script>
+  <script src="js/gerador-urna.js?v=20261126s"></script>
+  <script src="js/relatorio.js?v=20261126s"></script>
+  <script src="js/exportar.js?v=20261126s"></script>
+  <script src="js/planta.js?v=20261126s"></script>
+  <script src="js/placas.js?v=20261126s"></script>
+  <script src="js/petianos.js?v=20261126s"></script>
+  <script src="js/petianos-professores.js?v=20261126s"></script>
+  <script src="js/petianos-distribuir.js?v=20261126s"></script>
+  <script src="js/petianos-formularios.js?v=20261126s"></script>
+  <script src="js/nomes.js?v=20261126s"></script>
+  <script src="js/petianos-importar.js?v=20261126s"></script>
+  <script src="js/petianos-planilha.js?v=20261126s"></script>
+  <script src="js/petianos-limpar.js?v=20261126s"></script>
+  <script src="js/feiras-dados.js?v=20261126s"></script>
+  <script src="js/petianos-feiras.js?v=20261126s"></script>
+  <script src="js/petianos-frequencia.js?v=20261126s"></script>
+  <script src="js/petianos-planta.js?v=20261126s"></script>
 </body>
 </html>
