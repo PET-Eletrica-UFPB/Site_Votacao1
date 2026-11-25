@@ -21,18 +21,63 @@ function criarLinhasRanking() {
 }
 
 /* Mostra só o top 5; o resto aparece ao clicar em "ver mais" */
+const DURACAO_VER_MAIS = 700;
+const suave = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
+const semAnimacao = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// Anima a altura da caixa (e, se pedido, a rolagem da página) no mesmo ritmo
+function animarCaixa(caixa, de, para, rolagem, aoFim) {
+  const inicio = performance.now();
+  caixa.style.height = `${de}px`;
+  caixa.style.overflow = "hidden";
+  const passo = (agora) => {
+    const t = Math.min(1, (agora - inicio) / DURACAO_VER_MAIS);
+    const k = suave(t);
+    caixa.style.height = `${de + (para - de) * k}px`;
+    if (rolagem) window.scrollTo(0, rolagem.de + (rolagem.para - rolagem.de) * k);
+    if (t < 1) return requestAnimationFrame(passo);
+    caixa.style.height = "";
+    caixa.style.overflow = "";
+    aoFim();
+  };
+  requestAnimationFrame(passo);
+}
+
 function prepararVerMais() {
   const caixa = $("ranking-caixa");
   const botao = $("ver-mais");
   const temMais = projetos.length > TOP_VISIVEL;
+  let animando = false;
   botao.hidden = !temMais;
   caixa.classList.toggle("recolhido", temMais);
+
   botao.addEventListener("click", () => {
+    if (animando) return;
     const recolher = !caixa.classList.contains("recolhido");
+    const alturaAntes = caixa.offsetHeight;
     caixa.classList.toggle("recolhido", recolher);
+    const alturaDepois = caixa.offsetHeight;
     botao.setAttribute("aria-expanded", String(!recolher));
     $("ver-mais-texto").textContent = recolher ? "Ver mais" : "Ver menos";
-    if (recolher) caixa.scrollIntoView({ block: "nearest", behavior: "smooth" });
+
+    // Ao recolher, a página volta até o 5º colocado com o "ver mais" logo abaixo
+    let rolagem = null;
+    if (recolher) {
+      const fimCaixa = caixa.getBoundingClientRect().top + window.scrollY + alturaDepois;
+      const alvo = Math.max(0, fimCaixa + 32 - window.innerHeight);
+      if (window.scrollY > alvo) rolagem = { de: window.scrollY, para: alvo };
+    }
+
+    if (semAnimacao()) {
+      if (rolagem) window.scrollTo(0, rolagem.para);
+      return;
+    }
+    animando = true;
+    caixa.classList.add("animando");
+    animarCaixa(caixa, alturaAntes, alturaDepois, rolagem, () => {
+      caixa.classList.remove("animando");
+      animando = false;
+    });
   });
 }
 

@@ -235,6 +235,9 @@ em { font-family: var(--serif); font-style: italic; }
 /* Ver mais do placar: as posições 6 e 7 aparecem embaçadas sob um degradê */
 .ranking-caixa { position: relative; }
 .ranking-caixa.recolhido .linha:nth-child(n+8) { display: none; }
+/* Durante a animação as linhas de baixo continuam no lugar e somem sob o degradê */
+.ranking-caixa.animando .linha:nth-child(n+8) { display: grid; }
+.ranking-caixa .linha { transition: background .15s, filter .5s ease, opacity .5s ease; }
 .ranking-caixa.recolhido .linha:nth-child(n+6) { filter: blur(3px); opacity: .55; pointer-events: none; user-select: none; }
 .ranking-caixa.recolhido .linha:nth-child(7) { opacity: .3; }
 .ver-mais {
