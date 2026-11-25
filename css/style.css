@@ -758,6 +758,16 @@ dialog::backdrop { background: rgba(4, 2, 30, .72); backdrop-filter: blur(6px); 
 #limpar-confirmacao { max-width: 260px; font-family: var(--mono); letter-spacing: .1em; }
 
 /* Responsivo */
+/* Só no computador: botões do topo lado a lado e os do início um embaixo do outro */
+@media (min-width: 1041px) {
+  .nav-acoes { align-items: center; }
+  .nav-areas { flex-direction: row; gap: 8px; }
+  .hero-botoes { grid-template-columns: max-content; }
+  .hero-botoes .hero-edicoes { grid-column: auto; }
+}
+@media (min-width: 1041px) and (max-width: 1279px) {
+  .nav-acao { padding: 10px 14px; font-size: 13px; }
+}
 @media (max-width: 960px) {
   .nav-podio { display: none; }
 }
