@@ -518,11 +518,11 @@
   async function baixarPlanilha() {
     const botao = $("planilha-alunos");
     botao.disabled = true;
-    aviso("Gerando a planilha dos alunos…");
+    situacao("Gerando a planilha dos alunos…");
     try {
       await lerDados();
       const lista = montar(false);
-      if (!lista.length) return aviso("Nenhum aluno encontrado nas inscrições nem nos projetos cadastrados.", true);
+      if (!lista.length) return situacao("Nenhum aluno encontrado nas inscrições nem nos projetos cadastrados.", "alerta");
       const cabecalho = ["Nº", "Aluno", "Grupo (projeto)", "Código do grupo", "Disciplina", "Curso", "Presença"];
       const linha = (g, d, a, i) => [
         i + 1,
@@ -550,15 +550,16 @@
         ...lista.flatMap((g) => g.disciplinas.map((d) => ({ nome: abaDe(g, d), linhas: [cabecalho, ...d.alunos.map((a, i) => linha(g, d, a, i))] }))),
       ];
       const formato = await Exportar.planilha("alunos-por-grupo", abas);
-      aviso(
+      situacao(
         formato === "xlsx"
           ? `Planilha baixada: ${n} alunos, com uma aba para cada disciplina.`
-          : "Sem internet para gerar o .xlsx: baixei a lista em .csv, que o Excel também abre."
+          : "Sem internet para gerar o .xlsx: baixei a lista em .csv, que o Excel também abre.",
+        "ok"
       );
       if (carregado) atualizarTela();
     } catch (erro) {
       console.error(erro);
-      aviso(`Não consegui gerar a planilha. ${erro.message}`, true);
+      situacao(`Não consegui gerar a planilha. ${erro.message}`, "alerta");
     } finally {
       botao.disabled = false;
     }

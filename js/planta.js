@@ -46,11 +46,11 @@ window.Planta = (() => {
      caixa: interior da sala (onde as mesas são desenhadas se ela não tem mesas fixas). selo: onde fica o número. */
   const LOCAIS = [
     { id: 1, nome: "Sala 1 (esquerda, em cima)", mesas: [29, 30, 31, 32, 33, 34, 35, 36, 37], curso: "renovaveis", caixa: [62.5, 44, 295, 218.7], selo: [78, 61] },
-    { id: 2, nome: "Sala 2 (esquerda)", mesas: [], curso: null, caixa: [62.5, 218.7, 295, 388.8], selo: [80, 237] },
-    { id: 3, nome: "Sala 3 (esquerda)", mesas: [], curso: null, caixa: [62.5, 388.8, 295, 476.6], selo: [80, 407] },
-    { id: 4, nome: "Sala 4 (esquerda, embaixo)", mesas: [], curso: null, caixa: [62.5, 476.6, 295, 569.9], selo: [80, 495] },
+    { id: 2, nome: "Sala 2 (esquerda)", mesas: [], curso: null, porta: "dir", caixa: [62.5, 218.7, 295, 388.8], selo: [80, 237] },
+    { id: 3, nome: "Sala 3 (esquerda)", mesas: [], curso: null, porta: "dir", caixa: [62.5, 388.8, 295, 476.6], selo: [80, 407] },
+    { id: 4, nome: "Sala 4 (esquerda, embaixo)", mesas: [], curso: null, porta: "dir", caixa: [62.5, 476.6, 295, 569.9], selo: [80, 495] },
     { id: 5, nome: "Sala 5 (direita, em cima)", mesas: [10, 11, 12, 13, 14], curso: "eletrica", caixa: [697, 44, 929.5, 130.4], selo: [717, 62] },
-    { id: 6, nome: "Sala 6 (direita, embaixo)", mesas: [], curso: null, caixa: [697, 389, 929.5, 569.9], selo: [717, 408] },
+    { id: 6, nome: "Sala 6 (direita, embaixo)", mesas: [], curso: null, porta: "esq", caixa: [697, 389, 929.5, 569.9], selo: [711, 407] },
     { id: 7, nome: "Corredor 7 (lado Renováveis)", mesas: [21, 22, 23, 24, 25, 26, 27, 28], curso: "renovaveis", selo: [393, 141] },
     { id: 8, nome: "Fileira 8 (no alto do pátio)", mesas: [15, 16, 17, 18, 19, 20], curso: null, selo: [636, 96] },
     { id: 9, nome: "Corredor 9 (lado Elétrica)", mesas: [1, 2, 3, 4, 5, 6, 7, 8, 9], curso: "eletrica", selo: [656, 170] },
@@ -60,38 +60,69 @@ window.Planta = (() => {
   const lado = (curso) => (curso === "renovaveis" ? "renovaveis" : "eletrica");
   const nomeCurto = (l) => l.nome.replace(/\s*\(.*\)$/, "");
 
-  /* Mesas desenhadas dentro de uma sala sem mesas fixas: grade centralizada, do tamanho das
-     mesas das salas da original e diminuindo se não couber. Devolve [{ x0, y0, x1, y1 }]. */
-  const MARGEM_SALA = { esq: 40, dir: 12, cima: 14, baixo: 12 }; // à esquerda fica o número da sala
-  function gradeDaSala(caixa, quantidade) {
-    const [x0, y0, x1, y1] = caixa;
-    const largura = x1 - x0 - MARGEM_SALA.esq - MARGEM_SALA.dir;
-    const altura = y1 - y0 - MARGEM_SALA.cima - MARGEM_SALA.baixo;
+  /* Mesas desenhadas numa sala sem mesas fixas, como nas salas da original: encostadas nas
+     paredes (fileira de cima, parede do fundo e fileira de baixo), com o lado da porta livre.
+     A porta fica sempre na parede de frente para o pátio. Devolve [{ x0, y0, x1, y1 }]. */
+  const PAREDE = 12; // distância da mesa à parede
+  const LIVRE_PORTA = 30; // espaço livre junto à porta
+
+  // As três paredes com mesas, na ordem em volta da sala: fileira de baixo (da porta para o fundo),
+  // parede do fundo (de baixo para cima) e fileira de cima (do fundo para a porta).
+  function paredesDaSala(local, escala) {
+    const [x0, y0, x1, y1] = local.caixa;
+    const w = 36 * escala; // mesa deitada
+    const h = 21 * escala;
+    const g = 12 * escala;
+    const fundoEsq = local.porta === "dir"; // a parede do fundo é a oposta à porta
+    const xFundo = fundoEsq ? x0 + PAREDE : x1 - PAREDE - h;
+    const xa = fundoEsq ? xFundo + h + g : x0 + LIVRE_PORTA;
+    const xb = fundoEsq ? x1 - LIVRE_PORTA : xFundo - g;
+    const tamanho = 12 * escala;
+    const daPortaProFundo = (xs) => (fundoEsq ? xs.reverse() : xs);
+    return [
+      { a: xa, b: xb, t: w, g, ordem: daPortaProFundo, // baixo: porta → fundo
+        mesa: (x) => ({ x0: x, y0: y1 - PAREDE - h, x1: x + w, y1: y1 - PAREDE, lado: "dentro", tamanho }) },
+      { a: y0 + PAREDE + h + g, b: y1 - PAREDE - h, t: w, g, ordem: (ys) => ys.reverse(), // fundo: de baixo para cima, até a fileira de baixo
+        mesa: (y) => ({ x0: xFundo, y0: y, x1: xFundo + h, y1: y + w, lado: fundoEsq ? "dir" : "esq", tamanho: 10.5 * escala }) },
+      { a: xa, b: xb, t: w, g, ordem: (xs) => (fundoEsq ? xs : xs.reverse()), // cima: fundo → porta
+        mesa: (x) => ({ x0: x, y0: y0 + PAREDE, x1: x + w, y1: y0 + PAREDE + h, lado: "dentro", tamanho }) },
+    ].map((p) => ({ ...p, cabem: Math.max(0, Math.floor((p.b - p.a + p.g) / (p.t + p.g))) }));
+  }
+
+  // "k" peças de tamanho t entre a e b, com o mesmo espaço entre elas.
+  function espalhar(a, b, t, k) {
+    if (k <= 0) return [];
+    if (k === 1) return [a + (b - a - t) / 2];
+    return Array.from({ length: k }, (_, i) => a + (i * (b - a - t)) / (k - 1));
+  }
+
+  // Divide "n" mesas entre as paredes na proporção do que cabe em cada uma.
+  function repartir(paredes, n) {
+    const total = paredes.reduce((s, p) => s + p.cabem, 0);
+    const cotas = paredes.map((p) => Math.floor((n * p.cabem) / total));
+    let resto = n - cotas.reduce((s, c) => s + c, 0);
+    const ordem = paredes.map((p, i) => [i, (n * p.cabem) / total - cotas[i]]).sort((a, b) => b[1] - a[1]);
+    for (const [i] of ordem) {
+      if (resto <= 0) break;
+      if (cotas[i] < paredes[i].cabem) {
+        cotas[i]++;
+        resto--;
+      }
+    }
+    return cotas;
+  }
+
+  function gradeDaSala(local, quantidade) {
     for (let passo = 0; passo <= 9; passo++) {
-      const escala = 1 - passo * 0.05; // de 100% até 55%
-      const w = 36 * escala;
-      const h = 21 * escala;
-      const gx = 16 * escala;
-      const gy = 14 * escala;
-      const colunas = Math.floor((largura + gx) / (w + gx));
-      const linhas = Math.floor((altura + gy) / (h + gy));
-      if (colunas * linhas < quantidade && passo < 9) continue;
-      const n = Math.min(quantidade, colunas * linhas);
-      const usadasLinhas = Math.ceil(n / colunas);
-      const usadasColunas = Math.min(colunas, n);
-      const ox = x0 + MARGEM_SALA.esq + (largura - (usadasColunas * w + (usadasColunas - 1) * gx)) / 2;
-      const oy = y0 + MARGEM_SALA.cima + (altura - (usadasLinhas * h + (usadasLinhas - 1) * gy)) / 2;
-      return Array.from({ length: n }, (_, i) => {
-        const c = i % colunas;
-        const l = Math.floor(i / colunas);
-        const x = ox + c * (w + gx);
-        const y = oy + l * (h + gy);
-        return { x0: x, y0: y, x1: x + w, y1: y + h, lado: "dentro", tamanho: 12 * escala };
-      });
+      const paredes = paredesDaSala(local, 1 - passo * 0.05); // de 100% até 55%
+      const cabem = paredes.reduce((s, p) => s + p.cabem, 0);
+      if (cabem < quantidade && passo < 9) continue;
+      const cotas = repartir(paredes, Math.min(quantidade, cabem));
+      return paredes.flatMap((p, i) => p.ordem(espalhar(p.a, p.b, p.t, cotas[i])).map(p.mesa));
     }
     return [];
   }
-  const capacidadeDaSala = (l) => gradeDaSala(l.caixa, 999).length;
+  const capacidadeDaSala = (l) => gradeDaSala(l, 999).length;
 
   /* Distribuição.
      disciplinas: [{ nome, curso, local: "auto" | "fora" | 1..9, projetos: [{ codigo, nome }] }]
@@ -359,7 +390,7 @@ window.Planta = (() => {
     const cor = (p) => m.corDe.get(m.disciplinaDoProjeto.get(p.codigo));
     for (const [n, p] of m.projetoDaMesa) mesa(doc, MESA.get(n), p, cor(p));
     for (const [id, projetos] of m.naSala) {
-      const grade = gradeDaSala(LOCAL.get(id).caixa, projetos.length);
+      const grade = gradeDaSala(LOCAL.get(id), projetos.length);
       projetos.forEach((p, i) => grade[i] && mesa(doc, grade[i], p, cor(p)));
     }
   }
