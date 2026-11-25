@@ -18,7 +18,7 @@
       <nav class="nav" aria-label="Principal">
         <div class="nav-links">
           <a href="#inicio" aria-current="page">Início</a>
-          <a href="#projetos">Projetos</a>
+          <a href="projetos.html">Projetos</a>
           <a href="#placar">Placar</a>
           <a href="feiras.html">Feiras</a>
           <a href="inscricoes.html">Inscrições</a>
@@ -46,7 +46,7 @@
         <div class="hero-rodape">
           <p>Projetos de estudantes, avaliados por professores e votados pelo público, com o placar atualizado direto das urnas.</p>
           <div class="hero-botoes">
-            <a class="btn btn-claro" href="#projetos">Ver os projetos</a>
+            <a class="btn btn-claro" href="projetos.html">Ver os projetos</a>
             <a class="btn btn-vidro" href="#placar">Acompanhar o placar</a>
           </div>
         </div>
@@ -120,15 +120,6 @@
   </div>
 
   <main>
-    <section class="secao" id="projetos">
-      <div class="chamada">
-        <h2><span>Da ideia ao protótipo,</span><br><em>a energia é dos estudantes.</em></h2>
-        <p>Conheça os projetos em exposição, visite os stands e deixe o seu voto na urna mais próxima.</p>
-      </div>
-      <div class="filtros" id="filtros" role="group" aria-label="Filtrar projetos por categoria"></div>
-      <div class="grade-projetos" id="grade"></div>
-    </section>
-
     <div class="placar-faixa">
       <section class="secao" id="placar">
         <div class="placar-topo">
@@ -150,25 +141,6 @@
         </div>
       </section>
     </div>
-
-    <section class="secao">
-      <div class="ctas">
-        <div class="cta">
-          <div>
-            <h2>É da banca avaliadora?</h2>
-            <p>Entre na área do professor para dar as notas de cada projeto.</p>
-          </div>
-          <a class="btn btn-claro" href="professores.html">Entrar para avaliar</a>
-        </div>
-        <div class="cta cta-petianos">
-          <div>
-            <h2>Área dos Petianos</h2>
-            <p>Cadastre os projetos inscritos e baixe o código das urnas.</p>
-          </div>
-          <a class="btn btn-claro" href="petianos.html">Entrar na área</a>
-        </div>
-      </div>
-    </section>
   </main>
 
   <footer class="rodape">
@@ -178,21 +150,8 @@
     <span>Feira de Engenharia e Energia · <a class="link" href="feiras.html">Edições anteriores</a></span>
   </footer>
 
-  <dialog id="modal">
-    <div class="cartao modal-capa" id="modal-capa"><div class="cartao-arte" id="modal-arte"></div></div>
-    <button class="fechar" id="modal-fechar" aria-label="Fechar">×</button>
-    <div class="modal-corpo">
-      <p class="rotulo" id="modal-cat"></p>
-      <h3 id="modal-nome"></h3>
-      <p id="modal-resumo"></p>
-      <p class="modal-voto" id="modal-voto"></p>
-      <div class="modal-meta" id="modal-meta"></div>
-    </div>
-  </dialog>
-
   <script src="js/data.js"></script>
   <script src="js/api.js"></script>
-  <script src="js/artes.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>
