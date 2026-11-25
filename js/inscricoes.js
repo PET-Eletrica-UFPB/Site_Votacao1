@@ -175,6 +175,7 @@ $("outra").addEventListener("click", () => mostrar(tipoAtual));
   // Ponto da etiqueta brilha só se algum formulário estiver aberto
   const algumAberto = tipos.some((t) => formularios[t].aberto && formularios[t].perguntas.length);
   $("etiqueta").classList.toggle("encerrada", !algumAberto);
+  $("etiqueta-texto").textContent = algumAberto ? "Inscrições abertas" : "Inscrições fechadas";
   $("carregando").hidden = true;
   const pedido = location.hash.slice(1);
   if (tipos.includes(pedido)) mostrar(pedido);
