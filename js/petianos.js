@@ -228,7 +228,11 @@ $("form-projeto").addEventListener("submit", async (e) => {
       editandoCodigo = salvo.codigo;
       preencher(salvo);
     }
-    aviso(`“${salvo.nome}” ${eraNovo ? "cadastrado" : "atualizado"} como ${salvo.codigo}. Grave as urnas de novo se a lista mudou.`);
+    aviso(
+      `“${salvo.nome}” ${eraNovo ? "cadastrado" : "atualizado"} como ${salvo.codigo}.` +
+        (salvo.trocado ? ` “${salvo.trocado.nome}” tinha esse número e passou de ${salvo.trocado.de} para ${salvo.trocado.para}.` : "") +
+        " Grave as urnas de novo e refaça as placas se o código mudou."
+    );
   } catch (erro) {
     aviso(erro.message, true);
   } finally {

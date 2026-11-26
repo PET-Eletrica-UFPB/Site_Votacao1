@@ -104,16 +104,24 @@ window.OrganizarCodigos = (() => {
       );
   }
 
-  // Números das marcadas, na ordem da prioridade, cada curso com a sua contagem.
+  // Números das marcadas, na ordem da prioridade, cada curso com a sua contagem (a mesma conta de
+  // "Aplicar"): projetos com stand numérico ficam com o número do stand e os outros pulam esses números.
   function numeracao() {
-    const proximo = {};
+    const numeros = API.numerarPorDisciplina(projetos, ordemCom(plantaSalva, marcadas));
     const faixa = new Map();
     for (const item of marcadas) {
       const g = grupos.find((x) => x.item === item);
       if (!g) continue;
-      const de = proximo[g.curso] || 1;
-      proximo[g.curso] = de + g.projetos.length;
-      faixa.set(item, { de, ate: de + g.projetos.length - 1 });
+      const ns = g.projetos.map((p) => numeros.get(p.codigo)).sort((a, b) => a - b);
+      const letra = letraDe(g.curso);
+      const partes = [];
+      for (let i = 0; i < ns.length; ) {
+        let j = i;
+        while (j + 1 < ns.length && ns[j + 1] === ns[j] + 1) j++;
+        partes.push(i === j ? `${ns[i]}${letra}` : `${ns[i]}${letra} a ${ns[j]}${letra}`);
+        i = j + 1;
+      }
+      faixa.set(item, { texto: partes.join(", "), ate: ns.at(-1) });
     }
     return faixa;
   }
@@ -127,8 +135,7 @@ window.OrganizarCodigos = (() => {
         cursoAtual = g.curso;
         const pos = marcadas.indexOf(g.item);
         const f = faixa.get(g.item);
-        const letra = letraDe(g.curso);
-        const codigos = f ? (f.de === f.ate ? `${f.de}${letra}` : `${f.de}${letra} a ${f.ate}${letra}`) : "sem número";
+        const codigos = f ? f.texto : "sem número";
         return `${titulo}
           <li class="codigos-item ${pos >= 0 ? "marcada" : ""}">
             <label>
@@ -142,6 +149,7 @@ window.OrganizarCodigos = (() => {
       .join("");
 
     const faltam = grupos.filter((g) => !marcadas.includes(g.item));
+    const comStand = projetos.filter((p) => API.standNumerico(p.stand)).length;
     const totais = cursos
       .map((c) => {
         const ultimo = Math.max(0, ...[...faixa.entries()].filter(([item]) => item.startsWith(`${c.id}|`)).map(([, f]) => f.ate));
@@ -155,7 +163,8 @@ window.OrganizarCodigos = (() => {
           ? ". A não marcada fica com os números seguintes."
           : faltam.length
             ? `. As ${faltam.length} não marcadas ficam com os números seguintes, na ordem da planta.`
-            : ".");
+            : ".") +
+        (comStand ? ` ${plural(comStand, "projeto com stand numérico fica", "projetos com stand numérico ficam")} com o número do stand.` : "");
     $("codigos-aplicar").disabled = !marcadas.length;
   }
 

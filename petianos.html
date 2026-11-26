@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20261127i">
+  <link rel="stylesheet" href="css/style.css?v=20261127j">
 </head>
 <body>
   <div class="login" id="tela-login">
@@ -111,7 +111,8 @@
             </label>
             <label class="campo">
               <span>Stand (opcional)</span>
-              <input id="stand" maxlength="10" placeholder="Ex.: A1">
+              <input id="stand" maxlength="10" placeholder="Ex.: 16" aria-describedby="stand-dica">
+              <small class="campo-dica" id="stand-dica">O número do stand vira o código de votação: stand 16 → 16A (Elétrica) ou 16B (Renováveis).</small>
             </label>
           </div>
           <label class="campo">
@@ -597,7 +598,7 @@
   <dialog id="codigos-dialogo" class="confirmar freq-planilha-modal">
     <button class="fechar" id="codigos-fechar" type="button" aria-label="Fechar">×</button>
     <h2>Organizar códigos</h2>
-    <p>Marque as disciplinas na ordem de prioridade. A primeira marcada fica com os números 1, 2, 3… do seu curso; cada uma marcada depois continua do último número do mesmo curso. Os projetos de cada disciplina ficam com números seguidos.</p>
+    <p>Marque as disciplinas na ordem de prioridade. A primeira marcada fica com os números 1, 2, 3… do seu curso; cada uma marcada depois continua do último número do mesmo curso. Os projetos de cada disciplina ficam com números seguidos. Projeto com stand numérico mantém o número do stand.</p>
     <p class="aviso-votos" id="codigos-votos" hidden>Já há votos na rodada atual: trocar os códigos agora mistura a contagem das urnas.</p>
     <div class="freq-planilha-por">
       <div class="freq-planilha-por-topo">
@@ -828,31 +829,31 @@
     </form>
   </dialog>
 
-  <script src="js/data.js?v=20261127i"></script>
-  <script src="js/api.js?v=20261127i"></script>
-  <script src="js/senha.js?v=20261127i"></script>
-  <script src="js/modelo-urna.js?v=20261127i"></script>
-  <script src="js/gerador-urna.js?v=20261127i"></script>
-  <script src="js/relatorio.js?v=20261127i"></script>
-  <script src="js/exportar.js?v=20261127i"></script>
-  <script src="js/planta.js?v=20261127i"></script>
-  <script src="js/placas.js?v=20261127i"></script>
-  <script src="js/petianos-ajuste.js?v=20261127i"></script>
-  <script src="js/inscricao-projeto.js?v=20261127i"></script>
-  <script src="js/petianos.js?v=20261127i"></script>
-  <script src="js/petianos-professores.js?v=20261127i"></script>
-  <script src="js/petianos-distribuir.js?v=20261127i"></script>
-  <script src="js/petianos-formularios.js?v=20261127i"></script>
-  <script src="js/nomes.js?v=20261127i"></script>
-  <script src="js/petianos-importar.js?v=20261127i"></script>
-  <script src="js/petianos-planilha.js?v=20261127i"></script>
-  <script src="js/petianos-limpar.js?v=20261127i"></script>
-  <script src="js/feiras-dados.js?v=20261127i"></script>
-  <script src="js/petianos-feiras.js?v=20261127i"></script>
-  <script src="js/petianos-frequencia.js?v=20261127i"></script>
-  <script src="js/petianos-codigos.js?v=20261127i"></script>
-  <script src="js/petianos-qrcode.js?v=20261127i"></script>
-  <script src="js/petianos-placas.js?v=20261127i"></script>
-  <script src="js/petianos-planta.js?v=20261127i"></script>
+  <script src="js/data.js?v=20261127j"></script>
+  <script src="js/api.js?v=20261127j"></script>
+  <script src="js/senha.js?v=20261127j"></script>
+  <script src="js/modelo-urna.js?v=20261127j"></script>
+  <script src="js/gerador-urna.js?v=20261127j"></script>
+  <script src="js/relatorio.js?v=20261127j"></script>
+  <script src="js/exportar.js?v=20261127j"></script>
+  <script src="js/planta.js?v=20261127j"></script>
+  <script src="js/placas.js?v=20261127j"></script>
+  <script src="js/petianos-ajuste.js?v=20261127j"></script>
+  <script src="js/inscricao-projeto.js?v=20261127j"></script>
+  <script src="js/petianos.js?v=20261127j"></script>
+  <script src="js/petianos-professores.js?v=20261127j"></script>
+  <script src="js/petianos-distribuir.js?v=20261127j"></script>
+  <script src="js/petianos-formularios.js?v=20261127j"></script>
+  <script src="js/nomes.js?v=20261127j"></script>
+  <script src="js/petianos-importar.js?v=20261127j"></script>
+  <script src="js/petianos-planilha.js?v=20261127j"></script>
+  <script src="js/petianos-limpar.js?v=20261127j"></script>
+  <script src="js/feiras-dados.js?v=20261127j"></script>
+  <script src="js/petianos-feiras.js?v=20261127j"></script>
+  <script src="js/petianos-frequencia.js?v=20261127j"></script>
+  <script src="js/petianos-codigos.js?v=20261127j"></script>
+  <script src="js/petianos-qrcode.js?v=20261127j"></script>
+  <script src="js/petianos-placas.js?v=20261127j"></script>
+  <script src="js/petianos-planta.js?v=20261127j"></script>
 </body>
 </html>

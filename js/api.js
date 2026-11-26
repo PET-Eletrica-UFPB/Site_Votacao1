@@ -280,42 +280,86 @@ window.API = (() => {
     throw new Error("Não há número livre para este curso.");
   }
 
-  // Quando o código de um projeto muda (ou ele sai), leva junto as atribuições e notas.
-  async function mudancasDeCodigo(antigo, novo) {
+  // Stand → número do código de votação: "16", "16A" ou "A16" viram 16. Outro texto não vale como número.
+  function numeroDoStand(stand) {
+    const m = String(stand ?? "").trim().match(/^[^\d]{0,3}(\d{1,3})[^\d]{0,3}$/);
+    if (!m) return null;
+    const n = Number(m[1]);
+    if (n < 1 || n > GERADOR_MAX_NUMERO) throw new Error(`O stand ${stand} não serve de código: as urnas aceitam de 1 a ${GERADOR_MAX_NUMERO}.`);
+    return n;
+  }
+  const standNumerico = (stand) => {
+    try {
+      return numeroDoStand(stand);
+    } catch {
+      return null;
+    }
+  };
+
+  // Quando códigos mudam (ou projetos saem), leva junto as atribuições e notas.
+  // mapa: Map(código antigo → código novo, ou null se o projeto saiu). Reescreve cada lista inteira,
+  // assim duas trocas cruzadas (5A ↔ 9A) não se atropelam.
+  async function mudancasDeCodigos(mapa) {
     const [professores, avaliacoes] = await Promise.all([
       lerPublico("/site/professores").then((d) => d || {}),
       escrever("GET", "/site/avaliacoes").then((d) => d || {}),
     ]);
+    const trocar = (obj) => {
+      const novo = {};
+      for (const [c, v] of Object.entries(obj || {})) {
+        const destino = mapa.has(c) ? mapa.get(c) : c;
+        if (destino) novo[destino] = v;
+      }
+      return Object.keys(novo).length ? novo : null;
+    };
+    const toca = (obj) => Object.keys(obj || {}).some((c) => mapa.has(c));
     const mudancas = {};
-    for (const [uid, prof] of Object.entries(professores)) {
-      if (!prof?.projetos?.[antigo]) continue;
-      mudancas[`professores/${uid}/projetos/${antigo}`] = null;
-      if (novo) mudancas[`professores/${uid}/projetos/${novo}`] = true;
-    }
-    for (const [uid, notas] of Object.entries(avaliacoes)) {
-      if (!notas?.[antigo]) continue;
-      mudancas[`avaliacoes/${uid}/${antigo}`] = null;
-      if (novo) mudancas[`avaliacoes/${uid}/${novo}`] = notas[antigo];
-    }
+    for (const [uid, prof] of Object.entries(professores)) if (toca(prof?.projetos)) mudancas[`professores/${uid}/projetos`] = trocar(prof.projetos);
+    for (const [uid, notas] of Object.entries(avaliacoes)) if (toca(notas)) mudancas[`avaliacoes/${uid}`] = trocar(notas);
     return mudancas;
   }
+  const mudancasDeCodigo = (antigo, novo) => mudancasDeCodigos(new Map([[antigo, novo]]));
 
-  // codigoAtual: projeto em edição. Trocar de curso muda o número na urna.
+  // Campos guardados de um projeto lido do cadastro (sem os calculados).
+  const guardado = ({ id, codigo, arte, cor, ...resto }) => resto;
+
+  // codigoAtual: projeto em edição. Com stand numérico, o número do código é o do stand
+  // (stand 16 → 16A/16B); se outro projeto do curso tinha esse número, ele fica com o número que sobrou.
+  // Sem stand numérico: mantém o número, ou pega o próximo livre ao trocar de curso.
   async function salvarProjeto(dados, codigoAtual) {
     const lista = await lerCadastro();
     const atual = lista.find((p) => p.codigo === codigoAtual);
-    const numero = atual && atual.curso === dados.curso ? atual.numero : proximoNumero(lista, dados.curso);
+    const doStand = numeroDoStand(dados.stand);
+    const outros = lista.filter((p) => p !== atual);
+    let numero = doStand ?? (atual && atual.curso === dados.curso ? atual.numero : proximoNumero(outros, dados.curso));
     const codigo = codigoDe(dados.curso, numero);
+
+    const mapa = new Map(); // código antigo → novo
+    const mudancas = {};
+    let trocado = null;
+    const ocupante = outros.find((p) => p.codigo === codigo);
+    if (ocupante) {
+      if (standNumerico(ocupante.stand) === numero) {
+        throw new Error(`O stand ${dados.stand} já é de “${ocupante.nome}” (${ocupante.codigo}). Mude o stand de um dos dois.`);
+      }
+      // O ocupante fica com o número que este projeto deixou (mesmo curso) ou com o próximo livre.
+      const livre = atual && atual.curso === dados.curso ? atual.numero : proximoNumero([...outros, { curso: dados.curso, numero }], dados.curso);
+      const codigoOcupante = codigoDe(ocupante.curso, livre);
+      mudancas[`projetos/${codigoOcupante}`] = { ...guardado(ocupante), numero: livre };
+      mapa.set(ocupante.codigo, codigoOcupante);
+      trocado = { nome: ocupante.nome, de: ocupante.codigo, para: codigoOcupante };
+    }
 
     // Mantém o vínculo com a inscrição de onde o projeto veio, se houver.
     const extra = atual?.inscricao ? { inscricao: atual.inscricao } : {};
-    const mudancas = { [`projetos/${codigo}`]: { ...dados, ...extra, numero } };
+    mudancas[`projetos/${codigo}`] = { ...dados, ...extra, numero };
     if (atual && atual.codigo !== codigo) {
-      mudancas[`projetos/${atual.codigo}`] = null;
-      Object.assign(mudancas, await mudancasDeCodigo(atual.codigo, codigo));
+      mapa.set(atual.codigo, codigo);
+      if (!mudancas[`projetos/${atual.codigo}`]) mudancas[`projetos/${atual.codigo}`] = null;
     }
+    if (mapa.size) Object.assign(mudancas, await mudancasDeCodigos(mapa));
     await atualizarSite(mudancas);
-    return completarProjeto({ ...dados, numero });
+    return { ...completarProjeto({ ...dados, numero }), trocado };
   }
 
   async function removerProjeto(codigo) {
@@ -328,7 +372,10 @@ window.API = (() => {
     const mudancas = {};
     const criados = [];
     for (const dados of novos) {
-      const numero = proximoNumero(lista, dados.curso);
+      // Stand numérico vira o número do código, se ainda estiver livre no curso.
+      const doStand = standNumerico(dados.stand);
+      const livre = doStand && !lista.some((p) => p.curso === dados.curso && p.numero === doStand);
+      const numero = livre ? doStand : proximoNumero(lista, dados.curso);
       const projeto = { ...dados, numero };
       lista.push(projeto);
       mudancas[`projetos/${codigoDe(dados.curso, numero)}`] = projeto;
@@ -357,13 +404,23 @@ window.API = (() => {
      ficam com números seguidos (1A, 2A, 3A da mesma disciplina, depois a próxima…).
      ordemDe(nomeDaDisciplina, curso) dá a posição de cada disciplina (a ordem da planta).
      Leva junto as atribuições dos professores e as notas, tudo numa gravação só. */
-  async function organizarCodigos(ordemDe) {
-    const lista = await lerCadastro();
+  // Números por disciplina (Map código atual → número novo). Projeto com stand numérico fica com o número
+  // do stand; os outros ocupam, na ordem das disciplinas, os números que sobrarem.
+  function numerarPorDisciplina(lista, ordemDe) {
     const chave = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
-    const novoNumero = new Map(); // código antigo → número novo
+    const novoNumero = new Map();
     for (const curso of cursos) {
+      const doCurso = lista.filter((x) => x.curso === curso.id).sort((a, b) => a.numero - b.numero);
+      const ocupados = new Set();
+      for (const p of doCurso) {
+        const n = standNumerico(p.stand);
+        if (n && !ocupados.has(n)) {
+          ocupados.add(n);
+          novoNumero.set(p.codigo, n);
+        }
+      }
       const grupos = new Map();
-      for (const p of lista.filter((x) => x.curso === curso.id)) {
+      for (const p of doCurso) {
         const k = chave(p.disciplina);
         if (!grupos.has(k)) grupos.set(k, { nome: (p.disciplina || "").trim(), projetos: [] });
         grupos.get(k).projetos.push(p);
@@ -371,28 +428,31 @@ window.API = (() => {
       let n = 1;
       [...grupos.values()]
         .sort((a, b) => ordemDe(a.nome, curso.id) - ordemDe(b.nome, curso.id) || a.nome.localeCompare(b.nome, "pt-BR"))
-        .forEach((g) => g.projetos.sort((a, b) => a.numero - b.numero).forEach((p) => novoNumero.set(p.codigo, n++)));
+        .forEach((g) =>
+          g.projetos.forEach((p) => {
+            if (novoNumero.has(p.codigo)) return;
+            while (ocupados.has(n)) n++;
+            novoNumero.set(p.codigo, n);
+            ocupados.add(n);
+          })
+        );
     }
+    return novoNumero;
+  }
+
+  async function organizarCodigos(ordemDe) {
+    const lista = await lerCadastro();
+    const novoNumero = numerarPorDisciplina(lista, ordemDe);
     const mapa = new Map(lista.map((p) => [p.codigo, codigoDe(p.curso, novoNumero.get(p.codigo))]));
     const mudaram = [...mapa].filter(([antes, depois]) => antes !== depois).length;
     if (!mudaram) return { mudaram: 0, mapa };
 
     const projetos = {};
-    for (const p of lista) {
-      const { id, codigo, arte, cor, ...guardado } = p; // campos calculados não vão para o banco
-      projetos[mapa.get(p.codigo)] = { ...guardado, numero: novoNumero.get(p.codigo) };
-    }
-    const [professores, avaliacoes] = await Promise.all([
-      lerPublico("/site/professores").then((d) => d || {}),
-      escrever("GET", "/site/avaliacoes").then((d) => d || {}),
-    ]);
-    const mudancas = { projetos };
-    const trocar = (obj) => Object.fromEntries(Object.entries(obj || {}).map(([c, v]) => [mapa.get(c) || c, v]));
-    for (const [uid, prof] of Object.entries(professores)) if (prof?.projetos) mudancas[`professores/${uid}/projetos`] = trocar(prof.projetos);
-    for (const [uid, notas] of Object.entries(avaliacoes)) if (notas) mudancas[`avaliacoes/${uid}`] = trocar(notas);
-    await atualizarSite(mudancas);
+    for (const p of lista) projetos[mapa.get(p.codigo)] = { ...guardado(p), numero: novoNumero.get(p.codigo) };
+    await atualizarSite({ projetos, ...(await mudancasDeCodigos(mapa)) });
     return { mudaram, mapa };
   }
+
 
   /* Professores (cadastrados pelos petianos) */
   function listaDeProfessores(dados) {
@@ -720,7 +780,7 @@ window.API = (() => {
     meuPerfil, minhasAvaliacoes, salvarAvaliacao,
     lerFormulario, salvarFormulario, definirInscricoesAbertas, enviarInscricao, lerInscricoes, removerInscricao, editarInscricao,
     lerFrequencia, salvarFrequencia, lerPlanta, salvarPlanta, salvarPrioridade, salvarAjusteAutomatico,
-    importarProjetos, organizarCodigos, copiaDeSeguranca, contarDados, limparDados, importarInscricoes, assinaturasImportadas,
+    importarProjetos, organizarCodigos, numerarPorDisciplina, standNumerico, copiaDeSeguranca, contarDados, limparDados, importarInscricoes, assinaturasImportadas,
     lerFeiras, salvarFeira, removerFeira, publicarFeirasIniciais,
   };
 })();
