@@ -7,38 +7,111 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20261127f">
-  <link rel="stylesheet" href="css/podio.css?v=20261127f">
+  <link rel="stylesheet" href="css/style.css?v=20261127g">
+  <link rel="stylesheet" href="css/podio.css?v=20261127g">
 </head>
 <body class="tela-podio">
   <div class="palco">
     <img class="hero-cena" src="img/cena.svg" alt="">
 
-    <header class="podio-topo">
-      <span class="marca">
-        <img src="img/logo-pet-compacto.png" alt="PET Elétrica UFPB">
-      </span>
-      <h1>Os favoritos <em>do público</em></h1>
-      <p>Feira de Engenharia e Energia</p>
-    </header>
+    <section class="cena cena-podio ativa" id="cena-podio" aria-label="Pódio">
+      <header class="podio-topo">
+        <span class="marca">
+          <img src="img/logo-pet-compacto.png" alt="PET Elétrica UFPB">
+        </span>
+        <h1>Os favoritos <em>do público</em></h1>
+        <p>Feira de Engenharia e Energia</p>
+      </header>
 
-    <main class="podios" id="podios"></main>
+      <main class="podios" id="podios"></main>
 
-    <footer class="podio-rodape">
-      <span id="chamada">Ainda não votou? <b>Procure a urna mais próxima.</b></span>
-      <span class="podio-status" id="status" role="status"></span>
-    </footer>
+      <footer class="podio-rodape">
+        <span id="chamada">Ainda não votou? <b>Procure a urna mais próxima.</b></span>
+        <span class="podio-status" id="status" role="status"></span>
+      </footer>
+    </section>
+
+    <!-- Loop: planta e QR code entre um pódio e outro -->
+    <section class="cena cena-planta" id="cena-planta" aria-label="Planta da feira">
+      <header class="podio-topo cena-topo">
+        <span class="marca"><img src="img/logo-pet-compacto.png" alt="PET Elétrica UFPB"></span>
+        <h1>Planta <em>da feira</em></h1>
+        <p>Cada cor é uma disciplina: procure a sua!</p>
+      </header>
+      <div class="planta-moldura" id="planta-moldura"><img id="planta-img" alt="Planta da feira com a posição de cada disciplina"></div>
+      <footer class="podio-rodape"><span>Feira de Engenharia e Energia · <b>PET Elétrica UFPB</b></span></footer>
+    </section>
+
+    <section class="cena cena-qr" id="cena-qr" aria-label="QR code">
+      <header class="podio-topo cena-topo">
+        <span class="marca"><img src="img/logo-pet-compacto.png" alt="PET Elétrica UFPB"></span>
+      </header>
+      <div class="qr-corpo">
+        <h1 id="qr-titulo"></h1>
+        <p id="qr-texto"></p>
+        <div class="qr-quadro" id="qr-quadro"></div>
+        <p class="qr-endereco" id="qr-endereco"></p>
+      </div>
+      <footer class="podio-rodape"><span>Feira de Engenharia e Energia · <b>PET Elétrica UFPB</b></span></footer>
+    </section>
+
+    <div class="loop-progresso" id="loop-progresso" hidden><i></i><i></i><i></i></div>
 
     <div class="podio-controles" id="controles">
+      <button class="btn btn-vidro" id="loop" type="button">Loop</button>
       <button class="btn btn-vidro" id="girar" type="button">Girar tela</button>
       <button class="btn btn-vidro" id="tela-cheia" type="button">Tela cheia</button>
       <a class="btn btn-vidro" href="index.html">Sair</a>
     </div>
   </div>
 
-  <script src="js/data.js?v=20261127f"></script>
-  <script src="js/api.js?v=20261127f"></script>
-  <script src="js/artes.js?v=20261127f"></script>
-  <script src="js/podio.js?v=20261127f"></script>
+  <dialog id="loop-dialogo" class="loop-dialogo">
+    <button class="fechar" id="loop-fechar" type="button" aria-label="Fechar">×</button>
+    <h2>Loop</h2>
+    <p class="loop-ajuda">A tela passa sozinha por <b>pódio → planta → QR code</b> e recomeça. Fica salvo neste aparelho: se a TV recarregar a página, o loop volta sozinho.</p>
+    <form id="loop-form">
+      <label class="campo primeiro">
+        <span>Arquivo PNG da planta</span>
+        <input id="loop-planta" type="file" accept="image/png,image/jpeg">
+      </label>
+      <div class="loop-planta-info">
+        <img id="loop-planta-previa" alt="" hidden>
+        <small id="loop-planta-nome">Nenhum arquivo escolhido. Gere o PNG em Área dos Petianos → Projetos → Planta da feira → Baixar PNG.</small>
+      </div>
+      <label class="loop-check"><input id="loop-deitada" type="checkbox"> Girar a planta para ocupar a tela em pé</label>
+
+      <label class="campo">
+        <span>QR code</span>
+        <select id="loop-destino"></select>
+      </label>
+      <label class="campo">
+        <span>Link</span>
+        <input id="loop-link" type="url" inputmode="url" autocomplete="off">
+      </label>
+      <label class="campo">
+        <span>Título</span>
+        <input id="loop-titulo" type="text" maxlength="60">
+      </label>
+      <label class="campo">
+        <span>Texto</span>
+        <input id="loop-texto" type="text" maxlength="120">
+      </label>
+      <label class="campo">
+        <span>Tempo de cada tela (segundos)</span>
+        <input id="loop-tempo" type="number" min="5" max="300" step="1" value="20">
+      </label>
+      <p class="feedback" id="loop-feedback" role="status"></p>
+      <div class="loop-botoes">
+        <button class="btn btn-vidro" id="loop-parar" type="button">Parar loop</button>
+        <button class="btn btn-amber" id="loop-iniciar" type="submit">Iniciar loop</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="js/data.js?v=20261127g"></script>
+  <script src="js/api.js?v=20261127g"></script>
+  <script src="js/artes.js?v=20261127g"></script>
+  <script src="js/podio.js?v=20261127g"></script>
+  <script src="js/podio-loop.js?v=20261127g"></script>
 </body>
 </html>

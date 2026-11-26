@@ -207,6 +207,34 @@
     $("planta-lista").querySelector(`[data-chave="${CSS.escape(lista[i].chave)}"] [data-mover="${botao.dataset.mover}"]`)?.focus();
   });
 
+  // Imagem da planta em alta resolução, para o loop do Modo Pódio na TV.
+  $("planta-png").addEventListener("click", async () => {
+    const botao = $("planta-png");
+    botao.disabled = true;
+    try {
+      await Planta.prepararFonte();
+      const canvas = document.createElement("canvas");
+      canvas.width = 2880;
+      canvas.height = Math.round((2880 * Planta.PAGINA[1]) / Planta.PAGINA[0]);
+      const edicao = $("planta-edicao").value.trim() || edicaoPadrao();
+      Planta.previa(canvas, ordenadas(), { edicao });
+      const blob = await new Promise((ok) => canvas.toBlob(ok, "image/png"));
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `planta-feira-${edicao.replace(/[^\w.-]+/g, "-")}.png`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      guardarNavegador();
+      feedback("PNG da planta baixado. No Modo Pódio, use Loop → Arquivo PNG da planta.");
+    } catch (erro) {
+      console.error(erro);
+      feedback(`Não consegui gerar o PNG. ${erro.message}`, true);
+    } finally {
+      botao.disabled = false;
+    }
+  });
+
   $("planta-gerar").addEventListener("click", async () => {
     const botao = $("planta-gerar");
     botao.disabled = true;

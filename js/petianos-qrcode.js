@@ -3,14 +3,7 @@
 (() => {
   const BIBLIOTECA = "https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js";
   // Páginas do site: o link é montado a partir do endereço em que o site está publicado.
-  const DESTINOS = [
-    { id: "avaliacao", pagina: "avaliacao.html", nome: "Formulário de avaliação", titulo: "Avalie a feira!", texto: "Aponte a câmera do celular e conte como foi a sua experiência." },
-    { id: "inscricoes", pagina: "inscricoes.html", nome: "Inscrições", titulo: "Inscreva-se na feira", texto: "Aponte a câmera do celular para abrir os formulários de inscrição." },
-    { id: "projetos", pagina: "projetos.html", nome: "Projetos da feira", titulo: "Conheça os projetos", texto: "Aponte a câmera do celular para ver todos os projetos da feira." },
-    { id: "placar", pagina: "placar.html", nome: "Placar ao vivo", titulo: "Acompanhe o placar", texto: "Aponte a câmera do celular para ver a votação em tempo real." },
-    { id: "inicio", pagina: "index.html", nome: "Página inicial", titulo: "Feira de Engenharia e Energia", texto: "Aponte a câmera do celular para abrir o site da feira." },
-    { id: "outro", pagina: null, nome: "Outro link", titulo: "", texto: "Aponte a câmera do celular para abrir o link." },
-  ];
+  const DESTINOS = window.FEIRA.destinosQr;
   const AZUL = [12, 6, 92];
   const AMBAR = [238, 166, 20];
 

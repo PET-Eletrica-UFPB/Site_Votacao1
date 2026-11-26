@@ -15,10 +15,16 @@
   position: fixed; left: 50%; top: 50%; isolation: isolate; overflow: hidden;
   width: calc(var(--u) * 100); height: calc(var(--u) * 177.78);
   transform: translate(-50%, -50%) rotate(var(--giro));
-  display: flex; flex-direction: column;
-  padding: calc(var(--u) * 4);
   background: var(--navy);
 }
+
+/* Telas do palco: pódio e, no loop, planta e QR code. Só a "ativa" aparece. */
+.cena {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  padding: calc(var(--u) * 4);
+  transition: opacity .9s ease, visibility .9s;
+}
+.cena:not(.ativa) { opacity: 0; visibility: hidden; }
 
 .podio-topo { text-align: center; flex: none; }
 .podio-topo .marca img { height: calc(var(--u) * 11); }
@@ -94,3 +100,69 @@
 }
 .podio-controles .btn { padding: 8px 14px; font-size: max(12px, calc(var(--u) * 1.5)); }
 .tela-podio:not(.ocioso) .podio-controles, .podio-controles:focus-within { opacity: 1; pointer-events: auto; }
+
+/* Loop: planta */
+.cena-topo .marca img { height: calc(var(--u) * 9); }
+.cena-planta .podio-topo h1 { font-size: calc(var(--u) * 8.4); }
+.cena-planta .podio-topo p { font-size: calc(var(--u) * 2.8); }
+.planta-moldura {
+  flex: 1; min-height: 0; position: relative; container-type: size; margin-top: calc(var(--u) * 3);
+  display: grid; place-items: center;
+}
+.planta-moldura img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: calc(var(--u) * 1.6); background: #fff;
+  box-shadow: 0 calc(var(--u) * 1) calc(var(--u) * 4) rgba(0, 0, 0, .45);
+}
+/* Deitada: a planta (horizontal) gira 90° e ocupa a altura da TV em pé. */
+.planta-moldura img.deitada {
+  position: absolute; left: 50%; top: 50%; max-width: none; max-height: none;
+  width: 100cqh; height: 100cqw; transform: translate(-50%, -50%) rotate(90deg);
+  background: transparent; box-shadow: none;
+}
+.cena-planta .podio-rodape, .cena-qr .podio-rodape { justify-content: center; text-align: center; }
+
+/* Loop: QR code */
+.qr-corpo { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.qr-corpo h1 {
+  font-family: var(--serif); font-weight: 400; line-height: 1.02; letter-spacing: -.01em;
+  font-size: calc(var(--u) * 10.5); max-width: calc(var(--u) * 90);
+}
+.qr-corpo > p:not(.qr-endereco) { margin-top: calc(var(--u) * 2); max-width: calc(var(--u) * 76); font-size: calc(var(--u) * 3.3); line-height: 1.35; color: var(--tinta-2); }
+.qr-quadro {
+  width: calc(var(--u) * 72); aspect-ratio: 1; margin-top: calc(var(--u) * 5);
+  padding: calc(var(--u) * 1.2); border-radius: calc(var(--u) * 3.4);
+  background: #fff; border: calc(var(--u) * .9) solid var(--amber);
+  box-shadow: 0 0 calc(var(--u) * 8) rgba(238, 166, 20, .3);
+}
+.qr-quadro svg { display: block; width: 100%; height: 100%; border-radius: calc(var(--u) * 1.8); }
+.qr-endereco { margin-top: calc(var(--u) * 3); font-family: var(--mono); font-size: calc(var(--u) * 2.3); color: var(--amber-claro); overflow-wrap: anywhere; }
+.cena-qr.ativa .qr-quadro { animation: qr-chega 1.1s cubic-bezier(.2, .7, .2, 1); }
+@keyframes qr-chega { from { opacity: 0; transform: scale(.92); } }
+
+/* Barrinhas do loop: qual tela está passando e quanto falta. */
+.loop-progresso {
+  position: absolute; left: 50%; bottom: calc(var(--u) * 1.3); z-index: 4; transform: translateX(-50%);
+  display: flex; gap: calc(var(--u) * .8);
+}
+.loop-progresso[hidden] { display: none; }
+.loop-progresso i { position: relative; width: calc(var(--u) * 7); height: calc(var(--u) * .5); border-radius: 99px; background: rgba(255, 255, 255, .18); overflow: hidden; }
+.loop-progresso i::after { content: ""; position: absolute; inset: 0; background: var(--amber); transform: scaleX(0); transform-origin: left; }
+.loop-progresso i.feita::after { transform: scaleX(1); }
+.loop-progresso i.atual::after { animation: loop-enche var(--tempo-cena, 20s) linear forwards; }
+@keyframes loop-enche { to { transform: scaleX(1); } }
+.em-loop .podio-rodape { margin-bottom: calc(var(--u) * 1.2); }
+
+/* Janela do loop (fora do palco, para não girar com a tela) */
+.loop-dialogo { width: min(520px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow-y: auto; padding: 24px; }
+.loop-dialogo h2 { font-family: var(--serif); font-weight: 400; font-size: 30px; line-height: 1.1; }
+.loop-ajuda { margin: 8px 0 18px; font-size: 14px; color: var(--tinta-2); }
+.loop-planta-info { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+.loop-planta-info img { width: 120px; aspect-ratio: 16 / 9; object-fit: contain; border-radius: 8px; background: #fff; }
+.loop-planta-info small { font-size: 12.5px; color: var(--tinta-3); }
+.loop-check { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 14px; cursor: pointer; }
+.loop-check input { width: 16px; height: 16px; accent-color: var(--amber); }
+.loop-dialogo .campo input[readonly] { opacity: .7; }
+.loop-botoes { display: flex; gap: 8px; margin-top: 18px; }
+.loop-botoes .btn { flex: 1; }
+.loop-botoes [hidden] { display: none; }
