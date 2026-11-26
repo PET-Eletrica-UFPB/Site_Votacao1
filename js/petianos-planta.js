@@ -50,20 +50,24 @@
     return [...grupos.values()]
       .map((g) => {
         const nome = maisComum(g.grafias);
-        const padrao = FORA_POR_PADRAO.some((r) => r.test(normalizar(nome))) ? "fora" : "auto";
+        const curso = maisComum(g.cursos);
+        const padrao = FORA_POR_PADRAO.some((r) => r.test(normalizar(nome))) ? "fora" : Planta.localPadrao(nome);
+        const s = salvo.disciplinas?.[g.chave];
         return {
           chave: g.chave,
           nome,
-          curso: maisComum(g.cursos),
+          curso,
           projetos: g.projetos.sort((a, b) => a.numero - b.numero).map((p) => ({ codigo: p.codigo, nome: p.nome })),
-          local: lerLocal(salvo.disciplinas?.[g.chave]?.local) ?? padrao,
+          local: lerLocal(s?.local) ?? padrao,
+          ordem: Number.isFinite(s?.ordem) ? s.ordem : Planta.ordemPadrao(nome, curso),
         };
       })
-      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+      .sort((a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome, "pt-BR"))
+      .map((d, i) => ({ ...d, ordem: i })); // ordem sem buracos, para as setas
   }
 
-  // Elétrica primeiro, depois Renováveis (é a ordem das cores na legenda).
-  const ordenadas = () => cursos.flatMap((c) => disciplinas.filter((d) => d.curso === c.id));
+  // Ordem da lista = ordem no percurso do pátio (mesa 1 em diante).
+  const ordenadas = () => [...disciplinas].sort((a, b) => a.ordem - b.ordem);
 
   function opcoes(d) {
     const locais = Planta.LOCAIS.filter((l) => !l.patio).map((l) => {
@@ -71,7 +75,7 @@
       return `<option value="${l.id}" ${d.local === l.id ? "selected" : ""}>${l.id} · ${esc(l.nome)} · ${mesas}</option>`;
     }).join("");
     return `
-      <option value="auto" ${d.local === "auto" ? "selected" : ""}>Pátio</option>
+      <option value="auto" ${d.local === "auto" ? "selected" : ""}>Pátio (na ordem da lista)</option>
       <optgroup label="Salas">${locais}</optgroup>
       <option value="fora" ${d.local === "fora" ? "selected" : ""}>Fora da planta / Auditório</option>`;
   }
@@ -88,34 +92,33 @@
       (divididas.length ? ` Divididas em mais de um local por falta de espaço: ${divididas.join(", ")}.` : "");
     $("planta-resumo").classList.toggle("alerta", m.semMesa.length > 0 || divididas.length > 0);
 
-    $("planta-lista").innerHTML = cursos
-      .map((c) => {
-        const doCurso = lista.filter((d) => d.curso === c.id);
-        if (!doCurso.length) return "";
-        return `
-        <section class="planta-curso">
-          <h3>${esc(c.nome)}</h3>
-          <ol>
-            ${doCurso
-              .map((d) => {
-                const r = m.porDisciplina.get(d);
-                const onde = d.local === "fora" ? "fora da planta" : r?.texto || "";
-                return `
-              <li class="planta-item ${d.local === "fora" ? "fora" : ""} ${r?.sem || r?.dividida ? "alerta" : ""}" data-chave="${esc(d.chave)}">
-                <span class="planta-nome"><b>${esc(d.nome)}</b><small>${d.projetos.length} projeto${d.projetos.length === 1 ? "" : "s"} · ${esc(onde)}</small></span>
-                <select data-local aria-label="Local de ${esc(d.nome)}">${opcoes(d)}</select>
-              </li>`;
-              })
-              .join("")}
-          </ol>
-        </section>`;
-      })
-      .join("");
+    const curto = (id) => cursos.find((c) => c.id === id)?.curto || "";
+    $("planta-lista").innerHTML = `
+      <p class="planta-ordem-dica">A ordem da lista é a ordem no pátio: a primeira começa no corredor da Elétrica, sobe, atravessa a fileira do alto e desce pelo corredor das Renováveis. Use ↑ ↓ para mudar.</p>
+      <ol>
+        ${lista
+          .map((d, i) => {
+            const r = m.porDisciplina.get(d);
+            const onde = d.local === "fora" ? "fora da planta" : r?.texto || "";
+            return `
+          <li class="planta-item ${d.local === "fora" ? "fora" : ""} ${r?.sem || r?.dividida ? "alerta" : ""}" data-chave="${esc(d.chave)}">
+            <span class="planta-linha">
+              <span class="planta-ordem">
+                <button type="button" data-mover="-1" aria-label="Subir ${esc(d.nome)}" ${i === 0 ? "disabled" : ""}>↑</button>
+                <button type="button" data-mover="1" aria-label="Descer ${esc(d.nome)}" ${i === lista.length - 1 ? "disabled" : ""}>↓</button>
+              </span>
+              <span class="planta-nome"><b>${i + 1}. ${esc(d.nome)}</b><small>${esc(curto(d.curso))} · ${d.projetos.length} projeto${d.projetos.length === 1 ? "" : "s"} · ${esc(onde)}</small></span>
+            </span>
+            <select data-local aria-label="Local de ${esc(d.nome)}">${opcoes(d)}</select>
+          </li>`;
+          })
+          .join("")}
+      </ol>`;
   }
 
   const estadoParaSalvar = () => ({
     edicao: $("planta-edicao").value.trim() || edicaoPadrao(),
-    disciplinas: Object.fromEntries(disciplinas.map((d) => [d.chave, { local: String(d.local) }])),
+    disciplinas: Object.fromEntries(disciplinas.map((d) => [d.chave, { local: String(d.local), ordem: d.ordem }])),
   });
 
   function guardarNavegador() {
@@ -189,6 +192,19 @@
     render();
     guardarNavegador();
     $("planta-lista").querySelector(`[data-chave="${CSS.escape(d.chave)}"] select`)?.focus();
+  });
+
+  $("planta-lista").addEventListener("click", (e) => {
+    const botao = e.target.closest("[data-mover]");
+    if (!botao) return;
+    const lista = ordenadas();
+    const i = lista.findIndex((x) => x.chave === botao.closest("[data-chave]").dataset.chave);
+    const j = i + Number(botao.dataset.mover);
+    if (j < 0 || j >= lista.length) return;
+    [lista[i].ordem, lista[j].ordem] = [lista[j].ordem, lista[i].ordem];
+    render();
+    guardarNavegador();
+    $("planta-lista").querySelector(`[data-chave="${CSS.escape(lista[i].chave)}"] [data-mover="${botao.dataset.mover}"]`)?.focus();
   });
 
   $("planta-gerar").addEventListener("click", async () => {

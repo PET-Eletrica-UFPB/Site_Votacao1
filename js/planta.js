@@ -61,11 +61,11 @@ window.Planta = (() => {
      caixa: interior da sala (onde as mesas são desenhadas se ela não tem mesas fixas). selo: onde fica o número. */
   const LOCAIS = [
     { id: 1, nome: "Sala 1 (esquerda, em cima)", mesas: [29, 30, 31, 32, 33, 34, 35, 36, 37], curso: "renovaveis", caixa: [62.5, 44, 295, 218.7], selo: [78, 61] },
-    { id: 2, nome: "Sala 2 (esquerda)", mesas: [], curso: null, porta: "dir", caixa: [62.5, 218.7, 295, 388.8], selo: [80, 237] },
-    { id: 3, nome: "Sala 3 (esquerda)", mesas: [], curso: null, porta: "dir", caixa: [62.5, 388.8, 295, 476.6], selo: [80, 407] },
-    { id: 4, nome: "Sala 4 (esquerda, embaixo)", mesas: [], curso: null, porta: "dir", caixa: [62.5, 476.6, 295, 569.9], selo: [80, 495] },
+    { id: 2, nome: "Sala 2 (esquerda)", mesas: [], curso: "renovaveis", porta: "dir", caixa: [62.5, 218.7, 295, 388.8], selo: [80, 237] },
+    { id: 3, nome: "Sala 3 (esquerda)", mesas: [], curso: "renovaveis", porta: "dir", caixa: [62.5, 388.8, 295, 476.6], selo: [80, 407] },
+    { id: 4, nome: "Sala 4 (esquerda, embaixo)", mesas: [], curso: "renovaveis", porta: "dir", caixa: [62.5, 476.6, 295, 569.9], selo: [80, 495] },
     { id: 5, nome: "Sala 5 (direita, em cima)", mesas: [10, 11, 12, 13, 14], curso: "eletrica", caixa: [697, 44, 929.5, 130.4], selo: [717, 62] },
-    { id: 6, nome: "Sala 6 (direita, embaixo)", mesas: [], curso: null, porta: "esq", caixa: [697, 389, 929.5, 569.9], selo: [711, 407] },
+    { id: 6, nome: "Sala 6 (direita, embaixo)", mesas: [], curso: "eletrica", porta: "esq", caixa: [697, 389, 929.5, 569.9], selo: [711, 407] },
     // Pátio: sem número (as cores já separam as disciplinas); só o automático usa.
     { id: 7, nome: "Pátio (lado Renováveis)", mesas: [21, 22, 23, 24, 25, 26, 27, 28], curso: "renovaveis", patio: true },
     { id: 8, nome: "Pátio (fileira do alto)", mesas: [15, 16, 17, 18, 19, 20], curso: null, patio: true },
@@ -141,63 +141,152 @@ window.Planta = (() => {
   }
   const capacidadeDaSala = (l) => gradeDaSala(l, 999).length;
 
+  /* Pátio como uma fila contínua, no percurso da numeração original (um "U"):
+     corredor da Elétrica de baixo para cima (1→9), fileira do alto da direita para a
+     esquerda (15→20) e corredor das Renováveis de cima para baixo (21→28).
+     As disciplinas entram na ordem da lista, cada uma inteira numa só fileira; a fileira do
+     alto é preenchida primeiro e os corredores ficam encostados nela, de modo que as mesas
+     vazias sobram embaixo, perto da entrada, e nunca no alto do pátio. */
+  const FILEIRAS = [
+    { id: 9, mesas: [1, 2, 3, 4, 5, 6, 7, 8, 9], alinhar: "fim" }, // encostado no alto
+    { id: 8, mesas: [15, 16, 17, 18, 19, 20], alinhar: "centro" },
+    { id: 7, mesas: [21, 22, 23, 24, 25, 26, 27, 28], alinhar: "inicio" }, // encostado no alto
+  ];
+  const emPares = (lista) => Array.from({ length: Math.ceil(lista.length / 2) }, (_, i) => lista.slice(2 * i, 2 * i + 2));
+  const mesasDe = (d) => Math.ceil(d.projetos.length / 2);
+
+  // Melhor corte da lista em três trechos seguidos (um por fileira), ou null se não couber.
+  function cortarNoPatio(lista) {
+    const [c1, c2, c3] = FILEIRAS.map((f) => f.mesas.length);
+    const m = lista.map(mesasDe);
+    const soma = (i, j) => m.slice(i, j).reduce((s, x) => s + x, 0);
+    let melhor = null;
+    for (let a = 0; a <= lista.length; a++) {
+      for (let b = a; b <= lista.length; b++) {
+        const s1 = soma(0, a);
+        const s2 = soma(a, b);
+        const s3 = soma(b, lista.length);
+        if (s1 > c1 || s2 > c2 || s3 > c3) continue;
+        // Curso no lado errado: Renováveis no corredor da Elétrica e vice-versa.
+        const ladoErrado =
+          lista.slice(0, a).filter((d) => lado(d.curso) === "renovaveis").reduce((s, d) => s + mesasDe(d), 0) +
+          lista.slice(b).filter((d) => lado(d.curso) === "eletrica").reduce((s, d) => s + mesasDe(d), 0);
+        // Fileira do alto cheia primeiro; depois cada curso no seu lado; depois as sobras divididas entre os corredores.
+        const custo = (c2 - s2) * 1000 + ladoErrado * 10 + Math.abs((c1 - s1) - (c3 - s3));
+        if (!melhor || custo < melhor.custo) melhor = { custo, cortes: [0, a, b, lista.length] };
+      }
+    }
+    return melhor;
+  }
+
   /* Distribuição. Cada mesa é dividida ao meio entre dois projetos da mesma disciplina
      (uma disciplina com número ímpar de projetos deixa meia mesa livre).
-     disciplinas: [{ nome, curso, local: "auto" | "fora" | 1..9, projetos: [{ codigo, nome }] }]
-     1) as que têm local escolhido vão para ele: nas mesas fixas, ou em mesas desenhadas na sala;
-     2) as do pátio vão inteiras para uma única parte do pátio sempre que couber, maiores primeiro,
-        preferindo a área do seu curso; se o pátio lotar, as salas 1 e 5 e depois as salas vazias;
-        só se nada couber, dividem entre locais.
-     Mesas sem projeto não são desenhadas. */
-  const emPares = (lista) => Array.from({ length: Math.ceil(lista.length / 2) }, (_, i) => lista.slice(2 * i, 2 * i + 2));
-
+     disciplinas: [{ nome, curso, local: "auto" | "fora" | 1..6, projetos: [{ codigo, nome }] }], na ordem da lista.
+     1) as que têm sala escolhida vão para ela;
+     2) as do pátio entram na fila contínua; se o pátio lotar, as maiores vão para as salas
+        (primeiro as que têm mesas fixas, 1 e 5, depois as vazias), sempre inteiras. */
   function distribuir(disciplinas) {
     const livres = new Map(LOCAIS.map((l) => [l.id, [...l.mesas]]));
-    const mesaDe = new Map(); // código → nº da mesa fixa
+    const mesaDe = new Map(); // código → nº da mesa
     const localDe = new Map(); // código → id do local
     const projetosDaMesa = new Map(); // nº da mesa fixa → [projeto, projeto?]
     const naSala = new Map(); // id da sala sem mesas fixas → [[projeto, projeto?], ...]
     const semMesa = [];
+    const foiParaSala = new Map(); // disciplina do pátio que não coube → id da sala
     const mesasLivres = (l) => (l.mesas.length ? livres.get(l.id).length : capacidadeDaSala(l) - (naSala.get(l.id)?.length || 0));
-    const pegar = (id, d) => {
-      const fila = livres.get(id);
-      // Na fileira 8, que é das duas áreas, Renováveis entra pela ponta do lado dela.
-      return id === 8 && lado(d.curso) === "renovaveis" ? fila.pop() : fila.shift();
+    const ocuparMesa = (par, id, n) => {
+      projetosDaMesa.set(n, par);
+      par.forEach((p) => {
+        mesaDe.set(p.codigo, n);
+        localDe.set(p.codigo, id);
+      });
     };
-    const ocupar = (d, par, id) => {
+    const ocuparSala = (par, id) => {
       const l = LOCAL.get(id);
       if (mesasLivres(l) <= 0) return false;
-      if (l.mesas.length) {
-        const n = pegar(id, d);
-        projetosDaMesa.set(n, par);
-        par.forEach((p) => mesaDe.set(p.codigo, n));
-      } else {
+      if (l.mesas.length) ocuparMesa(par, id, livres.get(id).shift());
+      else {
         if (!naSala.has(id)) naSala.set(id, []);
         naSala.get(id).push(par);
+        par.forEach((p) => localDe.set(p.codigo, id));
       }
-      par.forEach((p) => localDe.set(p.codigo, id));
       return true;
     };
 
+    // 1) Salas escolhidas.
     for (const d of disciplinas.filter((x) => Number.isInteger(x.local))) {
-      for (const par of emPares(d.projetos)) if (!ocupar(d, par, d.local)) semMesa.push(...par);
+      for (const par of emPares(d.projetos)) if (!ocuparSala(par, d.local)) semMesa.push(...par);
     }
 
-    const automaticas = disciplinas
-      .filter((x) => x.local === "auto" && x.projetos.length)
-      .sort((a, b) => b.projetos.length - a.projetos.length || a.nome.localeCompare(b.nome, "pt-BR"));
-    for (const d of automaticas) {
+    // 2) Pátio. Se a fila não couber, algumas disciplinas vão inteiras para salas: o mínimo
+    //    possível, escolhidas para a fileira do alto ficar cheia e o pátio continuar na ordem.
+    const naFila = disciplinas.filter((x) => x.local === "auto" && x.projetos.length);
+    let patio = naFila;
+    let paraSalas = [];
+    let corte = cortarNoPatio(patio);
+    for (let k = 1; !corte && k <= Math.min(4, naFila.length); k++) {
+      let melhor = null;
+      const tentar = (inicio, fora) => {
+        if (fora.length === k) {
+          const resto = naFila.filter((d) => !fora.includes(d));
+          const c = cortarNoPatio(resto);
+          if (!c) return;
+          const custo = c.custo + fora.reduce((s, d) => s + mesasDe(d), 0); // tira o mínimo de mesas
+          if (!melhor || custo < melhor.custo) melhor = { custo, corte: c, resto, fora: [...fora] };
+          return;
+        }
+        for (let i = inicio; i < naFila.length; i++) tentar(i + 1, [...fora, naFila[i]]);
+      };
+      tentar(0, []);
+      if (melhor) ({ corte, resto: patio, fora: paraSalas } = melhor);
+    }
+    if (!corte) {
+      // Nem tirando quatro coube: as maiores vão para as salas até caber.
+      while (!corte && patio.length) {
+        const maior = patio.reduce((a, b) => (mesasDe(b) > mesasDe(a) ? b : a));
+        patio = patio.filter((d) => d !== maior);
+        paraSalas.push(maior);
+        corte = cortarNoPatio(patio);
+      }
+    }
+    if (corte) {
+      FILEIRAS.forEach((f, i) => {
+        const trecho = patio.slice(corte.cortes[i], corte.cortes[i + 1]);
+        const usadas = trecho.reduce((s, d) => s + mesasDe(d), 0);
+        const sobra = f.mesas.length - usadas;
+        // Corredores: encostados no alto (sobra embaixo). Fileira do alto: as pontas ficam ocupadas
+        // e a sobra vai entre as disciplinas, para nunca abrir vão no canto; com uma só, fica no meio.
+        const vaos = trecho.map(() => 0);
+        let k = f.alinhar === "fim" ? sobra : 0;
+        if (f.alinhar === "centro") {
+          if (trecho.length === 1) k = Math.floor(sobra / 2);
+          else for (let i = 0; i < sobra; i++) vaos[i % (trecho.length - 1)]++;
+        }
+        trecho.forEach((d, i) => {
+          for (const par of emPares(d.projetos)) ocuparMesa(par, f.id, f.mesas[k++]);
+          k += vaos[i];
+        });
+      });
+    }
+
+    // 3) O que não coube no pátio vai inteiro para uma sala: as de mesas fixas do lado do curso
+    //    primeiro, depois as outras com mesas fixas e por último as vazias.
+    for (const d of paraSalas) {
       const pares = emPares(d.projetos);
-      // Primeiro o pátio; se lotar, as salas com mesas fixas (1 e 5); por último, as salas vazias.
-      const preferencia = (l) => (l.patio ? 0 : l.mesas.length ? 3 : 6) + (l.curso === lado(d.curso) ? 0 : l.curso === null ? 1 : 2);
-      const cabe = LOCAIS.filter((l) => mesasLivres(l) >= pares.length).sort((a, b) => preferencia(a) - preferencia(b) || mesasLivres(a) - mesasLivres(b));
+      // Sala com mesas fixas antes das vazias; do lado do curso; e sem outra disciplina dentro.
+      const ocupada = (l) => (l.mesas.length ? livres.get(l.id).length < l.mesas.length : naSala.has(l.id));
+      const preferencia = (l) => (l.mesas.length ? 0 : 3) + (l.curso === lado(d.curso) ? 0 : l.curso === null ? 1 : 2) + (ocupada(l) ? 10 : 0);
+      const salas = LOCAIS.filter((l) => !l.patio);
+      const cabe = salas.filter((l) => mesasLivres(l) >= pares.length).sort((a, b) => preferencia(a) - preferencia(b) || mesasLivres(a) - mesasLivres(b));
       if (cabe.length) {
-        pares.forEach((par) => ocupar(d, par, cabe[0].id));
+        pares.forEach((par) => ocuparSala(par, cabe[0].id));
+        foiParaSala.set(d, cabe[0].id);
         continue;
       }
-      const ordem = [...LOCAIS].sort((a, b) => preferencia(a) - preferencia(b) || mesasLivres(b) - mesasLivres(a));
-      for (const par of pares) if (!ordem.some((l) => ocupar(d, par, l.id))) semMesa.push(...par);
+      const ordem = [...salas].sort((a, b) => preferencia(a) - preferencia(b) || mesasLivres(b) - mesasLivres(a));
+      for (const par of pares) if (!ordem.some((l) => ocuparSala(par, l.id))) semMesa.push(...par);
     }
+
     // Mesas desenhadas nas salas ganham números depois das 37 da original, sala por sala.
     let proximo = MESAS.length + 1;
     const numerosNaSala = new Map();
@@ -208,7 +297,32 @@ window.Planta = (() => {
         return n;
       }));
     }
-    return { mesaDe, localDe, projetosDaMesa, naSala, numerosNaSala, semMesa };
+    return { mesaDe, localDe, projetosDaMesa, naSala, numerosNaSala, semMesa, foiParaSala };
+  }
+
+  // Ordem e lugar das disciplinas na planta original (percurso das mesas 1 → 37).
+  const ORDEM_ORIGINAL = [
+    [/introducao a engenharia eletrica/, "auto"],
+    [/^integradora (i|1)$/, "auto"],
+    [/profissional (iii|3)/, 5],
+    [/unidade curricular de extensao/, "auto"],
+    [/ciencia dos materiais/, "auto"],
+    [/projeto integrador (i|1)$/, "auto"],
+    [/projeto integrador (ii|2)$/, "auto"],
+    [/projeto integrador (iii|3)/, "auto"],
+    [/eletronica digital/, 1],
+  ];
+  const naOriginal = (nome) => ORDEM_ORIGINAL.findIndex(([r]) => r.test(semAcento(nome)));
+
+  // Posição padrão na lista: a da original; disciplinas novas depois, Elétrica antes de Renováveis.
+  function ordemPadrao(nome, curso) {
+    const i = naOriginal(nome);
+    return i >= 0 ? i : 100 + (lado(curso) === "eletrica" ? 0 : 50);
+  }
+  // Lugar padrão: o da original (Profissional III na sala 5, Eletrônica Digital na sala 1); as outras no pátio.
+  function localPadrao(nome) {
+    const i = naOriginal(nome);
+    return i >= 0 ? ORDEM_ORIGINAL[i][1] : "auto";
   }
 
   /* Pintor para canvas com os mesmos métodos do jsPDF usados aqui. */
@@ -520,6 +634,7 @@ window.Planta = (() => {
       let texto = partes.join(" + ");
       if (mesas.length) texto += ` · mesa${mesas.length === 1 ? "" : "s"} ${faixas(mesas)}`;
       if (sem) texto += `${texto ? " · " : ""}${sem} sem mesa`;
+      if (m.foiParaSala.has(d)) texto = `pátio lotado → ${texto}`;
       porDisciplina.set(d, { texto, dividida: partes.length > 1, sem });
     }
     return porDisciplina;
@@ -611,5 +726,5 @@ window.Planta = (() => {
     return { ocupadas: m.localDe.size, semMesa: m.semMesa.length };
   }
 
-  return { baixar, previa, prepararFonte, LOCAIS, TOTAL_MESAS, PAGINA };
+  return { baixar, previa, prepararFonte, ordemPadrao, localPadrao, LOCAIS, TOTAL_MESAS, PAGINA };
 })();
