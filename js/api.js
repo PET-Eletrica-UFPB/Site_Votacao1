@@ -392,6 +392,13 @@ window.API = (() => {
     return criados;
   }
 
+  // Troca o cadastro inteiro de uma vez (sincronização com a planilha).
+  // novos: { "20A": { nome, curso, numero, ... } }; mapa: Map(código antigo → novo, ou null se saiu),
+  // para levar junto as atribuições dos professores e as notas.
+  async function substituirProjetos(novos, mapa) {
+    await atualizarSite({ projetos: novos, ...(await mudancasDeCodigos(mapa)) });
+  }
+
   /* Frequência dos alunos: { presenca: { chave: true }, extras: { id: aluno }, removidos: { chave: true } } */
   const lerFrequencia = async () => (await escrever("GET", "/site/frequencia")) || {};
   // mudancas: caminhos dentro de /site/frequencia (ex.: "presenca/abc": true)
@@ -791,7 +798,7 @@ window.API = (() => {
     meuPerfil, minhasAvaliacoes, salvarAvaliacao,
     lerFormulario, salvarFormulario, definirInscricoesAbertas, enviarInscricao, lerInscricoes, removerInscricao, editarInscricao,
     lerFrequencia, salvarFrequencia, lerPlanta, salvarPlanta, salvarPrioridade, salvarAjusteAutomatico,
-    importarProjetos, organizarCodigos, numerarPorDisciplina, standNumerico, codigoFixo, copiaDeSeguranca, contarDados, limparDados, importarInscricoes, assinaturasImportadas,
+    importarProjetos, substituirProjetos, organizarCodigos, numerarPorDisciplina, standNumerico, codigoFixo, copiaDeSeguranca, contarDados, limparDados, importarInscricoes, assinaturasImportadas,
     lerFeiras, salvarFeira, removerFeira, publicarFeirasIniciais,
   };
 })();

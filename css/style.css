@@ -1090,3 +1090,24 @@ body:has(> .versao-site) { padding-bottom: 40px; }
 }
 .versao-site.nova { border-color: rgba(238, 166, 20, .8); color: var(--amber-claro); cursor: pointer; }
 @media (max-width: 600px) { .versao-site { right: 8px; bottom: 6px; max-width: calc(100vw - 16px); font-size: 10.5px; } }
+
+/* Sincronizar com planilha */
+.sinc-modal { width: min(820px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow-y: auto; }
+.sinc-link { display: flex; gap: 10px; align-items: flex-end; }
+.sinc-link .campo { flex: 1; margin: 0; }
+.sinc-link .btn { flex: none; padding: 12px 18px; }
+.sinc-modal .loop-check { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 14px; cursor: pointer; }
+.sinc-modal .loop-check input, .sinc-caixa input { width: 16px; height: 16px; accent-color: var(--amber); }
+.sinc-resumo { margin: 6px 0 12px !important; color: var(--tinta) !important; }
+.sinc-avisos { margin-bottom: 12px; padding: 10px 14px; border-radius: 12px; background: rgba(238, 166, 20, .1); border: 1px solid rgba(238, 166, 20, .45); font-size: 13px; }
+.sinc-avisos ul { margin: 6px 0 0; padding-left: 18px; color: var(--amber-claro); }
+.sinc-secao { margin-top: 8px; border-radius: 12px; border: 1px solid var(--borda); background: rgba(255, 255, 255, .02); }
+.sinc-secao summary { padding: 10px 14px; cursor: pointer; font-weight: 600; font-size: 14px; }
+.sinc-secao summary b { margin-left: 6px; padding: 1px 8px; border-radius: 99px; background: rgba(255, 255, 255, .08); font-size: 12px; }
+.sinc-secao.alerta { border-color: rgba(238, 166, 20, .55); }
+.sinc-secao ul { list-style: none; margin: 0; padding: 0 14px 10px; max-height: 40vh; overflow-y: auto; }
+.sinc-secao li { display: flex; flex-direction: column; padding: 6px 0; border-top: 1px solid var(--borda); font-size: 13.5px; }
+.sinc-secao li b { font-family: var(--mono); font-size: 12.5px; color: var(--amber-claro); }
+.sinc-secao li small { margin-top: 2px; font-size: 12px; color: var(--tinta-3); }
+.sinc-caixa { display: inline-flex; align-items: center; gap: 4px; margin-right: 6px; font-size: 12px; color: var(--tinta-2); cursor: pointer; }
+@media (max-width: 600px) { .sinc-link { flex-direction: column; align-items: stretch; } }
