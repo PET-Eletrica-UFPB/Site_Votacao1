@@ -76,7 +76,7 @@ window.FEIRA = {
         { id: "curso", texto: "Curso", tipo: "unica", obrigatoria: true,
           opcoes: ["Engenharia Elétrica", "Engenharia de Energias Alternativas e Renováveis"] },
         { id: "disciplina", texto: "Disciplina", tipo: "curta", obrigatoria: true },
-        { id: "resumo", texto: "Do que se trata o projeto?", tipo: "longa", obrigatoria: true,
+        { id: "resumo", texto: "Do que se trata o projeto?", tipo: "longa", obrigatoria: false,
           exemplo: "Ex.: Braço robótico de MDF controlado por Arduino, que separa peças por cor." },
         { id: "projeto", texto: "Nome da equipe", tipo: "curta", obrigatoria: true, apenasNome: true,
           ajuda: "Só o nome do projeto ou da equipe, do jeito que vai aparecer no site, no placar e na urna. Não coloque aqui os nomes dos integrantes.",
