@@ -352,7 +352,7 @@ window.API = (() => {
   function listaDeProfessores(dados) {
     return Object.entries(dados || {})
       .filter(([, p]) => p?.nome && p?.login)
-      .map(([uid, p]) => ({ uid, nome: p.nome, login: p.login, projetos: Object.keys(p.projetos || {}) }))
+      .map(([uid, p]) => ({ uid, nome: p.nome, login: p.login, curso: p.curso || "", projetos: Object.keys(p.projetos || {}) }))
       .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
   }
 
@@ -367,7 +367,8 @@ window.API = (() => {
 
   const projetosComoObjeto = (codigos) => Object.fromEntries(codigos.map((c) => [c, true]));
 
-  async function cadastrarProfessor({ nome, codigo, projetos }) {
+  // curso: "eletrica" ou "renovaveis" (professor de Elétrica ou de Renováveis); vazio = não informado.
+  async function cadastrarProfessor({ nome, codigo, projetos, curso }) {
     conferirCodigo(codigo);
     const login = `prof-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}@${DOMINIO_PROFESSOR}`;
     let conta;
@@ -382,7 +383,7 @@ window.API = (() => {
     }
     try {
       await atualizarSite({
-        [`professores/${conta.localId}`]: { nome, login, projetos: projetosComoObjeto(projetos) },
+        [`professores/${conta.localId}`]: { nome, login, projetos: projetosComoObjeto(projetos), ...(curso ? { curso } : {}) },
         [`professores_codigos/${conta.localId}`]: codigo,
       });
     } catch (erro) {
@@ -404,7 +405,8 @@ window.API = (() => {
     }
   }
 
-  async function atualizarProfessor(uid, { nome, codigo, projetos }) {
+  // curso fica como está se não vier (undefined); "" apaga.
+  async function atualizarProfessor(uid, { nome, codigo, projetos, curso }) {
     conferirCodigo(codigo);
     const codigoAntigo = await escrever("GET", `/site/professores_codigos/${uid}`);
     if (codigo !== codigoAntigo) {
@@ -416,6 +418,7 @@ window.API = (() => {
       [`professores/${uid}/nome`]: nome,
       [`professores/${uid}/projetos`]: projetosComoObjeto(projetos),
       [`professores_codigos/${uid}`]: codigo,
+      ...(curso !== undefined ? { [`professores/${uid}/curso`]: curso || null } : {}),
     });
   }
 

@@ -302,6 +302,54 @@ $("form-baixar").addEventListener("submit", async (e) => {
   }
 });
 
+/* Abas que não cabem: rolam para o lado. Com o mouse, dá para arrastar; a aba escolhida
+   aparece inteira e a borda esmaece do lado onde há mais abas. */
+function abasQueRolam(barra) {
+  const marcar = () => {
+    barra.classList.toggle("mais-esq", barra.scrollLeft > 2);
+    barra.classList.toggle("mais-dir", barra.scrollLeft + barra.clientWidth < barra.scrollWidth - 2);
+  };
+  let inicio = null;
+  let arrastou = false;
+  barra.addEventListener("pointerdown", (e) => {
+    if (e.pointerType !== "mouse" || barra.scrollWidth <= barra.clientWidth) return;
+    inicio = { x: e.clientX, rolagem: barra.scrollLeft };
+    arrastou = false;
+  });
+  addEventListener("pointermove", (e) => {
+    if (!inicio) return;
+    const dx = e.clientX - inicio.x;
+    if (!arrastou && Math.abs(dx) < 5) return;
+    arrastou = true;
+    barra.classList.add("arrastando");
+    barra.scrollLeft = inicio.rolagem - dx;
+  });
+  addEventListener("pointerup", () => {
+    inicio = null;
+    barra.classList.remove("arrastando");
+  });
+  // Um arraste não conta como clique na aba.
+  barra.addEventListener("click", (e) => {
+    if (arrastou) {
+      e.stopPropagation();
+      e.preventDefault();
+      arrastou = false;
+      return;
+    }
+    e.target.closest(".aba")?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, true);
+  // Roda do mouse na vertical também rola as abas.
+  barra.addEventListener("wheel", (e) => {
+    if (barra.scrollWidth <= barra.clientWidth || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+    barra.scrollLeft += e.deltaY;
+    e.preventDefault();
+  }, { passive: false });
+  barra.addEventListener("scroll", marcar, { passive: true });
+  new ResizeObserver(marcar).observe(barra);
+  marcar();
+}
+document.querySelectorAll(".abas").forEach(abasQueRolam);
+
 // Espera petianos-professores.js carregar antes de abrir o painel.
 addEventListener("DOMContentLoaded", () => {
   if (API.sessaoAtual()) abrirPainel();

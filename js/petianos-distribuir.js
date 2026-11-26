@@ -8,12 +8,14 @@
   const { disciplinaDe } = PainelProfessores;
 
   let marcados = new Set(); // uids dos cadastrados que entram na distribuição
+  const cursoNovo = new Map(); // nome (minúsculo) do professor novo → curso escolhido na janela
   let escolhas = new Map(); // disciplina -> [chave do professor ou ""]
   let salvando = false;
   // Depois da lista automática, só as disciplinas repetidas mostram a segunda vaga.
   let vagasExtras = false;
 
   const chaveNovo = (nome) => `novo:${nome.toLowerCase()}`;
+  const tagCurso = (curso) => (curso ? ` <span class="prof-tag ${curso}">${curso === "eletrica" ? "Elétrica" : "Renováveis"}</span>` : "");
   const plural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
 
   // "ELETRONICA  DIGITAL" e "Eletrônica Digital" são a mesma disciplina.
@@ -41,13 +43,13 @@
   // Professores que entram na distribuição: { chave, nome, uid }
   function participantes() {
     const { professores } = PainelProfessores.estado();
-    const lista = professores.filter((p) => marcados.has(p.uid)).map((p) => ({ chave: p.uid, nome: p.nome, uid: p.uid }));
+    const lista = professores.filter((p) => marcados.has(p.uid)).map((p) => ({ chave: p.uid, nome: p.nome, uid: p.uid, curso: p.curso || "" }));
     const vistos = new Set(professores.map((p) => p.nome.toLowerCase()));
     for (const linha of $("distribuir-novos").value.split("\n")) {
       const nome = linha.trim().replace(/\s+/g, " ").slice(0, LIMITE_NOME);
       if (!nome || vistos.has(nome.toLowerCase())) continue;
       vistos.add(nome.toLowerCase());
-      lista.push({ chave: chaveNovo(nome), nome, uid: null });
+      lista.push({ chave: chaveNovo(nome), nome, uid: null, curso: cursoNovo.get(nome.toLowerCase()) || "" });
     }
     return lista;
   }
@@ -62,6 +64,15 @@
       .filter((n) => existentes.has(n))
       .map((n) => existentes.get(n));
   }
+
+  // Curso de uma disciplina: o da maioria dos seus projetos.
+  function cursoDaDisciplina(lista) {
+    const conta = {};
+    for (const p of lista) conta[p.curso] = (conta[p.curso] || 0) + 1;
+    return Object.entries(conta).sort((a, b) => b[1] - a[1])[0]?.[0] || "";
+  }
+  // Disciplina fora do curso do professor (professor sem curso aceita qualquer uma).
+  const foraDoCurso = (prof, cursoDisc) => !!prof.curso && !!cursoDisc && prof.curso !== cursoDisc;
 
   const porDisciplina = () =>
     Math.min(MAX_POR_DISCIPLINA, Math.max(1, parseInt($("distribuir-por").value, 10) || 1));
@@ -101,14 +112,16 @@
     const carga = new Map(profs.map((p) => [p.chave, { projetos: 0, disciplinas: 0 }]));
 
     const ordem = [...disciplinas().entries()]
-      .map(([d, lista]) => ({ d, total: lista.length, sorteio: Math.random() }))
+      .map(([d, lista]) => ({ d, total: lista.length, curso: cursoDaDisciplina(lista), sorteio: Math.random() }))
       .sort((a, b) => b.total - a.total || a.sorteio - b.sorteio);
+    const prof = new Map(profs.map((p) => [p.chave, p]));
 
     escolhas = new Map();
-    for (const { d, total } of ordem) {
+    for (const { d, total, curso } of ordem) {
+      // Professores do curso da disciplina primeiro; entre eles, quem tem menos projetos.
       const escolhidos = profs
         .map((p) => p.chave)
-        .sort((a, b) => carga.get(a).projetos - carga.get(b).projetos || carga.get(a).disciplinas - carga.get(b).disciplinas || sorteio.get(a) - sorteio.get(b))
+        .sort((a, b) => foraDoCurso(prof.get(a), curso) - foraDoCurso(prof.get(b), curso) || carga.get(a).projetos - carga.get(b).projetos || carga.get(a).disciplinas - carga.get(b).disciplinas || sorteio.get(a) - sorteio.get(b))
         .slice(0, n);
       for (const c of escolhidos) {
         carga.get(c).projetos += total;
@@ -127,36 +140,47 @@
   const POR_PROFESSOR = 2;
   const GRANDE = 12;
 
-  // Custo de uma divisão em pares: regras quebradas pesam muito; depois, a maior carga e o desequilíbrio.
-  function custo(pares) {
+  // Custo de uma divisão em pares (o par i é do professor i): regras quebradas pesam muito;
+  // depois, disciplina fora do curso do professor; depois, a maior carga e o desequilíbrio.
+  function custo(pares, profs, atuais) {
     let c = 0;
     let maior = 0;
     let quadrados = 0;
-    for (const par of pares) {
+    pares.forEach((par, i) => {
       if (par.length === 2 && par[0].d === par[1].d) c += 1e9;
       if (par.length === 2 && par[0].total > GRANDE && par[1].total > GRANDE) c += 1e7;
+      for (const x of par) {
+        if (foraDoCurso(profs[i], x.curso)) c += 1e5;
+        if (!(atuais.get(x.d) || []).includes(profs[i].chave)) c += 1; // mexe o mínimo no que já existe
+      }
       const soma = par.reduce((s, x) => s + x.total, 0);
       maior = Math.max(maior, soma);
       quadrados += soma * soma;
-    }
+    });
     return c + maior * 1000 + quadrados;
   }
 
-  // Melhora trocando disciplinas entre pares enquanto o custo cair.
-  function melhorar(pares) {
-    let atual = custo(pares);
+  // Melhora trocando disciplinas entre pares, ou pares inteiros entre professores, enquanto o custo cair.
+  function melhorar(pares, profs, atuais) {
+    let atual = custo(pares, profs, atuais);
+    const tentar = (trocar) => {
+      trocar();
+      const novo = custo(pares, profs, atuais);
+      if (novo < atual) {
+        atual = novo;
+        return true;
+      }
+      trocar();
+      return false;
+    };
     for (let melhorou = true; melhorou; ) {
       melhorou = false;
       for (let i = 0; i < pares.length; i++) {
         for (let j = i + 1; j < pares.length; j++) {
+          if (tentar(() => ([pares[i], pares[j]] = [pares[j], pares[i]]))) melhorou = true;
           for (let a = 0; a < pares[i].length; a++) {
             for (let b = 0; b < pares[j].length; b++) {
-              [pares[i][a], pares[j][b]] = [pares[j][b], pares[i][a]];
-              const novo = custo(pares);
-              if (novo < atual) {
-                atual = novo;
-                melhorou = true;
-              } else [pares[i][a], pares[j][b]] = [pares[j][b], pares[i][a]];
+              if (tentar(() => ([pares[i][a], pares[j][b]] = [pares[j][b], pares[i][a]]))) melhorou = true;
             }
           }
         }
@@ -168,44 +192,57 @@
   function duasPorProfessor() {
     const profs = participantes();
     if (!profs.length) return feedback("Marque ou digite pelo menos um professor.", true);
-    const lista = [...disciplinas().entries()].map(([d, l]) => ({ d, total: l.length }));
+    const lista = [...disciplinas().entries()].map(([d, l]) => ({ d, total: l.length, curso: cursoDaDisciplina(l) }));
     if (!lista.length) return feedback("Cadastre os projetos na aba Projetos primeiro.", true);
 
-    const vagas = profs.length * POR_PROFESSOR;
-    // Quais disciplinas entram: todas, uma vez; se sobrar vaga, repete as menores; se faltar, ficam de fora as menores.
-    const porTamanho = [...lista].sort((a, b) => b.total - a.total || a.d.localeCompare(b.d, "pt-BR"));
-    const itens = porTamanho.slice(0, vagas);
-    const semProfessor = porTamanho.slice(vagas).map((x) => x.d);
-    for (let i = 0; itens.length < vagas; i++) itens.push(porTamanho[porTamanho.length - 1 - (i % porTamanho.length)]);
+    // Vagas de cada curso (2 por professor). As disciplinas de cada curso vão para as vagas do seu
+    // curso; o que não couber vai para professores sem curso e, se ainda faltar, para o outro curso.
+    // Vagas que sobram repetem as menores disciplinas do mesmo curso.
+    const vagas = { eletrica: 0, renovaveis: 0, "": 0 };
+    for (const p of profs) vagas[p.curso in vagas ? p.curso : ""] += POR_PROFESSOR;
+    const porTamanho = (l) => [...l].sort((a, b) => b.total - a.total || a.d.localeCompare(b.d, "pt-BR"));
+    const doCurso = { eletrica: porTamanho(lista.filter((x) => x.curso === "eletrica")), renovaveis: porTamanho(lista.filter((x) => x.curso !== "eletrica")) };
+    const itens = [];
+    const sobra = [];
+    for (const c of ["eletrica", "renovaveis"]) {
+      itens.push(...doCurso[c].slice(0, vagas[c]));
+      sobra.push(...doCurso[c].slice(vagas[c]));
+      vagas[c] = Math.max(0, vagas[c] - doCurso[c].length);
+    }
+    const semProfessor = [];
+    for (const x of porTamanho(sobra)) {
+      const onde = vagas[""] > 0 ? "" : ["eletrica", "renovaveis"].find((c) => vagas[c] > 0);
+      if (onde === undefined) semProfessor.push(x.d);
+      else {
+        itens.push(x);
+        vagas[onde]--;
+      }
+    }
+    for (const c of ["eletrica", "renovaveis", ""]) {
+      const base = c && doCurso[c].length ? doCurso[c] : porTamanho(lista);
+      for (let i = 0; vagas[c] > 0; i++, vagas[c]--) itens.push(base[base.length - 1 - (i % base.length)]);
+    }
 
     // Várias tentativas a partir de pares diferentes; fica a de menor custo (com sorteio entre as empatadas).
+    const atuais = escolhasAtuais();
     let melhor = null;
     for (let t = 0; t < 60; t++) {
       const ordem = [...itens].sort((a, b) => b.total - a.total || Math.random() - 0.5);
       // Ponto de partida: a maior com a menor, a segunda maior com a segunda menor...
       const pares = profs.map((_, i) => [ordem[i], ordem[ordem.length - 1 - i]]);
-      for (let k = 0; t > 0 && k < 3; k++) {
+      for (let k = 0; t > 0 && k < 4; k++) {
         const i = Math.floor(Math.random() * pares.length);
         const j = Math.floor(Math.random() * pares.length);
         [pares[i][0], pares[j][1]] = [pares[j][1], pares[i][0]];
       }
-      const c = melhorar(pares) + Math.random() * 0.5;
-      if (!melhor || c < melhor.custo) melhor = { custo: c, pares };
-    }
-
-    // Quem já tinha uma das disciplinas do par fica com ele, para mexer o mínimo.
-    const atuais = escolhasAtuais();
-    const temHoje = (prof, par) => par.filter((x) => (atuais.get(x.d) || []).includes(prof.chave)).length;
-    const livres = [...profs].sort(() => Math.random() - 0.5);
-    const paresOrdenados = [...melhor.pares].sort((a, b) => b.reduce((s, x) => s + x.total, 0) - a.reduce((s, x) => s + x.total, 0));
-    const dono = new Map();
-    for (const par of paresOrdenados) {
-      livres.sort((a, b) => temHoje(b, par) - temHoje(a, par));
-      dono.set(par, livres.shift());
+      const c = melhorar(pares, profs, atuais) + Math.random() * 0.5;
+      if (!melhor || c < melhor.custo) melhor = { custo: c, pares: pares.map((p) => [...p]) };
     }
 
     escolhas = new Map(lista.map(({ d }) => [d, []]));
-    for (const [par, prof] of dono) for (const x of new Set(par)) escolhas.get(x.d).push(prof.chave);
+    melhor.pares.forEach((par, i) => {
+      for (const x of new Set(par)) escolhas.get(x.d).push(profs[i].chave);
+    });
     $("distribuir-por").value = 1;
     vagasExtras = true;
     ajustarEscolhas();
@@ -216,6 +253,8 @@
     if (grandes) avisos.push(`há mais disciplinas grandes (mais de ${GRANDE} projetos) do que professores: ${plural(grandes, "professor ficou", "professores ficaram")} com duas delas`);
     const repetidas = [...escolhas.entries()].filter(([, v]) => v.filter(Boolean).length > 1).map(([d]) => d);
     if (repetidas.length) avisos.push(`como há mais vagas que disciplinas, ${repetidas.join(", ")} ${repetidas.length === 1 ? "ficou" : "ficaram"} com dois professores`);
+    const trocados = melhor.pares.reduce((s, par, i) => s + par.filter((x) => foraDoCurso(profs[i], x.curso)).length, 0);
+    if (trocados) avisos.push(`faltam professores de um dos cursos: ${plural(trocados, "disciplina ficou", "disciplinas ficaram")} com professor do outro curso`);
     if (semProfessor.length) avisos.push(`faltam professores: ${semProfessor.join(", ")} ${semProfessor.length === 1 ? "ficou" : "ficaram"} sem avaliador`);
     feedback(
       `Lista montada: ${plural(profs.length, "professor", "professores")}, ${POR_PROFESSOR} disciplinas para cada.` +
@@ -263,7 +302,7 @@
             (p) => `
           <label class="ep-obrig">
             <input type="checkbox" value="${esc(p.uid)}" ${marcados.has(p.uid) ? "checked" : ""}>
-            ${esc(p.nome)}
+            ${esc(p.nome)}${p.curso ? tagCurso(p.curso) : ` <small class="distribuir-sem-curso">sem curso</small>`}
           </label>`
           )
           .join("")
@@ -286,7 +325,14 @@
            .map((p) => {
              const c = carga.get(p.chave);
              const alerta = c.grandes > 1 ? `<small class="distribuir-alerta">duas disciplinas com mais de ${GRANDE} projetos</small>` : "";
-             return `<li class="${c.disciplinas ? "" : "vazio"} ${c.grandes > 1 ? "alerta" : ""}"><b>${esc(p.nome)}</b>${p.uid ? "" : ` <span class="distribuir-novo">novo</span>`}<small>${c.disciplinas ? `${plural(c.disciplinas, "disciplina", "disciplinas")} · ${plural(c.projetos, "projeto", "projetos")}` : "Sem disciplina"}</small>${c.nomes.length ? `<small class="distribuir-quais">${c.nomes.sort((a, b) => a.localeCompare(b, "pt-BR")).map((d) => `${esc(d)} (${grupos.get(d).length})`).join(" · ")}</small>` : ""}${alerta}</li>`;
+             const escolherCurso = p.uid
+               ? ""
+               : `<select class="distribuir-curso-novo" data-novo="${esc(p.nome.toLowerCase())}" aria-label="Curso de ${esc(p.nome)}">
+                    <option value="">Curso?</option>
+                    <option value="eletrica" ${p.curso === "eletrica" ? "selected" : ""}>Professor de Elétrica</option>
+                    <option value="renovaveis" ${p.curso === "renovaveis" ? "selected" : ""}>Professor de Renováveis</option>
+                  </select>`;
+             return `<li class="${c.disciplinas ? "" : "vazio"} ${c.grandes > 1 ? "alerta" : ""}"><b>${esc(p.nome)}</b>${p.uid ? tagCurso(p.curso) : ` <span class="distribuir-novo">novo</span>`}${escolherCurso}<small>${c.disciplinas ? `${plural(c.disciplinas, "disciplina", "disciplinas")} · ${plural(c.projetos, "projeto", "projetos")}` : "Sem disciplina"}</small>${c.nomes.length ? `<small class="distribuir-quais">${c.nomes.sort((a, b) => a.localeCompare(b, "pt-BR")).map((d) => `${esc(d)} (${grupos.get(d).length})`).join(" · ")}</small>` : ""}${alerta}</li>`;
            })
            .join("")}</ul>`
       : "";
@@ -361,6 +407,8 @@
       if (notas.length) perdem.push(`• ${p.nome}: ${notas.join(", ")}`);
     }
     const avisos = [];
+    const trocados = melhor.pares.reduce((s, par, i) => s + par.filter((x) => foraDoCurso(profs[i], x.curso)).length, 0);
+    if (trocados) avisos.push(`faltam professores de um dos cursos: ${plural(trocados, "disciplina ficou", "disciplinas ficaram")} com professor do outro curso`);
     if (semProfessor.length) avisos.push(`Ficam sem professor: ${semProfessor.join(", ")}.`);
     if (perdem.length) avisos.push(`Estes professores deixam de ver projetos que já avaliaram (as notas param de contar):\n${perdem.join("\n")}`);
     const novos = profs.filter((p) => !p.uid);
@@ -385,7 +433,7 @@
             await API.atualizarProfessor(p.uid, { nome: p.nome, codigo: codigos[p.uid], projetos: lista });
           } else {
             const codigo = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, "0");
-            await API.cadastrarProfessor({ nome: p.nome, codigo, projetos: lista });
+            await API.cadastrarProfessor({ nome: p.nome, codigo, projetos: lista, curso: p.curso });
             criados.push({ nome: p.nome, codigo });
           }
         } catch (erro) {
@@ -443,6 +491,12 @@
     duasPorProfessor();
   });
   $("distribuir-salvar").addEventListener("click", salvar);
+
+  $("distribuir-cargas").addEventListener("change", (e) => {
+    if (!e.target.matches("[data-novo]")) return;
+    cursoNovo.set(e.target.dataset.novo, e.target.value);
+    render();
+  });
 
   $("distribuir-cadastrados").addEventListener("change", (e) => {
     if (!e.target.value) return;

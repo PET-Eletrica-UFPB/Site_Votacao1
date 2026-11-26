@@ -71,7 +71,7 @@ window.PainelProfessores = (() => {
                 <button class="item-projeto" data-uid="${esc(p.uid)}" aria-current="${p.uid === editandoUid}">
                   <span class="item-stand ${completo ? "ok" : ""}">${feitos}/${total}</span>
                   <span>
-                    <span class="item-nome">${esc(p.nome)}</span>
+                    <span class="item-nome">${esc(p.nome)}${p.curso ? ` <span class="prof-tag ${esc(p.curso)}">${p.curso === "eletrica" ? "Elétrica" : "Renováveis"}</span>` : ""}</span>
                     <span class="item-sub">${total ? `${total} projeto${total > 1 ? "s" : ""} · ${completo ? "tudo avaliado" : `${total - feitos} pendente${total - feitos > 1 ? "s" : ""}`}` : "Nenhum projeto atribuído"}</span>
                     ${total ? `<span class="item-sub item-disciplinas">${disciplinasDoProfessor(p).map(esc).join(" · ")}</span>` : ""}
                   </span>
@@ -99,6 +99,7 @@ window.PainelProfessores = (() => {
   function preencher(prof) {
     $("prof-nome").value = prof?.nome ?? "";
     $("prof-codigo").value = prof ? codigos[prof.uid] ?? "" : "";
+    document.querySelectorAll('[name="prof-curso"]').forEach((r) => (r.checked = r.value === (prof?.curso || "")));
     selecionados = new Set(prof?.projetos ?? []);
     $("prof-titulo").textContent = prof ? prof.nome : "Novo professor";
     $("salvar-prof").textContent = prof ? "Salvar alterações" : "Cadastrar professor";
@@ -291,7 +292,9 @@ window.PainelProfessores = (() => {
       if (!confirm(`Alguns projetos marcados já têm outro avaliador:\n\n${lista}\n\nSalvar mesmo assim?`)) return;
     }
 
-    const dados = { nome, codigo, projetos: [...selecionados].filter((c) => existentes().has(c)) };
+    const curso = document.querySelector('[name="prof-curso"]:checked')?.value || "";
+    if (!curso) return aviso("Escolha se é professor de Elétrica ou de Renováveis.", true);
+    const dados = { nome, codigo, curso, projetos: [...selecionados].filter((c) => existentes().has(c)) };
     const eraNovo = !editandoUid;
     $("salvar-prof").disabled = true;
     aviso("Salvando…");
