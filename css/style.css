@@ -874,6 +874,16 @@ dialog::backdrop { background: rgba(4, 2, 30, .72); backdrop-filter: blur(6px); 
 .freq-planilha-lista label { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
 .freq-planilha-lista input { width: 16px; height: 16px; accent-color: var(--amber); }
 .freq-planilha-lista small { margin-left: auto; font-size: 12px; color: var(--tinta-3); }
+.codigos-lista label { gap: 10px; padding: 4px 6px; border-radius: 8px; }
+.codigos-item.marcada label { background: rgba(238, 166, 20, .08); }
+.codigos-pos { min-width: 26px; font-size: 12.5px; font-weight: 700; color: var(--amber-claro); }
+.codigos-nome { display: flex; flex-direction: column; min-width: 0; }
+.codigos-nome small { margin-left: 0; }
+.codigos-faixa { margin-left: auto; font-size: 13px; white-space: nowrap; }
+.codigos-item:not(.marcada) .codigos-faixa { font-weight: 400; font-size: 12px; color: var(--tinta-3); }
+.codigos-resumo { margin: 10px 0 0 !important; font-size: 13px; }
+.aviso-votos { margin: 0 0 12px !important; padding: 8px 12px; border-radius: 10px; background: rgba(238, 166, 20, .12); color: var(--amber-claro) !important; font-size: 13px; }
+.freq-planilha-por-topo span { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px 12px; }
 .freq-planilha-botoes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .freq-planilha-botoes .btn { flex: 1 1 200px; padding: 10px 14px; font-size: 13px; white-space: normal; }
 
