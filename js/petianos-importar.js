@@ -3,15 +3,7 @@
 (() => {
   const { colunas, valorTexto, dataHora } = RelatorioInscricoes;
 
-  // Campo do projeto ← pergunta do formulário. "padrao" é o id da pergunta no modelo; "parecido" acha a pergunta se o id mudou.
-  const CAMPOS = [
-    { campo: "nome", rotulo: "Nome do projeto", padrao: "projeto", parecido: /nome d[oa] (projeto|equipe)|^\s*projeto/i, obrigatorio: true, limite: 80 },
-    { campo: "curso", rotulo: "Curso", padrao: "curso", parecido: /^\s*curso/i, obrigatorio: true },
-    { campo: "disciplina", rotulo: "Disciplina", padrao: "disciplina", parecido: /disciplina/i, obrigatorio: true, limite: 80 },
-    { campo: "equipe", rotulo: "Equipe", padrao: "equipe", parecido: /integrantes|quais alunos/i, limite: 80 },
-    { campo: "resumo", rotulo: "Resumo", padrao: "resumo", parecido: /resumo|descri|do que se trata/i, limite: 400 },
-    { campo: "stand", rotulo: "Stand", padrao: "stand", parecido: /^\s*(n[uú]mero do )?stand\s*$/i, limite: 10 },
-  ];
+  const { CAMPOS, acharCurso } = InscricaoProjeto;
 
   let formulario = null;
   let inscricoes = [];
@@ -26,22 +18,7 @@
 
   const cortar = (texto, limite) => (limite && texto.length > limite ? `${texto.slice(0, limite - 1).trimEnd()}…` : texto);
 
-  // Resposta escrita → curso do site. Aceita o nome completo, o curto ou só a palavra principal.
-  function acharCurso(resposta) {
-    const r = normalizar(resposta);
-    if (!r) return null;
-    const exato = cursos.find((c) => [c.nome, c.curto, c.id].some((t) => normalizar(t) === r));
-    if (exato) return exato.id;
-    return cursos.find((c) => r.includes(normalizar(c.id).slice(0, 5)))?.id || null;
-  }
-
-  function valor(r, campo) {
-    const id = mapa[campo];
-    if (!id) return "";
-    const v = valorTexto(r.respostas[id]?.v);
-    // Equipe com um nome por linha vira uma lista separada por vírgulas.
-    return campo === "equipe" ? v.split(/\s*[\n;]\s*/).filter(Boolean).join(", ") : v.replace(/\s+/g, " ").trim();
-  }
+  const valor = (r, campo) => InscricaoProjeto.valor(r.respostas, mapa, campo);
 
   function dadosDe(r) {
     const dados = {};
@@ -238,12 +215,7 @@
     try {
       [formulario, inscricoes] = await Promise.all([API.lerFormulario("alunos"), API.lerInscricoes("alunos")]);
       cols = colunas(formulario, inscricoes);
-      mapa = {};
-      for (const c of CAMPOS) {
-        mapa[c.campo] = cols.find((q) => q.id === c.padrao)?.id || cols.find((q) => c.parecido.test(q.texto))?.id || "";
-      }
-      // O nome de quem se inscreveu não é o nome do projeto.
-      if (mapa.nome && /complet|quem/i.test(cols.find((q) => q.id === mapa.nome)?.texto || "")) mapa.nome = "";
+      mapa = InscricaoProjeto.mapaPadrao(cols);
       marcadas.clear();
       renderMapa();
       renderLista();

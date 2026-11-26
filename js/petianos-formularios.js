@@ -164,10 +164,26 @@ window.PainelFormularios = (() => {
     $("ver-resposta-feedback").classList.remove("erro");
     $("ver-resposta-feedback").textContent = "Salvando…";
     try {
+      const antes = r.respostas;
       await API.editarInscricao(tipo, respostaAberta, respostas);
+      // Inscrição de projeto: a correção vai junto para o projeto da aba Projetos.
+      let projeto = "";
+      if (tipo === "alunos") {
+        try {
+          const s = await InscricaoProjeto.depoisDeEditar(e.formulario, e.inscricoes, respostaAberta, antes, respostas);
+          projeto = !s.projeto
+            ? " Esta inscrição ainda não virou projeto: use “Importar das inscrições” na aba Projetos."
+            : s.feitos.length
+              ? ` Projeto atualizado: ${InscricaoProjeto.resumo(s.feitos)}${s.feitos.some((f) => f.antes !== f.depois || f.campos.includes("nome")) ? " Grave as urnas de novo." : ""}`
+              : ` O projeto ${s.projeto.codigo} já estava com estes dados.`;
+        } catch (erro) {
+          console.error(erro);
+          projeto = ` Mas não consegui atualizar o projeto: ${erro.message} Corrija na aba Projetos.`;
+        }
+      }
       await carregar(tipo);
       abrirResposta(respostaAberta);
-      $("ver-resposta-feedback").textContent = "Correção salva. A resposta original fica guardada na cópia de segurança.";
+      $("ver-resposta-feedback").textContent = `Correção salva. A resposta original fica guardada na cópia de segurança.${projeto}`;
     } catch (erro) {
       $("ver-resposta-feedback").classList.add("erro");
       $("ver-resposta-feedback").textContent = erro.message;

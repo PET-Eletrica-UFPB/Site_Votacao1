@@ -547,7 +547,7 @@ window.API = (() => {
     conferirTipo(tipo);
     const dados = (await escrever("GET", `/site/inscricoes/${tipo}`)) || {};
     return Object.entries(dados)
-      .map(([id, r]) => ({ id, enviadoEm: Number(r?.enviadoEm) || 0, respostas: r?.respostas || {}, editadoEm: Number(r?.editadoEm) || 0 }))
+      .map(([id, r]) => ({ id, enviadoEm: Number(r?.enviadoEm) || 0, respostas: r?.respostas || {}, editadoEm: Number(r?.editadoEm) || 0, original: r?.original || null }))
       .sort((a, b) => a.enviadoEm - b.enviadoEm);
   }
 

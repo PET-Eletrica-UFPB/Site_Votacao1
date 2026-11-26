@@ -15,7 +15,7 @@ function abrirPainel() {
   $("tela-painel").hidden = false;
   $("painel-nome").textContent = API.sessaoAtual().email;
   novoProjeto();
-  recarregar();
+  recarregar().then(sincronizarInscricoes);
   PainelProfessores.iniciar();
   PainelFormularios.iniciar();
 }
@@ -117,6 +117,18 @@ function atualizarContador() {
 
 function podeDescartar() {
   return !alterado || confirm("Você tem alterações não salvas neste projeto. Descartar?");
+}
+
+// Respostas do formulário corrigidas antes de a correção ir sozinha para o projeto: acerta os projetos ao entrar.
+async function sincronizarInscricoes() {
+  try {
+    const feitos = await InscricaoProjeto.sincronizarCorrigidas();
+    if (feitos.length) {
+      aviso(`Projetos atualizados com as correções feitas no formulário: ${InscricaoProjeto.resumo(feitos)} Grave as urnas de novo.`);
+    }
+  } catch (erro) {
+    console.error(erro); // sem acesso às inscrições: fica para a próxima vez
+  }
 }
 
 function aviso(texto, erro = false) {
