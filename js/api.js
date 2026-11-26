@@ -460,7 +460,7 @@ window.API = (() => {
   }
 
   /* Inscrições: um formulário para alunos e outro para professores, montados pelos petianos. */
-  const TIPOS_FORMULARIO = ["alunos", "professores", "escolas"];
+  const TIPOS_FORMULARIO = ["alunos", "professores", "escolas", "avaliacao"];
 
   function conferirTipo(tipo) {
     if (!TIPOS_FORMULARIO.includes(tipo)) throw new Error(`Formulário desconhecido: ${tipo}`);
@@ -589,13 +589,14 @@ window.API = (() => {
 
   // Quanto existe hoje de cada coisa que pode ser apagada.
   async function contarDados() {
-    const [projetos, professores, avaliacoes, alunos, profs, escolas] = await Promise.all([
+    const [projetos, professores, avaliacoes, alunos, profs, escolas, satisfacao] = await Promise.all([
       lerPublico("/site/projetos"),
       lerPublico("/site/professores"),
       escrever("GET", "/site/avaliacoes"),
       escrever("GET", "/site/inscricoes/alunos"),
       escrever("GET", "/site/inscricoes/professores"),
       escrever("GET", "/site/inscricoes/escolas"),
+      escrever("GET", "/site/inscricoes/avaliacao"),
     ]);
     const n = (o) => Object.keys(o || {}).length;
     let votos = null;
@@ -609,6 +610,7 @@ window.API = (() => {
       inscricoesAlunos: n(alunos),
       inscricoesProfessores: n(profs),
       inscricoesEscolas: n(escolas),
+      inscricoesAvaliacao: n(satisfacao),
       projetos: n(projetos),
       avaliacoes: Object.values(avaliacoes || {}).reduce((s, x) => s + n(x), 0),
       professores: n(professores),
@@ -624,6 +626,7 @@ window.API = (() => {
     }
     if (escolha.inscricoesProfessores) mudancas["inscricoes/professores"] = null;
     if (escolha.inscricoesEscolas) mudancas["inscricoes/escolas"] = null;
+    if (escolha.inscricoesAvaliacao) mudancas["inscricoes/avaliacao"] = null;
     if (escolha.projetos) mudancas.projetos = null;
     if (escolha.avaliacoes || escolha.professores || escolha.projetos) mudancas.avaliacoes = null;
     if (escolha.professores) {

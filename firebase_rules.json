@@ -52,7 +52,7 @@
           "inscricoes": {
             ".read": "auth != null && auth.uid === 'b2Ejyy4jJCYbx0edNZxB3QAnYuE2'",
             "$tipo": {
-              ".validate": "$tipo === 'alunos' || $tipo === 'professores' || $tipo === 'escolas'",
+              ".validate": "$tipo === 'alunos' || $tipo === 'professores' || $tipo === 'escolas' || $tipo === 'avaliacao'",
               "$resposta": {
                 ".write": "!data.exists() && newData.exists() && root.child('urna/multiurna/site/formularios/' + $tipo + '/aberto').val() === true",
                 ".validate": "newData.hasChildren(['enviadoEm', 'respostas']) && (newData.child('enviadoEm').val() === now || (auth != null && auth.uid === 'b2Ejyy4jJCYbx0edNZxB3QAnYuE2' && newData.child('enviadoEm').isNumber()))"

@@ -93,5 +93,20 @@ window.Exportar = (() => {
     baixarArquivo(`${nomeZip}-${hoje()}.zip`, await pacote.generateAsync({ type: "blob" }));
   }
 
-  return { tabela, planilha, zip, csv, carregar };
+  // Arquivos prontos num .zip: arquivos = [{ nome (com extensão), dados (ArrayBuffer ou Blob) }].
+  async function zipArquivos(nomeZip, arquivos) {
+    const JSZip = await carregarZip();
+    const pacote = new JSZip();
+    const usados = new Set();
+    for (const { nome, dados } of arquivos) {
+      const [base, ext] = [nome.replace(/\.[^.]+$/, ""), nome.match(/\.[^.]+$/)?.[0] || ""];
+      let arquivo = nome;
+      for (let i = 2; usados.has(arquivo); i++) arquivo = `${base}-${i}${ext}`;
+      usados.add(arquivo);
+      pacote.file(arquivo, dados);
+    }
+    baixarArquivo(`${nomeZip}-${hoje()}.zip`, await pacote.generateAsync({ type: "blob" }));
+  }
+
+  return { tabela, planilha, zip, zipArquivos, csv, carregar };
 })();

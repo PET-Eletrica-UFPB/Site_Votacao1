@@ -1,6 +1,9 @@
 const { esc } = API;
 const $ = (id) => document.getElementById(id);
-const ROTULOS = { alunos: "Inscrição de alunos", professores: "Inscrição de professores", escolas: "Inscrição de escolas" };
+const ROTULOS = { alunos: "Inscrição de alunos", professores: "Inscrição de professores", escolas: "Inscrição de escolas", avaliacao: "Avaliação da feira" };
+// Página de um formulário só (ex.: avaliacao.html, com <body data-formulario="avaliacao">); senão, as inscrições.
+const UNICO = document.body.dataset.formulario || null;
+const TIPOS = UNICO ? [UNICO] : ["alunos", "professores", "escolas"];
 const LIMITE = { curta: 200, longa: 2000, email: 120, telefone: 30, numero: 20, data: 10 };
 const LIMITE_NOME = NomeProjeto.LIMITE; // nome de projeto: precisa caber no site, no placar e na urna
 
@@ -58,7 +61,7 @@ function mostrar(tipo) {
   tipoAtual = tipo;
   const f = formularios[tipo];
   document.querySelectorAll(".escolha").forEach((b) => b.setAttribute("aria-selected", b.dataset.tipo === tipo));
-  $("painel-form").setAttribute("aria-labelledby", `tab-${tipo}`);
+  if (!UNICO) $("painel-form").setAttribute("aria-labelledby", `tab-${tipo}`);
   $("painel-form").hidden = false;
   $("form-enviado").hidden = true;
   $("form-erro").textContent = "";
@@ -73,9 +76,11 @@ function mostrar(tipo) {
     ? f.erro === 401
       ? "As inscrições ainda não estão disponíveis. Volte mais tarde."
       : "Não consegui carregar este formulário. Confira a internet e recarregue a página."
-    : `As inscrições de ${tipo} não estão abertas no momento. Volte mais tarde ou fale com o PET Elétrica.`;
+    : UNICO
+      ? "Este formulário não está recebendo respostas no momento. Volte mais tarde ou fale com o PET Elétrica."
+      : `As inscrições de ${tipo} não estão abertas no momento. Volte mais tarde ou fale com o PET Elétrica.`;
   if (aberto) $("perguntas").innerHTML = f.perguntas.map(htmlPergunta).join("");
-  history.replaceState(null, "", `#${tipo}`);
+  if (!UNICO) history.replaceState(null, "", `#${tipo}`);
 }
 
 /* Leitura e validação */
@@ -116,7 +121,7 @@ function validar(f) {
 }
 
 /* Eventos */
-document.querySelector(".escolha-publico").addEventListener("click", (e) => {
+document.querySelector(".escolha-publico")?.addEventListener("click", (e) => {
   const botao = e.target.closest(".escolha");
   if (botao && formularios[botao.dataset.tipo]) mostrar(botao.dataset.tipo);
 });
@@ -156,27 +161,29 @@ $("form-inscricao").addEventListener("submit", async (e) => {
     $("form-erro").textContent = erroEnvio.message;
   } finally {
     $("enviar").disabled = false;
-    $("enviar").textContent = "Enviar inscrição";
+    $("enviar").textContent = UNICO ? "Enviar avaliação" : "Enviar inscrição";
   }
 });
 
-$("outra").addEventListener("click", () => mostrar(tipoAtual));
+$("outra")?.addEventListener("click", () => mostrar(tipoAtual));
 
 /* Início */
 (async () => {
-  const tipos = Object.keys(window.FEIRA.publicos);
+  const tipos = TIPOS;
   const lidos = await Promise.allSettled(tipos.map((t) => API.lerFormulario(t)));
   tipos.forEach((t, i) => {
     formularios[t] = lidos[i].status === "fulfilled" ? lidos[i].value : { perguntas: [], aberto: false, erro: lidos[i].reason?.status || true };
     const aberto = formularios[t].aberto && formularios[t].perguntas.length;
-    $(`status-${t}`).textContent = aberto ? "Aberto" : "Fechado";
-    $(`status-${t}`).classList.toggle("fechado", !aberto);
+    $(`status-${t}`)?.replaceChildren(aberto ? "Aberto" : "Fechado");
+    $(`status-${t}`)?.classList.toggle("fechado", !aberto);
   });
   // Ponto da etiqueta brilha só se algum formulário estiver aberto
   const algumAberto = tipos.some((t) => formularios[t].aberto && formularios[t].perguntas.length);
   $("etiqueta").classList.toggle("encerrada", !algumAberto);
-  $("etiqueta-texto").textContent = algumAberto ? "Inscrições abertas" : "Inscrições fechadas";
+  $("etiqueta-texto").textContent = UNICO
+    ? algumAberto ? "Avaliação aberta" : "Avaliação fechada"
+    : algumAberto ? "Inscrições abertas" : "Inscrições fechadas";
   $("carregando").hidden = true;
-  const pedido = location.hash.slice(1);
+  const pedido = UNICO || location.hash.slice(1);
   if (tipos.includes(pedido)) mostrar(pedido);
 })();

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Avaliação da feira | PET Elétrica</title>
+  <meta name="description" content="Formulário de avaliação da Feira de Engenharia e Energia: participantes e visitantes deixam seu feedback para o PET Elétrica UFPB.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=20261127a">
+</head>
+<body data-formulario="avaliacao">
+  <div class="hero-moldura">
+    <header class="hero hero-curto">
+      <img class="hero-cena" src="img/cena.svg" alt="">
+
+      <nav class="nav" aria-label="Principal">
+        <div class="nav-links">
+          <a href="index.html">Início</a>
+          <a href="projetos.html">Projetos</a>
+          <a href="placar.html">Placar</a>
+          <a href="feiras.html">Feiras</a>
+          <a href="inscricoes.html">Inscrições</a>
+        </div>
+        <a class="marca" href="index.html">
+          <img src="img/logo-pet-compacto.png" alt="PET Elétrica UFPB">
+        </a>
+        <div class="nav-acoes">
+          <a class="btn btn-amber nav-acao nav-podio" href="podio.html">Modo pódio</a>
+        </div>
+      </nav>
+
+      <div class="hero-feiras">
+        <span class="etiqueta encerrada" id="etiqueta"><span class="ponto-vivo"></span><span id="etiqueta-texto">Avaliação</span></span>
+        <h1>Como foi <em>a feira?</em></h1>
+        <p>Participou com um projeto ou veio visitar? Deixe a sua avaliação: leva menos de 2 minutos e ajuda o PET Elétrica a melhorar a próxima edição.</p>
+      </div>
+    </header>
+  </div>
+
+  <main class="secao secao-inscricao">
+    <section class="form-inscricao" id="painel-form" hidden>
+      <div class="form-cabeca">
+        <p class="rotulo" id="form-rotulo"></p>
+        <h2 id="form-titulo"></h2>
+        <p id="form-descricao"></p>
+      </div>
+      <p class="form-fechado" id="form-fechado" hidden></p>
+      <form id="form-inscricao" novalidate>
+        <div id="perguntas"></div>
+        <p class="legenda-obrigatoria"><span aria-hidden="true">*</span> Resposta obrigatória</p>
+        <p class="feedback erro" id="form-erro" role="alert"></p>
+        <button class="btn btn-amber" id="enviar" type="submit">Enviar avaliação</button>
+      </form>
+      <div class="form-enviado" id="form-enviado" hidden>
+        <span class="form-enviado-icone" aria-hidden="true">✓</span>
+        <h2>Avaliação enviada!</h2>
+        <p>Obrigado pelo seu feedback. Ele ajuda o PET Elétrica a fazer uma feira cada vez melhor.</p>
+        <a class="btn btn-vidro" href="index.html">Voltar ao início</a>
+      </div>
+    </section>
+
+    <p class="carregando" id="carregando">Carregando o formulário…</p>
+  </main>
+
+  <footer class="rodape">
+    <span class="marca">
+      <img src="img/logo-pet-compacto.png" alt="PET Elétrica UFPB">
+    </span>
+    <span>Feira de Engenharia e Energia · <a class="link" href="feiras.html">Edições anteriores</a></span>
+  </footer>
+
+  <script src="js/data.js?v=20261127a"></script>
+  <script src="js/api.js?v=20261127a"></script>
+  <script src="js/nomes.js?v=20261127a"></script>
+  <script src="js/inscricoes.js?v=20261127a"></script>
+</body>
+</html>

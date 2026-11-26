@@ -62,6 +62,7 @@ window.FEIRA = {
     alunos: { nome: "alunos", dos: "dos alunos" },
     professores: { nome: "professores", dos: "dos professores" },
     escolas: { nome: "escolas", dos: "das escolas" },
+    avaliacao: { nome: "avaliação", dos: "da avaliação" },
   },
 
   // Modelo inicial dos formulários. Depois de salvos pela Área dos Petianos, valem os do Firebase.
@@ -118,6 +119,27 @@ window.FEIRA = {
           opcoes: ["Sim", "Não"] },
         { id: "alunos", texto: "Quantidade de alunos que irão", tipo: "numero", obrigatoria: true },
         { id: "observacoes", texto: "Observações", tipo: "longa", obrigatoria: false },
+      ],
+    },
+    // Avaliação da feira, para participantes e visitantes (página avaliacao.html).
+    avaliacao: {
+      titulo: "Formulário de avaliação",
+      descricao: "Conte como foi a sua experiência na Feira de Engenharia e Energia. Leva menos de 2 minutos e nos ajuda a melhorar a próxima edição.",
+      perguntas: [
+        { id: "perfil", texto: "Você participou da feira como", tipo: "unica", obrigatoria: true,
+          opcoes: ["Expositor (apresentei um projeto)", "Visitante", "Professor / avaliador", "Escola visitante", "Organização"] },
+        { id: "geral", texto: "De 1 a 5, como você avalia a feira no geral?", tipo: "unica", obrigatoria: true,
+          opcoes: ["1", "2", "3", "4", "5"] },
+        { id: "organizacao", texto: "Como você avalia a organização (espaço, horários, sinalização)?", tipo: "unica", obrigatoria: true,
+          opcoes: ["Ótima", "Boa", "Regular", "Ruim"] },
+        { id: "projetos", texto: "Como você avalia os projetos apresentados?", tipo: "unica", obrigatoria: true,
+          opcoes: ["Ótimos", "Bons", "Regulares", "Ruins"] },
+        { id: "votacao", texto: "A votação nas urnas foi fácil de usar?", tipo: "unica", obrigatoria: false,
+          opcoes: ["Sim", "Mais ou menos", "Não", "Não votei"] },
+        { id: "gostou", texto: "Do que você mais gostou?", tipo: "longa", obrigatoria: false },
+        { id: "sugestoes", texto: "O que podemos melhorar?", tipo: "longa", obrigatoria: false },
+        { id: "voltaria", texto: "Você participaria ou visitaria a próxima edição?", tipo: "unica", obrigatoria: true,
+          opcoes: ["Sim", "Talvez", "Não"] },
       ],
     },
   },

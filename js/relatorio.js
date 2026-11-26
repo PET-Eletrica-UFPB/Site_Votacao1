@@ -541,7 +541,9 @@ window.RelatorioVotos = (() => {
 
 /* Relatório das respostas de um formulário de inscrição */
 window.RelatorioInscricoes = (() => {
-  const NOMES = { alunos: "alunos", professores: "professores", escolas: "escolas" };
+  const NOMES = { alunos: "alunos", professores: "professores", escolas: "escolas", avaliacao: "avaliação" };
+  // "Inscrições de alunos", mas "Respostas da avaliação" para o formulário de satisfação.
+  const tituloDe = (tipo) => (tipo === "avaliacao" ? "Respostas da avaliação" : `Inscrições de ${NOMES[tipo]}`);
 
   // Colunas: perguntas atuais na ordem do formulário e, no fim, as que já foram removidas.
   function colunas(formulario, inscricoes) {
@@ -573,10 +575,10 @@ window.RelatorioInscricoes = (() => {
   async function baixar(tipo, formulario, inscricoes) {
     const cols = colunas(formulario, inscricoes);
     const p = await PDF.criar({
-      rotulo: `PET ELÉTRICA UFPB  ·  INSCRIÇÕES DE ${NOMES[tipo].toUpperCase()}`,
-      titulo: `Inscrições de ${NOMES[tipo]}`,
+      rotulo: `PET ELÉTRICA UFPB  ·  ${tituloDe(tipo).toUpperCase()}`,
+      titulo: tituloDe(tipo),
       subtitulo: formulario.titulo || "Feira de Engenharia e Energia",
-      cabecalho: `Inscrições de ${NOMES[tipo]}`,
+      cabecalho: tituloDe(tipo),
     });
     const { doc, M, L, COR, texto, fonte } = p;
 

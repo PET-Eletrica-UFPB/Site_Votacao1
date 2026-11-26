@@ -2,6 +2,8 @@
 window.PainelFormularios = (() => {
   const TIPOS = Object.keys(window.FEIRA.publicos);
   const dos = (t) => window.FEIRA.publicos[t].dos;
+  // "Inscrições de alunos"; o formulário de satisfação aparece como "Avaliação".
+  const nomeDoForm = (t) => (t === "avaliacao" ? "Formulário de avaliação" : `Inscrições de ${t}`);
   const { tiposPergunta, formulariosPadrao } = window.FEIRA;
   const comOpcoes = (tipo) => tiposPergunta.find((t) => t.id === tipo)?.opcoes;
   const copia = (obj) => JSON.parse(JSON.stringify(obj));
@@ -49,7 +51,7 @@ window.PainelFormularios = (() => {
     $("form-link").href = `inscricoes.html#${tipo}`;
     const n = e.rascunho?.perguntas.length || 0;
     $("form-qtd-perguntas").textContent = `${n} pergunta${n === 1 ? "" : "s"}${e.alterado ? " · não salvas" : ""}`;
-    $("respostas-titulo").textContent = `Inscrições de ${tipo}`;
+    $("respostas-titulo").textContent = nomeDoForm(tipo);
     $("perguntas-titulo").textContent = `Formulário ${dos(tipo)}`;
 
     document.querySelectorAll("[data-secao]").forEach((b) => b.setAttribute("aria-current", b.dataset.secao === secao));
@@ -70,7 +72,7 @@ window.PainelFormularios = (() => {
       .filter((l) => !busca || l.valores.some((v) => v.toLowerCase().includes(busca)));
 
     if (!e.inscricoes.length) {
-      $("respostas-tabela").innerHTML = `<p class="lista-vazia">Ninguém respondeu ainda. ${e.formulario.aberto ? "" : "Abra as inscrições na lateral para o formulário aparecer no site."}</p>`;
+      $("respostas-tabela").innerHTML = `<p class="lista-vazia">Ninguém respondeu ainda. ${e.formulario.aberto ? "" : (tipo === "avaliacao" ? "Abra o formulário na lateral para ele receber respostas no site." : "Abra as inscrições na lateral para o formulário aparecer no site.")}</p>`;
       return;
     }
     if (!linhas.length) {
@@ -337,7 +339,7 @@ window.PainelFormularios = (() => {
       }
       e.formulario.aberto = aberto;
       await carregar(tipo);
-      situacao(aberto ? `Inscrições de ${tipo} abertas no site.` : `Inscrições de ${tipo} fechadas.`, "ok");
+      situacao(aberto ? `${nomeDoForm(tipo)}: aberto no site.` : `${nomeDoForm(tipo)}: fechado.`, "ok");
     } catch (erro) {
       $("form-aberto").checked = !aberto;
       situacao(erro.message, "alerta");

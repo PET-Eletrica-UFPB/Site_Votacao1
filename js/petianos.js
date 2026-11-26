@@ -177,25 +177,6 @@ $("form-projeto").addEventListener("input", () => {
 
 $("busca").addEventListener("input", renderLista);
 
-// Placas de mesa: uma folha por projeto do cadastro, na ordem das urnas.
-$("placas").addEventListener("click", async () => {
-  const botao = $("placas");
-  botao.disabled = true;
-  aviso("Gerando as placas de mesa…");
-  try {
-    projetos = await API.lerCadastro();
-    renderLista();
-    if (!projetos.length) return aviso("Cadastre os projetos antes de gerar as placas.", true);
-    await Placas.baixar(projetos);
-    aviso(`Placas de mesa baixadas: ${projetos.length} projeto${projetos.length === 1 ? "" : "s"}, uma folha para cada.`);
-  } catch (erro) {
-    console.error(erro);
-    aviso(`Não consegui gerar as placas. ${erro.message}`, true);
-  } finally {
-    botao.disabled = false;
-  }
-});
-
 $("novo").addEventListener("click", () => {
   if (!podeDescartar()) return;
   novoProjeto();

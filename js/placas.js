@@ -75,16 +75,24 @@ window.Placas = (() => {
     escrever(codigo, CAIXA.x + CAIXA.l - 6 - doc.getTextWidth(codigo), CAIXA.y + CAIXA.a - 6.5, "helvetica", "bold", 34);
   }
 
-  async function baixar(projetos) {
+  async function documento(projetos, titulo = "Placas de mesa") {
     const jsPDF = await PDF.bibliotecas();
     const doc = new jsPDF({ unit: "mm", format: "a4" });
     projetos.forEach((p, i) => {
       if (i > 0) doc.addPage();
       desenharPlaca(doc, p);
     });
-    doc.setProperties({ title: "Placas de mesa", creator: "PET Elétrica UFPB" });
-    doc.save(`placas-de-mesa-${new Date().toISOString().slice(0, 10)}.pdf`);
+    doc.setProperties({ title: titulo, creator: "PET Elétrica UFPB" });
+    return doc;
   }
 
-  return { baixar };
+  // nomeArquivo sem a data e sem ".pdf"
+  async function baixar(projetos, nomeArquivo = "placas-de-mesa", titulo) {
+    (await documento(projetos, titulo)).save(`${nomeArquivo}-${new Date().toISOString().slice(0, 10)}.pdf`);
+  }
+
+  // O PDF em bytes, para juntar vários num .zip.
+  const bytes = async (projetos, titulo) => (await documento(projetos, titulo)).output("arraybuffer");
+
+  return { baixar, bytes };
 })();

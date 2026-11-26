@@ -6,6 +6,7 @@
     inscricoesAlunos: "respostas dos alunos",
     inscricoesProfessores: "respostas dos professores",
     inscricoesEscolas: "respostas das escolas",
+    inscricoesAvaliacao: "respostas da avaliação",
     avaliacoes: "notas",
     projetos: "projetos",
     professores: "professores",
@@ -64,13 +65,14 @@
   }
 
   let copiaFeita = false;
-  const INFO = { inscricoesAlunos: "resposta", inscricoesProfessores: "resposta", inscricoesEscolas: "resposta", avaliacoes: "nota", votacao: "voto" };
+  const INFO = { inscricoesAlunos: "resposta", inscricoesProfessores: "resposta", inscricoesEscolas: "resposta", inscricoesAvaliacao: "resposta", avaliacoes: "nota", votacao: "voto" };
 
   /* Relatórios de backup: cada item em PDF ou Excel */
   const GERADORES = {
     async alunos(formato) { return formulario("alunos", formato); },
     async professores(formato) { return formulario("professores", formato); },
     async escolas(formato) { return formulario("escolas", formato); },
+    async avaliacao(formato) { return formulario("avaliacao", formato); },
     async notas(formato) {
       const [projetos, professores, avaliacoes] = await Promise.all([API.lerCadastro(), API.listarProfessores(), API.lerAvaliacoes()]);
       const dados = { projetos, professores, avaliacoes };
@@ -94,7 +96,7 @@
     $("copia-situacao").textContent = texto;
   }
 
-  const NOMES_BACKUP = { alunos: "formulário dos alunos", professores: "formulário dos professores", escolas: "formulário das escolas", notas: "notas dos professores", votos: "pódio e votos" };
+  const NOMES_BACKUP = { alunos: "formulário dos alunos", professores: "formulário dos professores", escolas: "formulário das escolas", avaliacao: "formulário de avaliação", notas: "notas dos professores", votos: "pódio e votos" };
 
   async function gerar(item, formato) {
     await GERADORES[item](formato);

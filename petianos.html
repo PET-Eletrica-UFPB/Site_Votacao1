@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20261126v">
+  <link rel="stylesheet" href="css/style.css?v=20261127a">
 </head>
 <body>
   <div class="login" id="tela-login">
@@ -50,6 +50,7 @@
         <button class="aba" type="button" data-aba="professores" aria-pressed="false">Professores e notas</button>
         <button class="aba" type="button" data-aba="formularios" aria-pressed="false">Formulários</button>
         <button class="aba" type="button" data-aba="feiras" aria-pressed="false">Feiras</button>
+        <button class="aba" type="button" data-aba="qrcodes" aria-pressed="false">QR codes</button>
         <button class="aba" type="button" data-aba="limpar" aria-pressed="false">Limpar dados</button>
       </nav>
       <div class="painel-usuario">
@@ -241,6 +242,7 @@
         <button class="aba" type="button" data-tipo="alunos" aria-pressed="true">Alunos</button>
         <button class="aba" type="button" data-tipo="professores" aria-pressed="false">Professores</button>
         <button class="aba" type="button" data-tipo="escolas" aria-pressed="false">Escolas</button>
+        <button class="aba" type="button" data-tipo="avaliacao" aria-pressed="false">Avaliação</button>
       </div>
       <div class="relatorio">
         <p class="rotulo">Inscrições de <span id="form-tipo-nome">alunos</span></p>
@@ -400,6 +402,50 @@
   </div>
 
   <!-- Aba: limpar dados para uma nova feira -->
+  <!-- Aba: QR codes -->
+  <div class="painel painel-unico" id="aba-qrcodes" hidden>
+    <main class="ficha">
+      <div class="ficha-cabeca">
+        <p class="rotulo">Divulgação</p>
+        <h1>QR codes</h1>
+        <p>Escolha a página e baixe o QR code: ao escanear com a câmera do celular, a pessoa cai direto nela. O cartaz em PDF sai pronto para imprimir e colar nas mesas, nas urnas ou na entrada.</p>
+      </div>
+      <div class="ficha-corpo qr-corpo">
+        <div class="qr-campos">
+          <label class="campo primeiro">
+            <span>O QR code abre</span>
+            <select id="qr-destino"></select>
+          </label>
+          <label class="campo">
+            <span>Link</span>
+            <input id="qr-link" type="url" autocomplete="off" spellcheck="false">
+            <small class="qr-dica">As páginas do site usam o endereço em que o site está publicado. Em “Outro link”, cole qualquer endereço.</small>
+          </label>
+          <label class="campo">
+            <span>Título do cartaz</span>
+            <input id="qr-titulo" maxlength="60">
+          </label>
+          <label class="campo">
+            <span>Texto do cartaz</span>
+            <input id="qr-texto" maxlength="140">
+          </label>
+          <div class="qr-botoes">
+            <button class="btn btn-amber" id="qr-pdf" type="button">Baixar cartaz (PDF)</button>
+            <button class="btn btn-vidro" id="qr-png" type="button">Baixar imagem (PNG)</button>
+            <button class="btn btn-vidro" id="qr-copiar" type="button">Copiar link</button>
+          </div>
+          <span class="urna-situacao" id="qr-situacao" role="status"></span>
+        </div>
+        <figure class="qr-previa" aria-label="Prévia do cartaz">
+          <b id="qr-titulo-previa"></b>
+          <small id="qr-texto-previa"></small>
+          <canvas id="qr-canvas" width="280" height="280"></canvas>
+          <figcaption id="qr-link-previa"></figcaption>
+        </figure>
+      </div>
+    </main>
+  </div>
+
   <div class="painel painel-unico" id="aba-limpar" hidden>
     <main class="ficha">
       <div class="ficha-cabeca">
@@ -424,6 +470,11 @@
             </li>
             <li data-backup="escolas">
               <span><b>Formulário das escolas</b><small data-info="inscricoesEscolas">–</small></span>
+              <button class="btn btn-vidro" type="button" data-formato="pdf">PDF</button>
+              <button class="btn btn-vidro" type="button" data-formato="excel">Excel</button>
+            </li>
+            <li data-backup="avaliacao">
+              <span><b>Formulário de avaliação</b><small data-info="inscricoesAvaliacao">–</small></span>
               <button class="btn btn-vidro" type="button" data-formato="pdf">PDF</button>
               <button class="btn btn-vidro" type="button" data-formato="excel">Excel</button>
             </li>
@@ -467,6 +518,11 @@
               <input type="checkbox" data-parte="inscricoesEscolas" checked>
               <span><b>Respostas do formulário das escolas</b><small>As visitas de escolas agendadas.</small></span>
               <em data-conta="inscricoesEscolas">–</em>
+            </label>
+            <label class="limpar-opcao">
+              <input type="checkbox" data-parte="inscricoesAvaliacao" checked>
+              <span><b>Respostas do formulário de avaliação</b><small>As avaliações de satisfação de participantes e visitantes.</small></span>
+              <em data-conta="inscricoesAvaliacao">–</em>
             </label>
             <label class="limpar-opcao">
               <input type="checkbox" data-parte="avaliacoes">
@@ -528,6 +584,28 @@
       <button class="btn btn-vidro" id="planta-cancelar" type="button">Fechar</button>
       <button class="btn btn-amber" id="planta-gerar" type="button">Gerar planta (PDF)</button>
     </div>
+  </dialog>
+
+  <dialog id="placas-dialogo" class="confirmar freq-planilha-modal">
+    <button class="fechar" id="placas-fechar" type="button" aria-label="Fechar">×</button>
+    <h2>Placas de mesa</h2>
+    <p>Uma folha A4 por projeto, para dobrar ao meio: nome do projeto, disciplina e código de votação.</p>
+    <button class="freq-planilha-opcao freq-planilha-todos" id="placas-todas" type="button">
+      <b>1. Todas as placas</b>
+      <small id="placas-todas-info"></small>
+    </button>
+    <div class="freq-planilha-por">
+      <div class="freq-planilha-por-topo">
+        <b>Por disciplina</b>
+        <button class="botao-texto" id="placas-marcar" type="button">Marcar / desmarcar todas</button>
+      </div>
+      <ul class="freq-planilha-lista" id="placas-lista"></ul>
+      <div class="freq-planilha-botoes">
+        <button class="btn btn-vidro freq-planilha-opcao" id="placas-marcadas" type="button">2. Um PDF com as marcadas</button>
+        <button class="btn btn-amber freq-planilha-opcao" id="placas-zip" type="button">3. Um PDF por disciplina (.zip)</button>
+      </div>
+    </div>
+    <p class="feedback" id="placas-feedback" role="status"></p>
   </dialog>
 
   <dialog id="freq-planilha" class="confirmar freq-planilha-modal">
@@ -719,26 +797,28 @@
     </form>
   </dialog>
 
-  <script src="js/data.js?v=20261126v"></script>
-  <script src="js/api.js?v=20261126v"></script>
-  <script src="js/senha.js?v=20261126v"></script>
-  <script src="js/modelo-urna.js?v=20261126v"></script>
-  <script src="js/gerador-urna.js?v=20261126v"></script>
-  <script src="js/relatorio.js?v=20261126v"></script>
-  <script src="js/exportar.js?v=20261126v"></script>
-  <script src="js/planta.js?v=20261126v"></script>
-  <script src="js/placas.js?v=20261126v"></script>
-  <script src="js/petianos.js?v=20261126v"></script>
-  <script src="js/petianos-professores.js?v=20261126v"></script>
-  <script src="js/petianos-distribuir.js?v=20261126v"></script>
-  <script src="js/petianos-formularios.js?v=20261126v"></script>
-  <script src="js/nomes.js?v=20261126v"></script>
-  <script src="js/petianos-importar.js?v=20261126v"></script>
-  <script src="js/petianos-planilha.js?v=20261126v"></script>
-  <script src="js/petianos-limpar.js?v=20261126v"></script>
-  <script src="js/feiras-dados.js?v=20261126v"></script>
-  <script src="js/petianos-feiras.js?v=20261126v"></script>
-  <script src="js/petianos-frequencia.js?v=20261126v"></script>
-  <script src="js/petianos-planta.js?v=20261126v"></script>
+  <script src="js/data.js?v=20261127a"></script>
+  <script src="js/api.js?v=20261127a"></script>
+  <script src="js/senha.js?v=20261127a"></script>
+  <script src="js/modelo-urna.js?v=20261127a"></script>
+  <script src="js/gerador-urna.js?v=20261127a"></script>
+  <script src="js/relatorio.js?v=20261127a"></script>
+  <script src="js/exportar.js?v=20261127a"></script>
+  <script src="js/planta.js?v=20261127a"></script>
+  <script src="js/placas.js?v=20261127a"></script>
+  <script src="js/petianos.js?v=20261127a"></script>
+  <script src="js/petianos-professores.js?v=20261127a"></script>
+  <script src="js/petianos-distribuir.js?v=20261127a"></script>
+  <script src="js/petianos-formularios.js?v=20261127a"></script>
+  <script src="js/nomes.js?v=20261127a"></script>
+  <script src="js/petianos-importar.js?v=20261127a"></script>
+  <script src="js/petianos-planilha.js?v=20261127a"></script>
+  <script src="js/petianos-limpar.js?v=20261127a"></script>
+  <script src="js/feiras-dados.js?v=20261127a"></script>
+  <script src="js/petianos-feiras.js?v=20261127a"></script>
+  <script src="js/petianos-frequencia.js?v=20261127a"></script>
+  <script src="js/petianos-qrcode.js?v=20261127a"></script>
+  <script src="js/petianos-placas.js?v=20261127a"></script>
+  <script src="js/petianos-planta.js?v=20261127a"></script>
 </body>
 </html>
