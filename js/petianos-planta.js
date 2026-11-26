@@ -71,7 +71,7 @@
 
   function opcoes(d) {
     const locais = Planta.LOCAIS.filter((l) => !l.patio).map((l) => {
-      const mesas = l.mesas.length ? `${l.mesas.length} mesas` : "sem mesas";
+      const mesas = `até ${Planta.projetosNaSala(l.id)} projetos`;
       return `<option value="${l.id}" ${d.local === l.id ? "selected" : ""}>${l.id} · ${esc(l.nome)} · ${mesas}</option>`;
     }).join("");
     return `
