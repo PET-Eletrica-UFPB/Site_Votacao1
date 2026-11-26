@@ -296,7 +296,7 @@
       $("feedback").classList.remove("erro");
       $("feedback").textContent =
         `${criados.length} projeto${criados.length === 1 ? "" : "s"} importado${criados.length === 1 ? "" : "s"}: ${codigos.join(", ")}.` +
-        (organizados.mudaram ? " Os códigos foram reorganizados para cada disciplina ficar com números seguidos." : organizados.pulou ? " Como já há votos (ou não deu para conferir), os códigos não foram reorganizados: use “Organizar códigos por disciplina” se quiser." : "") +
+        (organizados.mudaram ? " Os códigos foram reorganizados para cada disciplina ficar com números seguidos." : organizados.desligado ? " Ajuste automático desativado: os códigos não foram reorganizados." : organizados.pulou ? " Como já há votos (ou não deu para conferir), os códigos não foram reorganizados: use “Organizar códigos por disciplina” se quiser." : "") +
         " Confira os dados e grave as urnas de novo.";
     } catch (erro) {
       aviso(erro.message, true);

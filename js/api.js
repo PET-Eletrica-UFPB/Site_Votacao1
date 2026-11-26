@@ -349,6 +349,8 @@ window.API = (() => {
   // PATCH: não apaga a prioridade dos códigos, que fica na mesma pasta.
   const salvarPlanta = (planta) => escrever("PATCH", "/site/planta", planta);
   // Prioridade das disciplinas nos códigos: ["eletrica|integradora-i", "renovaveis|…", …]
+  // Interruptor "Ajuste automático" da aba Projetos (true/false).
+  const salvarAjusteAutomatico = (ligado) => escrever("PUT", "/site/planta/ajusteAutomatico", !!ligado);
   const salvarPrioridade = (lista) => escrever("PUT", "/site/planta/prioridade", lista.length ? lista : null);
 
   /* Códigos em sequência por disciplina: em cada curso, os projetos de uma mesma disciplina
@@ -717,7 +719,7 @@ window.API = (() => {
     entrarProfessor, sairProfessor: contaProfessor.sair, sessaoProfessor: contaProfessor.atual,
     meuPerfil, minhasAvaliacoes, salvarAvaliacao,
     lerFormulario, salvarFormulario, definirInscricoesAbertas, enviarInscricao, lerInscricoes, removerInscricao, editarInscricao,
-    lerFrequencia, salvarFrequencia, lerPlanta, salvarPlanta, salvarPrioridade,
+    lerFrequencia, salvarFrequencia, lerPlanta, salvarPlanta, salvarPrioridade, salvarAjusteAutomatico,
     importarProjetos, organizarCodigos, copiaDeSeguranca, contarDados, limparDados, importarInscricoes, assinaturasImportadas,
     lerFeiras, salvarFeira, removerFeira, publicarFeirasIniciais,
   };

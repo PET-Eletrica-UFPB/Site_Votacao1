@@ -15,6 +15,7 @@ function abrirPainel() {
   $("tela-painel").hidden = false;
   $("painel-nome").textContent = API.sessaoAtual().email;
   novoProjeto();
+  AjusteAutomatico.ligado();
   recarregar().then(sincronizarInscricoes);
   PainelProfessores.iniciar();
   PainelFormularios.iniciar();

@@ -171,7 +171,9 @@ window.PainelFormularios = (() => {
       if (tipo === "alunos") {
         try {
           const s = await InscricaoProjeto.depoisDeEditar(e.formulario, e.inscricoes, respostaAberta, antes, respostas);
-          projeto = !s.projeto
+          projeto = s.desligado
+            ? " Ajuste automático desativado: o projeto não foi alterado (mude na aba Projetos, se precisar)."
+            : !s.projeto
             ? " Esta inscrição ainda não virou projeto: use “Importar das inscrições” na aba Projetos."
             : s.feitos.length
               ? ` Projeto atualizado: ${InscricaoProjeto.resumo(s.feitos)}${s.feitos.some((f) => f.antes !== f.depois || f.campos.includes("nome")) ? " Grave as urnas de novo." : ""}`

@@ -67,6 +67,7 @@ window.OrganizarCodigos = (() => {
   // automatico: chamado depois de importar ou de mudar um curso; só reorganiza se for seguro (sem votos).
   // Segue a prioridade salva, para não desfazer a escolhida na janela.
   async function executar({ automatico = true } = {}) {
+    if (automatico && !(await AjusteAutomatico.ligado())) return { mudaram: 0, pulou: true, desligado: true };
     const votos = await temVotos();
     if (automatico && votos !== false) return { mudaram: 0, pulou: true };
     const resultado = await API.organizarCodigos(await ordem());

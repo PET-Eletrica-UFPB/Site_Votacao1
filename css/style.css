@@ -692,6 +692,9 @@ dialog::backdrop { background: rgba(4, 2, 30, .72); backdrop-filter: blur(6px); 
 
 /* Área dos petianos: importar das inscrições */
 .importar-btn { width: 100%; margin-top: 8px; }
+.ajuste-interruptor { margin-top: 16px; font-size: 13.5px; text-align: left; }
+.progresso .ajuste-interruptor span { margin-left: 0; font-size: inherit; color: var(--tinta); }
+.ajuste-dica { display: block; margin-top: 6px; font-size: 12px; line-height: 1.4; color: var(--tinta-3); text-align: left; }
 .importar-modal { width: min(720px, calc(100vw - 32px)); max-height: calc(100vh - 48px); }
 .importar-modal h2 { padding-right: 40px; }
 .importar-mapa { margin-top: 4px; padding: 10px 14px; border-radius: 14px; border: 1px solid var(--borda); background: rgba(255, 255, 255, .025); }

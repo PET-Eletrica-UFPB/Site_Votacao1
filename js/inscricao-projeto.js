@@ -116,6 +116,7 @@ window.InscricaoProjeto = (() => {
   // Depois de corrigir uma resposta na aba Formulários: leva a correção para o projeto.
   // Devolve { projeto: null } se a resposta ainda não virou projeto.
   async function depoisDeEditar(formulario, inscricoes, id, respostasAntes, respostasDepois) {
+    if (!(await AjusteAutomatico.ligado())) return { desligado: true };
     const mapa = mapaPadrao(RelatorioInscricoes.colunas(formulario, inscricoes));
     const antes = dados(respostasAntes, mapa);
     const depois = dados(respostasDepois, mapa);
@@ -134,6 +135,7 @@ window.InscricaoProjeto = (() => {
   // Respostas corrigidas antes desta ligação existir: compara a original com a corrigida e leva para os projetos
   // o que ainda estiver com o valor antigo. Rodar de novo não muda nada.
   async function sincronizarCorrigidas() {
+    if (!(await AjusteAutomatico.ligado())) return [];
     const [formulario, inscricoes, lista] = await Promise.all([API.lerFormulario("alunos"), API.lerInscricoes("alunos"), API.lerCadastro()]);
     const corrigidas = inscricoes.filter((r) => r.original);
     if (!corrigidas.length) return [];
