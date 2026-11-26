@@ -90,10 +90,22 @@ async function renderUrnas() {
 }
 
 /* Formulário */
+// Stand: na ficha só o número; a letra do curso aparece ao lado e entra sozinha ao salvar.
+const letraDoCurso = () => cursos.find((c) => c.id === $("curso").value)?.letra || "";
+function mostrarLetraStand() {
+  const letra = letraDoCurso();
+  $("stand-letra").textContent = letra;
+  $("stand-letra").hidden = !letra;
+}
+const standParaFicha = (stand) => String(stand ?? "").match(/^[^\d]{0,3}(\d{1,3})[^\d]{0,3}$/)?.[1] ?? String(stand ?? "");
+const standParaSalvar = (texto) => (/^\d+$/.test(texto) ? `${Number(texto)}${letraDoCurso()}` : texto);
+
 function preencher(projeto) {
   CAMPOS.forEach((c) => {
     $(c).value = projeto?.[c] ?? "";
   });
+  $("stand").value = standParaFicha(projeto?.stand);
+  mostrarLetraStand();
   $("ficha-titulo").textContent = projeto ? projeto.nome : "Novo projeto";
   $("salvar").textContent = projeto ? "Salvar alterações" : "Cadastrar projeto";
   $("excluir").hidden = !projeto;
@@ -182,6 +194,13 @@ $("sair").addEventListener("click", () => {
   location.reload();
 });
 
+// Só números no stand; a letra acompanha o curso escolhido.
+$("stand").addEventListener("input", (e) => {
+  const so = e.target.value.replace(/\D/g, "");
+  if (so !== e.target.value) e.target.value = so;
+});
+$("curso").addEventListener("change", mostrarLetraStand);
+
 $("form-projeto").addEventListener("input", () => {
   alterado = true;
   aviso("");
@@ -215,6 +234,7 @@ $("form-projeto").addEventListener("submit", async (e) => {
   if (!e.target.reportValidity()) return;
 
   const dados = Object.fromEntries(CAMPOS.map((c) => [c, $(c).value.trim()]));
+  dados.stand = standParaSalvar(dados.stand);
   const eraNovo = !editandoCodigo;
   $("salvar").disabled = true;
   try {

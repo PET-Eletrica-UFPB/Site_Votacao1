@@ -160,6 +160,16 @@ window.PainelFormularios = (() => {
       const v = c.tipo === "varias" ? texto.split(/\s*;\s*/).filter(Boolean) : texto;
       respostas[c.id] = { p: r.respostas[c.id]?.p || c.texto.replace(/ \(pergunta removida\)$/, ""), v };
     }
+    // Stand digitado só com o número: a letra do curso da resposta entra sozinha (16 → 16A / 16B).
+    if (tipo === "alunos") {
+      const mapa = InscricaoProjeto.mapaPadrao(cols);
+      const stand = mapa.stand && respostas[mapa.stand];
+      if (stand && /^\d+$/.test(stand.v)) {
+        const curso = InscricaoProjeto.acharCurso(InscricaoProjeto.valor(respostas, mapa, "curso"));
+        const letra = window.FEIRA.cursos.find((c) => c.id === curso)?.letra || "";
+        stand.v = `${Number(stand.v)}${letra}`;
+      }
+    }
     $("salvar-resposta").disabled = true;
     $("ver-resposta-feedback").classList.remove("erro");
     $("ver-resposta-feedback").textContent = "Salvando…";
