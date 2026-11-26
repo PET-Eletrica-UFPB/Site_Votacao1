@@ -1,8 +1,11 @@
 // Loop do Modo Pódio: pódio → planta → QR code → pódio…, cada tela por alguns segundos.
-// A planta é um PNG escolhido aqui (guardado no próprio aparelho, no IndexedDB) e o QR code
+// A planta é um PNG ou PDF escolhido aqui (guardado no próprio aparelho, no IndexedDB) e o QR code
 // usa os mesmos destinos da aba "QR codes" da Área dos Petianos. Usa $ de podio.js.
 (() => {
   const BIBLIOTECA_QR = "https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js";
+  const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+  const PDFJS_WORKER = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  const LARGURA_PDF = 2880; // px da imagem feita a partir do PDF
   const CHAVE = "feira-pet:podio-loop";
   const DESTINOS = window.FEIRA.destinosQr;
   const CENAS = ["cena-podio", "cena-planta", "cena-qr"];
@@ -64,7 +67,37 @@
     if (urlPlanta) $("loop-planta-previa").src = urlPlanta;
     $("loop-planta-nome").textContent = planta
       ? `${planta.nome} (salvo neste aparelho)`
-      : "Nenhum arquivo escolhido. Gere o PNG em Área dos Petianos → Projetos → Planta da feira → Baixar PNG.";
+      : "Nenhum arquivo escolhido. Use o PDF da planta ou o PNG de Área dos Petianos → Projetos → Planta da feira → Baixar PNG.";
+  }
+
+  /* PDF da planta → imagem PNG (1ª página), feita uma vez só, na hora de escolher o arquivo. */
+  function carregarScript(src, global) {
+    if (window[global]) return Promise.resolve(window[global]);
+    return new Promise((ok, falha) => {
+      const s = document.createElement("script");
+      s.src = src;
+      s.onload = () => ok(window[global]);
+      s.onerror = () => falha(new Error("Sem internet para abrir o PDF."));
+      document.head.append(s);
+    });
+  }
+  async function pdfParaPng(arquivoPdf) {
+    const pdfjs = await carregarScript(PDFJS, "pdfjsLib");
+    pdfjs.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+    const doc = await pdfjs.getDocument({ data: await arquivoPdf.arrayBuffer() }).promise;
+    const pagina = await doc.getPage(1);
+    const base = pagina.getViewport({ scale: 1 });
+    const viewport = pagina.getViewport({ scale: LARGURA_PDF / Math.max(base.width, base.height) });
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(viewport.width);
+    canvas.height = Math.round(viewport.height);
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    await pagina.render({ canvasContext: ctx, viewport }).promise;
+    const paginas = doc.numPages;
+    doc.destroy();
+    return { blob: await new Promise((ok) => canvas.toBlob(ok, "image/png")), paginas };
   }
 
   /* QR code em SVG: nítido em qualquer tamanho de TV. */
@@ -168,12 +201,30 @@
   $("loop-planta").addEventListener("change", async (e) => {
     const f = e.target.files[0];
     if (!f) return;
-    if (!/^image\/(png|jpeg)$/.test(f.type)) return feedback("Escolha um arquivo PNG (ou JPG) da planta.", true);
-    planta = { blob: f, nome: f.name };
+    const ehPdf = f.type === "application/pdf" || /\.pdf$/i.test(f.name);
+    if (!ehPdf && !/^image\/(png|jpeg)$/.test(f.type)) return feedback("Escolha o arquivo da planta em PNG ou PDF.", true);
+    let aviso = "";
+    if (ehPdf) {
+      feedback("Abrindo o PDF…");
+      $("loop-iniciar").disabled = true;
+      try {
+        const { blob, paginas } = await pdfParaPng(f);
+        planta = { blob, nome: f.name };
+        if (paginas > 1) aviso = `O PDF tem ${paginas} páginas: usei a 1ª (a da planta).`;
+      } catch (erro) {
+        console.error(erro);
+        e.target.value = "";
+        return feedback(`Não consegui abrir o PDF. ${erro.message}`, true);
+      } finally {
+        $("loop-iniciar").disabled = false;
+      }
+    } else {
+      planta = { blob: f, nome: f.name };
+    }
     mostrarPlanta();
     try {
       await arquivo("gravar", planta);
-      feedback("");
+      feedback(aviso);
     } catch (erro) {
       console.error(erro);
       feedback("A planta vale só até recarregar a página (o navegador não deixou guardar o arquivo).", true);
@@ -185,7 +236,7 @@
     e.preventDefault();
     const link = $("loop-link").value.trim();
     if (!valido(link)) return feedback("Digite um link completo para o QR code, começando com https://", true);
-    if (!planta) return feedback("Escolha o arquivo PNG da planta.", true);
+    if (!planta) return feedback("Escolha o arquivo da planta (PNG ou PDF).", true);
     const tempo = Math.min(300, Math.max(5, Math.round(Number($("loop-tempo").value) || 20)));
     config = {
       ativo: true,
