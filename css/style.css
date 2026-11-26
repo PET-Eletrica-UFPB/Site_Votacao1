@@ -357,6 +357,8 @@ dialog::backdrop { background: rgba(4, 2, 30, .72); backdrop-filter: blur(6px); 
 .item-projeto:hover { background: var(--superficie); }
 .item-projeto[aria-current="true"] { background: var(--superficie-forte); border-color: var(--borda); }
 .item-stand { font-family: var(--mono); font-size: 12px; color: var(--tinta-3); }
+.item-stand.fixo { padding: 1px 5px; border-radius: 6px; border: 1px solid rgba(238, 166, 20, .7); color: var(--amber-claro); }
+.prioridade-interruptor { margin-top: 18px; }
 .item-nome { font-size: 14px; font-weight: 600; line-height: 1.3; }
 .item-nota { font-weight: 700; font-size: 14px; color: var(--green-claro); font-variant-numeric: tabular-nums; }
 .item-nota.pendente { font-weight: 500; font-size: 12px; color: var(--tinta-3); }

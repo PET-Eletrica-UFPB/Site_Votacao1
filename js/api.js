@@ -296,6 +296,10 @@ window.API = (() => {
     }
   };
 
+  // Prioridade (código fixo): o projeto é um "bloco fixo" na numeração automática; os outros pulam o número dele.
+  // Marcada à mão na ficha (prioridade: true/false). Projeto antigo sem a marcação, mas com stand numérico, conta como fixo.
+  const codigoFixo = (p) => (typeof p?.prioridade === "boolean" ? p.prioridade : !!standNumerico(p?.stand));
+
   // Quando códigos mudam (ou projetos saem), leva junto as atribuições e notas.
   // mapa: Map(código antigo → código novo, ou null se o projeto saiu). Reescreve cada lista inteira,
   // assim duas trocas cruzadas (5A ↔ 9A) não se atropelam.
@@ -339,8 +343,8 @@ window.API = (() => {
     let trocado = null;
     const ocupante = outros.find((p) => p.codigo === codigo);
     if (ocupante) {
-      if (standNumerico(ocupante.stand) === numero) {
-        throw new Error(`O stand ${dados.stand} já é de “${ocupante.nome}” (${ocupante.codigo}). Mude o stand de um dos dois.`);
+      if (codigoFixo(ocupante)) {
+        throw new Error(`O ${codigo} é de “${ocupante.nome}”, que está com prioridade (código fixo). Mude o stand ou desmarque a prioridade dele antes.`);
       }
       // O ocupante fica com o número que este projeto deixou (mesmo curso) ou com o próximo livre.
       const livre = atual && atual.curso === dados.curso ? atual.numero : proximoNumero([...outros, { curso: dados.curso, numero }], dados.curso);
@@ -350,8 +354,11 @@ window.API = (() => {
       trocado = { nome: ocupante.nome, de: ocupante.codigo, para: codigoOcupante };
     }
 
-    // Mantém o vínculo com a inscrição de onde o projeto veio, se houver.
-    const extra = atual?.inscricao ? { inscricao: atual.inscricao } : {};
+    // Mantém o vínculo com a inscrição de onde o projeto veio e a prioridade, se não vierem nos dados.
+    const extra = {
+      ...(atual?.inscricao ? { inscricao: atual.inscricao } : {}),
+      ...(dados.prioridade === undefined && typeof atual?.prioridade === "boolean" ? { prioridade: atual.prioridade } : {}),
+    };
     mudancas[`projetos/${codigo}`] = { ...dados, ...extra, numero };
     if (atual && atual.codigo !== codigo) {
       mapa.set(atual.codigo, codigo);
@@ -404,8 +411,8 @@ window.API = (() => {
      ficam com números seguidos (1A, 2A, 3A da mesma disciplina, depois a próxima…).
      ordemDe(nomeDaDisciplina, curso) dá a posição de cada disciplina (a ordem da planta).
      Leva junto as atribuições dos professores e as notas, tudo numa gravação só. */
-  // Números por disciplina (Map código atual → número novo). Projeto com stand numérico fica com o número
-  // do stand; os outros ocupam, na ordem das disciplinas, os números que sobrarem.
+  // Números por disciplina (Map código atual → número novo). Projeto com prioridade (código fixo) fica onde
+  // está; os outros ocupam, na ordem das disciplinas, os números que sobrarem, pulando os fixos.
   function numerarPorDisciplina(lista, ordemDe) {
     const chave = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
     const novoNumero = new Map();
@@ -413,10 +420,9 @@ window.API = (() => {
       const doCurso = lista.filter((x) => x.curso === curso.id).sort((a, b) => a.numero - b.numero);
       const ocupados = new Set();
       for (const p of doCurso) {
-        const n = standNumerico(p.stand);
-        if (n && !ocupados.has(n)) {
-          ocupados.add(n);
-          novoNumero.set(p.codigo, n);
+        if (codigoFixo(p) && !ocupados.has(p.numero)) {
+          ocupados.add(p.numero);
+          novoNumero.set(p.codigo, p.numero);
         }
       }
       const grupos = new Map();
@@ -448,7 +454,12 @@ window.API = (() => {
     if (!mudaram) return { mudaram: 0, mapa };
 
     const projetos = {};
-    for (const p of lista) projetos[mapa.get(p.codigo)] = { ...guardado(p), numero: novoNumero.get(p.codigo) };
+    for (const p of lista) {
+      const novo = { ...guardado(p), numero: novoNumero.get(p.codigo) };
+      // Stand numérico acompanha o código novo, para placa, site e stand dizerem o mesmo número.
+      if (novo.numero !== p.numero && standNumerico(p.stand)) novo.stand = mapa.get(p.codigo);
+      projetos[mapa.get(p.codigo)] = novo;
+    }
     await atualizarSite({ projetos, ...(await mudancasDeCodigos(mapa)) });
     return { mudaram, mapa };
   }
@@ -780,7 +791,7 @@ window.API = (() => {
     meuPerfil, minhasAvaliacoes, salvarAvaliacao,
     lerFormulario, salvarFormulario, definirInscricoesAbertas, enviarInscricao, lerInscricoes, removerInscricao, editarInscricao,
     lerFrequencia, salvarFrequencia, lerPlanta, salvarPlanta, salvarPrioridade, salvarAjusteAutomatico,
-    importarProjetos, organizarCodigos, numerarPorDisciplina, standNumerico, copiaDeSeguranca, contarDados, limparDados, importarInscricoes, assinaturasImportadas,
+    importarProjetos, organizarCodigos, numerarPorDisciplina, standNumerico, codigoFixo, copiaDeSeguranca, contarDados, limparDados, importarInscricoes, assinaturasImportadas,
     lerFeiras, salvarFeira, removerFeira, publicarFeirasIniciais,
   };
 })();

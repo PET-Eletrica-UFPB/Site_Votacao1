@@ -52,7 +52,7 @@ function renderLista() {
         .map((p) => `
           <li>
             <button class="item-projeto" data-codigo="${esc(p.codigo)}" aria-current="${p.codigo === editandoCodigo}">
-              <span class="item-stand">${esc(p.codigo)}</span>
+              <span class="item-stand ${API.codigoFixo(p) ? "fixo" : ""}" ${API.codigoFixo(p) ? 'title="Prioridade: código fixo"' : ""}>${esc(p.codigo)}</span>
               <span>
                 <span class="item-nome">${esc(p.nome)}</span>
                 <span class="item-sub">${esc(p.disciplina)}</span>
@@ -98,6 +98,7 @@ function mostrarLetraStand() {
   $("stand-letra").hidden = !letra;
 }
 const standParaFicha = (stand) => String(stand ?? "").match(/^[^\d]{0,3}(\d{1,3})[^\d]{0,3}$/)?.[1] ?? String(stand ?? "");
+let prioridadeMexida = false; // marcada/desmarcada à mão nesta edição
 const standParaSalvar = (texto) => (/^\d+$/.test(texto) ? `${Number(texto)}${letraDoCurso()}` : texto);
 
 function preencher(projeto) {
@@ -106,6 +107,8 @@ function preencher(projeto) {
   });
   $("stand").value = standParaFicha(projeto?.stand);
   mostrarLetraStand();
+  $("prioridade").checked = projeto ? API.codigoFixo(projeto) : false;
+  prioridadeMexida = false;
   $("ficha-titulo").textContent = projeto ? projeto.nome : "Novo projeto";
   $("salvar").textContent = projeto ? "Salvar alterações" : "Cadastrar projeto";
   $("excluir").hidden = !projeto;
@@ -198,7 +201,10 @@ $("sair").addEventListener("click", () => {
 $("stand").addEventListener("input", (e) => {
   const so = e.target.value.replace(/\D/g, "");
   if (so !== e.target.value) e.target.value = so;
+  // Stand definido vira bloco fixo, a não ser que a prioridade já tenha sido mexida à mão.
+  if (so && !prioridadeMexida) $("prioridade").checked = true;
 });
+$("prioridade").addEventListener("change", () => (prioridadeMexida = true));
 $("curso").addEventListener("change", mostrarLetraStand);
 
 $("form-projeto").addEventListener("input", () => {
@@ -235,6 +241,7 @@ $("form-projeto").addEventListener("submit", async (e) => {
 
   const dados = Object.fromEntries(CAMPOS.map((c) => [c, $(c).value.trim()]));
   dados.stand = standParaSalvar(dados.stand);
+  dados.prioridade = $("prioridade").checked;
   const eraNovo = !editandoCodigo;
   $("salvar").disabled = true;
   try {

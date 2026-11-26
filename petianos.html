@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20261127k">
+  <link rel="stylesheet" href="css/style.css?v=20261127l">
 </head>
 <body>
   <div class="login" id="tela-login">
@@ -118,6 +118,12 @@
               <small class="campo-dica" id="stand-dica">Digite só o número: a letra do curso entra sozinha (16 → 16A na Elétrica, 16B nas Renováveis) e vira o código de votação.</small>
             </label>
           </div>
+          <label class="interruptor prioridade-interruptor">
+            <input type="checkbox" id="prioridade" role="switch" aria-describedby="prioridade-dica">
+            <span class="interruptor-trilho" aria-hidden="true"></span>
+            <span>Prioridade: código fixo</span>
+          </label>
+          <small class="campo-dica" id="prioridade-dica">Com prioridade, o código não muda na organização automática: os outros projetos pulam esse número. Desmarque para ele voltar à sequência. Ao preencher o stand, a prioridade é marcada sozinha.</small>
           <label class="campo">
             <span>Equipe (opcional)</span>
             <input id="equipe" maxlength="80" placeholder="Nome da equipe ou dos integrantes">
@@ -601,7 +607,7 @@
   <dialog id="codigos-dialogo" class="confirmar freq-planilha-modal">
     <button class="fechar" id="codigos-fechar" type="button" aria-label="Fechar">×</button>
     <h2>Organizar códigos</h2>
-    <p>Marque as disciplinas na ordem de prioridade. A primeira marcada fica com os números 1, 2, 3… do seu curso; cada uma marcada depois continua do último número do mesmo curso. Os projetos de cada disciplina ficam com números seguidos. Projeto com stand numérico mantém o número do stand.</p>
+    <p>Marque as disciplinas na ordem de prioridade. A primeira marcada fica com os números 1, 2, 3… do seu curso; cada uma marcada depois continua do último número do mesmo curso. Os projetos de cada disciplina ficam com números seguidos. Projetos com prioridade (código fixo) não saem do lugar: a sequência pula os números deles.</p>
     <p class="aviso-votos" id="codigos-votos" hidden>Já há votos na rodada atual: trocar os códigos agora mistura a contagem das urnas.</p>
     <div class="freq-planilha-por">
       <div class="freq-planilha-por-topo">
@@ -832,31 +838,31 @@
     </form>
   </dialog>
 
-  <script src="js/data.js?v=20261127k"></script>
-  <script src="js/api.js?v=20261127k"></script>
-  <script src="js/senha.js?v=20261127k"></script>
-  <script src="js/modelo-urna.js?v=20261127k"></script>
-  <script src="js/gerador-urna.js?v=20261127k"></script>
-  <script src="js/relatorio.js?v=20261127k"></script>
-  <script src="js/exportar.js?v=20261127k"></script>
-  <script src="js/planta.js?v=20261127k"></script>
-  <script src="js/placas.js?v=20261127k"></script>
-  <script src="js/petianos-ajuste.js?v=20261127k"></script>
-  <script src="js/inscricao-projeto.js?v=20261127k"></script>
-  <script src="js/petianos.js?v=20261127k"></script>
-  <script src="js/petianos-professores.js?v=20261127k"></script>
-  <script src="js/petianos-distribuir.js?v=20261127k"></script>
-  <script src="js/petianos-formularios.js?v=20261127k"></script>
-  <script src="js/nomes.js?v=20261127k"></script>
-  <script src="js/petianos-importar.js?v=20261127k"></script>
-  <script src="js/petianos-planilha.js?v=20261127k"></script>
-  <script src="js/petianos-limpar.js?v=20261127k"></script>
-  <script src="js/feiras-dados.js?v=20261127k"></script>
-  <script src="js/petianos-feiras.js?v=20261127k"></script>
-  <script src="js/petianos-frequencia.js?v=20261127k"></script>
-  <script src="js/petianos-codigos.js?v=20261127k"></script>
-  <script src="js/petianos-qrcode.js?v=20261127k"></script>
-  <script src="js/petianos-placas.js?v=20261127k"></script>
-  <script src="js/petianos-planta.js?v=20261127k"></script>
+  <script src="js/data.js?v=20261127l"></script>
+  <script src="js/api.js?v=20261127l"></script>
+  <script src="js/senha.js?v=20261127l"></script>
+  <script src="js/modelo-urna.js?v=20261127l"></script>
+  <script src="js/gerador-urna.js?v=20261127l"></script>
+  <script src="js/relatorio.js?v=20261127l"></script>
+  <script src="js/exportar.js?v=20261127l"></script>
+  <script src="js/planta.js?v=20261127l"></script>
+  <script src="js/placas.js?v=20261127l"></script>
+  <script src="js/petianos-ajuste.js?v=20261127l"></script>
+  <script src="js/inscricao-projeto.js?v=20261127l"></script>
+  <script src="js/petianos.js?v=20261127l"></script>
+  <script src="js/petianos-professores.js?v=20261127l"></script>
+  <script src="js/petianos-distribuir.js?v=20261127l"></script>
+  <script src="js/petianos-formularios.js?v=20261127l"></script>
+  <script src="js/nomes.js?v=20261127l"></script>
+  <script src="js/petianos-importar.js?v=20261127l"></script>
+  <script src="js/petianos-planilha.js?v=20261127l"></script>
+  <script src="js/petianos-limpar.js?v=20261127l"></script>
+  <script src="js/feiras-dados.js?v=20261127l"></script>
+  <script src="js/petianos-feiras.js?v=20261127l"></script>
+  <script src="js/petianos-frequencia.js?v=20261127l"></script>
+  <script src="js/petianos-codigos.js?v=20261127l"></script>
+  <script src="js/petianos-qrcode.js?v=20261127l"></script>
+  <script src="js/petianos-placas.js?v=20261127l"></script>
+  <script src="js/petianos-planta.js?v=20261127l"></script>
 </body>
 </html>

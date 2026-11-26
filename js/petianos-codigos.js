@@ -149,7 +149,7 @@ window.OrganizarCodigos = (() => {
       .join("");
 
     const faltam = grupos.filter((g) => !marcadas.includes(g.item));
-    const comStand = projetos.filter((p) => API.standNumerico(p.stand)).length;
+    const fixos = projetos.filter((p) => API.codigoFixo(p)).length;
     const totais = cursos
       .map((c) => {
         const ultimo = Math.max(0, ...[...faixa.entries()].filter(([item]) => item.startsWith(`${c.id}|`)).map(([, f]) => f.ate));
@@ -164,7 +164,11 @@ window.OrganizarCodigos = (() => {
           : faltam.length
             ? `. As ${faltam.length} não marcadas ficam com os números seguintes, na ordem da planta.`
             : ".") +
-        (comStand ? ` ${plural(comStand, "projeto com stand numérico fica", "projetos com stand numérico ficam")} com o número do stand.` : "");
+        (fixos === 1
+          ? " 1 projeto com prioridade (código fixo) fica onde está e a sequência pula o número dele."
+          : fixos
+            ? ` ${fixos} projetos com prioridade (código fixo) ficam onde estão e a sequência pula os números deles.`
+            : "");
     $("codigos-aplicar").disabled = !marcadas.length;
   }
 
