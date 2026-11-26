@@ -348,6 +348,47 @@ window.API = (() => {
   const lerPlanta = async () => (await escrever("GET", "/site/planta")) || {};
   const salvarPlanta = (planta) => escrever("PUT", "/site/planta", planta);
 
+  /* Códigos em sequência por disciplina: em cada curso, os projetos de uma mesma disciplina
+     ficam com números seguidos (1A, 2A, 3A da mesma disciplina, depois a próxima…).
+     ordemDe(nomeDaDisciplina, curso) dá a posição de cada disciplina (a ordem da planta).
+     Leva junto as atribuições dos professores e as notas, tudo numa gravação só. */
+  async function organizarCodigos(ordemDe) {
+    const lista = await lerCadastro();
+    const chave = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+    const novoNumero = new Map(); // código antigo → número novo
+    for (const curso of cursos) {
+      const grupos = new Map();
+      for (const p of lista.filter((x) => x.curso === curso.id)) {
+        const k = chave(p.disciplina);
+        if (!grupos.has(k)) grupos.set(k, { nome: (p.disciplina || "").trim(), projetos: [] });
+        grupos.get(k).projetos.push(p);
+      }
+      let n = 1;
+      [...grupos.values()]
+        .sort((a, b) => ordemDe(a.nome, curso.id) - ordemDe(b.nome, curso.id) || a.nome.localeCompare(b.nome, "pt-BR"))
+        .forEach((g) => g.projetos.sort((a, b) => a.numero - b.numero).forEach((p) => novoNumero.set(p.codigo, n++)));
+    }
+    const mapa = new Map(lista.map((p) => [p.codigo, codigoDe(p.curso, novoNumero.get(p.codigo))]));
+    const mudaram = [...mapa].filter(([antes, depois]) => antes !== depois).length;
+    if (!mudaram) return { mudaram: 0, mapa };
+
+    const projetos = {};
+    for (const p of lista) {
+      const { id, codigo, arte, cor, ...guardado } = p; // campos calculados não vão para o banco
+      projetos[mapa.get(p.codigo)] = { ...guardado, numero: novoNumero.get(p.codigo) };
+    }
+    const [professores, avaliacoes] = await Promise.all([
+      lerPublico("/site/professores").then((d) => d || {}),
+      escrever("GET", "/site/avaliacoes").then((d) => d || {}),
+    ]);
+    const mudancas = { projetos };
+    const trocar = (obj) => Object.fromEntries(Object.entries(obj || {}).map(([c, v]) => [mapa.get(c) || c, v]));
+    for (const [uid, prof] of Object.entries(professores)) if (prof?.projetos) mudancas[`professores/${uid}/projetos`] = trocar(prof.projetos);
+    for (const [uid, notas] of Object.entries(avaliacoes)) if (notas) mudancas[`avaliacoes/${uid}`] = trocar(notas);
+    await atualizarSite(mudancas);
+    return { mudaram, mapa };
+  }
+
   /* Professores (cadastrados pelos petianos) */
   function listaDeProfessores(dados) {
     return Object.entries(dados || {})
@@ -674,7 +715,7 @@ window.API = (() => {
     meuPerfil, minhasAvaliacoes, salvarAvaliacao,
     lerFormulario, salvarFormulario, definirInscricoesAbertas, enviarInscricao, lerInscricoes, removerInscricao, editarInscricao,
     lerFrequencia, salvarFrequencia, lerPlanta, salvarPlanta,
-    importarProjetos, copiaDeSeguranca, contarDados, limparDados, importarInscricoes, assinaturasImportadas,
+    importarProjetos, organizarCodigos, copiaDeSeguranca, contarDados, limparDados, importarInscricoes, assinaturasImportadas,
     lerFeiras, salvarFeira, removerFeira, publicarFeirasIniciais,
   };
 })();

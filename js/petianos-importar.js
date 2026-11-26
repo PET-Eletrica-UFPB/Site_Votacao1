@@ -310,11 +310,22 @@
     aviso("Cadastrando…");
     try {
       const criados = await API.importarProjetos(escolhidas.map(dadosDe));
+      // Mantém os projetos de cada disciplina com números seguidos (se ainda não há votos).
+      let organizados = { mudaram: 0, pulou: true };
+      try {
+        organizados = await OrganizarCodigos.executar({ automatico: true });
+      } catch (erro) {
+        console.error(erro);
+      }
       await recarregar();
       marcadas.clear();
       fechar();
+      const codigos = criados.map((p) => organizados.mapa?.get(p.codigo) || p.codigo);
       $("feedback").classList.remove("erro");
-      $("feedback").textContent = `${criados.length} projeto${criados.length === 1 ? "" : "s"} importado${criados.length === 1 ? "" : "s"}: ${criados.map((p) => p.codigo).join(", ")}. Confira os dados e grave as urnas de novo.`;
+      $("feedback").textContent =
+        `${criados.length} projeto${criados.length === 1 ? "" : "s"} importado${criados.length === 1 ? "" : "s"}: ${codigos.join(", ")}.` +
+        (organizados.mudaram ? " Os códigos foram reorganizados para cada disciplina ficar com números seguidos." : organizados.pulou ? " Como já há votos (ou não deu para conferir), os códigos não foram reorganizados: use “Organizar códigos por disciplina” se quiser." : "") +
+        " Confira os dados e grave as urnas de novo.";
     } catch (erro) {
       aviso(erro.message, true);
       $("importar-confirmar").disabled = false;
