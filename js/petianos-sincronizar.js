@@ -142,26 +142,34 @@
     }
     if (!lidas) throw new Error("Não achei nenhuma aba com as colunas “Nome da Equipe / Projeto” e “Identificação da Equipe”.");
 
-    // Mesmo código duas vezes: fica a linha que está na sequência dos vizinhos (ou a última).
+    // Mesmo código duas vezes: fica a linha que está na sequência dos vizinhos; a outra fica com o número
+    // que falta na sequência da disciplina dela (ex.: EcoPet em Ciência dos Materiais com 23B → 2B), se houver.
     const votacao = itens.filter((i) => !i.fora);
+    const usado = (curso, n) => votacao.some((x) => x.curso === curso && x.numero === n && !x.descartado);
+    const daSecao = (i) => votacao.filter((x) => x.aba === i.aba && x.disciplina === i.disciplina).sort((a, b) => a.posicao - b.posicao);
+    const vizinhos = (i) => daSecao(i).filter((x) => x !== i && Math.abs(x.numero - i.numero) === 1).length;
     const porCodigo = new Map();
     for (const i of votacao) porCodigo.set(i.codigo, [...(porCodigo.get(i.codigo) || []), i]);
-    const validos = [];
     for (const [codigo, repetidos] of porCodigo) {
-      if (repetidos.length === 1) {
-        validos.push(repetidos[0]);
-        continue;
+      if (repetidos.length === 1) continue;
+      const fica = [...repetidos].sort((a, b) => vizinhos(b) - vizinhos(a))[0];
+      for (const o of repetidos.filter((x) => x !== fica)) {
+        const secao = daSecao(o);
+        const k = secao.indexOf(o);
+        const antes = secao[k - 1];
+        const depois = secao[k + 1];
+        const candidato = antes ? antes.numero + 1 : depois ? depois.numero - 1 : null;
+        if (candidato && candidato > 0 && !usado(o.curso, candidato)) {
+          o.numero = candidato;
+          o.codigo = `${candidato}${letraDe(o.curso)}`;
+          avisos.push(`O código ${codigo} aparece duas vezes na planilha (“${fica.nome}” em ${fica.disciplina} e “${o.nome}” em ${o.disciplina}). “${o.nome}” em ${o.disciplina} ficou com ${o.codigo}, o número que falta na sequência dela.`);
+        } else {
+          o.descartado = true;
+          avisos.push(`O código ${codigo} aparece duas vezes na planilha. Usei “${fica.nome}” em ${fica.disciplina}; “${o.nome}” em ${o.disciplina} ficou de fora.`);
+        }
       }
-      const vizinhos = (i) => {
-        const daDisc = votacao.filter((x) => x.aba === i.aba && x.disciplina === i.disciplina);
-        return daDisc.filter((x) => x !== i && Math.abs(x.numero - i.numero) === 1).length;
-      };
-      const fica = [...repetidos].sort((a, b) => vizinhos(b) - vizinhos(a))[0] || repetidos.at(-1);
-      validos.push(fica);
-      avisos.push(
-        `O código ${codigo} aparece ${repetidos.length} vezes na planilha (${repetidos.map((r) => `“${r.nome}” em ${r.disciplina}`).join("; ")}). Usei “${fica.nome}” em ${fica.disciplina}.`
-      );
     }
+    const validos = votacao.filter((i) => !i.descartado);
     // Números que faltam no meio da sequência (só aviso).
     for (const c of cursos) {
       const ns = validos.filter((i) => i.curso === c.id).map((i) => i.numero);
@@ -176,75 +184,103 @@
   /* Comparação com o cadastro */
   let plano = null;
 
+  // Nome sem a sigla do fim ("EcoPet (ICM)" = "EcoPet") e sem pontuação.
+  const base = (n) => normalizar(n).replace(/\s*\([^)]*\)\s*$/, "").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  // "Grupo 1", "Equipe 2 / Grupo 2"…: o nome sozinho não identifica.
+  const generico = (n) => /^((grupo|equipe|time|projeto)\s*\d*\s*)+$/.test(base(n));
+  const numeroDoGrupo = (n) => base(n).match(/\b(?:grupo|equipe)\s*(\d+)/)?.[1] ?? null;
+
+  // Disciplinas iguais apesar de acento, sigla ("ICM (Introdução à Ciência dos Materiais)", "UCE") ou erro de
+  // digitação de uma letra ("Projetor Integrador I"). Algarismos romanos precisam bater (I ≠ II).
+  const PALAVRAS_VAZIAS = new Set(["a", "o", "as", "os", "de", "da", "do", "das", "dos", "e", "em", "na", "no"]);
+  const palavras = (t) => normalizar(t).replace(/[^\p{L}\p{N}]+/gu, " ").split(" ").filter((x) => x && !PALAVRAS_VAZIAS.has(x));
+  function formas(d) {
+    const n = normalizar(d);
+    const lista = [palavras(d), palavras(n.replace(/\([^)]*\)/g, ""))];
+    const dentro = n.match(/\(([^)]*)\)/)?.[1];
+    if (dentro) lista.push(palavras(dentro));
+    return lista.filter((f) => f.length);
+  }
+  const quase = (a, b) => {
+    if (a === b) return true;
+    if (Math.min(a.length, b.length) < 5 || Math.abs(a.length - b.length) > 1) return false;
+    let i = 0;
+    while (i < Math.min(a.length, b.length) && a[i] === b[i]) i++;
+    const resto = (x) => x.slice(i + 1);
+    return resto(a) === resto(b) || resto(a) === b.slice(i) || a.slice(i) === resto(b);
+  };
+  const mesmasPalavras = (x, y) => x.length === y.length && x.every((w, k) => (/^[ivx]+$/.test(w) || /^[ivx]+$/.test(y[k]) ? w === y[k] : quase(w, y[k])));
+  const sigla = (f) => (f.length > 1 ? f.map((w) => w[0]).join("") : null);
+  function mesmaDisciplina(a, b) {
+    const fa = formas(a);
+    const fb = formas(b);
+    for (const x of fa)
+      for (const y of fb) {
+        if (mesmasPalavras(x, y)) return true;
+        if (x.length === 1 && x[0] === sigla(y)) return true;
+        if (y.length === 1 && y[0] === sigla(x)) return true;
+      }
+    return false;
+  }
+
   function comparar(planilha, site) {
-    const chave = (p) => normalizar(p.nome);
+    const itens = [...planilha.votacao, ...planilha.fora];
     const casados = new Map(); // item da planilha → projeto do site
     const usados = new Set();
-    const casar = (teste) => {
-      for (const item of planilha.votacao) {
+    const disc = (i, p) => mesmaDisciplina(i.disciplina, p.disciplina);
+    const casar = (teste, primeiro = false) => {
+      for (const item of itens) {
         if (casados.has(item)) continue;
         const candidatos = site.filter((p) => !usados.has(p) && teste(item, p));
-        if (candidatos.length !== 1 && !(candidatos.length > 1 && teste.primeiro)) continue;
+        if (!candidatos.length || (candidatos.length > 1 && !primeiro)) continue;
         casados.set(item, candidatos[0]);
         usados.add(candidatos[0]);
       }
     };
-    const mesmaDisc = (i, p) => normalizar(i.disciplina) === normalizar(p.disciplina);
-    // "Grupo 1", "Equipe 2"…: o nome sozinho não identifica; precisa bater a disciplina também.
-    const generico = (n) => /^(grupo|equipe|projeto|time)\s*\d*$/.test(normalizar(n));
-    // 1) mesmo código e mesmo nome; 2) nome + curso + disciplina; 3) nome + curso; 4) só o nome;
-    // 5) mesmo código e mesma disciplina (nome mudou na planilha).
-    const passo1 = (i, p) => p.codigo === i.codigo && chave(p) === chave(i);
-    passo1.primeiro = true;
-    casar(passo1);
-    const passo2 = (i, p) => chave(p) === chave(i) && p.curso === i.curso && mesmaDisc(i, p);
-    passo2.primeiro = true;
-    casar(passo2);
-    casar((i, p) => chave(p) === chave(i) && p.curso === i.curso && !generico(i.nome));
-    casar((i, p) => chave(p) === chave(i) && !generico(i.nome) && planilha.votacao.filter((x) => chave(x) === chave(i)).length === 1);
-    // (só se o nome do site não aparece em outra linha da planilha: senão é repetido, não renomeado)
-    const nomesDaPlanilha = new Set([...planilha.votacao, ...planilha.fora].map(chave));
-    casar((i, p) => p.codigo === i.codigo && mesmaDisc(i, p) && !nomesDaPlanilha.has(chave(p)));
+    const mesmoNome = (i, p) => base(i.nome) === base(p.nome);
+    const nomesDaPlanilha = new Set(itens.map((i) => base(i.nome)));
+    const contagem = new Map();
+    itens.forEach((i) => contagem.set(base(i.nome), (contagem.get(base(i.nome)) || 0) + 1));
 
-    // O que sobrou no site: repetido de um projeto da planilha, fora da votação (segundo a planilha) ou só no site.
-    const sobras = site.filter((p) => !usados.has(p));
-    const repetidos = [];
-    const naoParticipam = [];
-    const soNoSite = [];
-    const jaVisto = new Set();
-    for (const p of sobras) {
-      // Repetido: mesmo nome, curso e disciplina de um projeto que já ficou com uma linha da planilha.
-      const igual = [...casados.entries()].find(
-        ([i, q]) => (chave(q) === chave(p) || chave(i) === chave(p)) && (q.curso === p.curso || i.curso === p.curso) && (mesmaDisc(q, p) || mesmaDisc(i, p))
-      );
-      const k = `${p.curso}|${chave(p)}|${normalizar(p.disciplina)}`;
-      if (igual) repetidos.push({ projeto: p, de: igual[0] });
-      else if (jaVisto.has(k)) repetidos.push({ projeto: p, de: null });
-      else if (planilha.fora.some((f) => chave(f) === chave(p) && (!generico(f.nome) || mesmaDisc(f, p)))) naoParticipam.push({ projeto: p, excluir: false });
-      else soNoSite.push({ projeto: p, excluir: false });
-      jaVisto.add(k);
-    }
-    repetidos.forEach((r) => (r.excluir = true));
-
-    const atualizar = [];
-    const iguais = [];
-    const criar = [];
-    for (const item of planilha.votacao) {
-      const p = casados.get(item);
-      if (!p) {
-        criar.push(item);
-        continue;
+    // Do mais certo para o menos certo.
+    casar((i, p) => !i.fora && p.codigo === i.codigo && mesmoNome(i, p), true);
+    casar((i, p) => mesmoNome(i, p) && p.curso === i.curso && disc(i, p), true);
+    casar((i, p) => mesmoNome(i, p) && disc(i, p) && !generico(i.nome));
+    casar((i, p) => mesmoNome(i, p) && p.curso === i.curso && !generico(i.nome));
+    casar((i, p) => mesmoNome(i, p) && !generico(i.nome) && contagem.get(base(i.nome)) === 1);
+    casar((i, p) => generico(i.nome) && generico(p.nome) && numeroDoGrupo(i.nome) && numeroDoGrupo(i.nome) === numeroDoGrupo(p.nome) && p.curso === i.curso && disc(i, p));
+    // Nome mudou na planilha: mesmo código e disciplina, e o nome do site não aparece em outra linha.
+    casar((i, p) => !i.fora && p.codigo === i.codigo && disc(i, p) && !nomesDaPlanilha.has(base(p.nome)));
+    // Sobrou exatamente um de cada lado na mesma disciplina e curso: é o mesmo projeto com outro nome.
+    for (const item of itens) {
+      if (casados.has(item)) continue;
+      const doLado = (lista, x) => lista.filter((y) => y.curso === x.curso && mesmaDisciplina(y.disciplina, x.disciplina));
+      const itensLivres = doLado(itens.filter((i) => !casados.has(i)), item);
+      const siteLivres = doLado(site.filter((p) => !usados.has(p)), item);
+      if (itensLivres.length === 1 && siteLivres.length === 1) {
+        casados.set(item, siteLivres[0]);
+        usados.add(siteLivres[0]);
       }
-      const mud = [];
-      if (p.codigo !== item.codigo) mud.push(`código ${p.codigo} → ${item.codigo}`);
-      if (limpar(p.nome) !== item.nome) mud.push(`nome “${p.nome}” → “${item.nome}”`);
-      if (p.curso !== item.curso) mud.push(`curso ${curtoDe(p.curso)} → ${curtoDe(item.curso)}`);
-      if (limpar(p.disciplina) !== item.disciplina) mud.push(`disciplina “${p.disciplina || "—"}” → “${item.disciplina}”`);
-      if (item.equipe && limpar(p.equipe) !== item.equipe) mud.push("integrantes");
-      (mud.length ? atualizar : iguais).push({ item, projeto: p, mud });
     }
-    return { planilha, casados, atualizar, iguais, criar, repetidos, naoParticipam, soNoSite };
+
+    // O que sobrou no site: repetido (mesmo nome, curso e disciplina de um projeto que já tem linha) ou só no site.
+    const repetidos = [];
+    const soNoSite = [];
+    const vistos = [];
+    for (const p of site.filter((x) => !usados.has(x))) {
+      const igual = [...casados.entries()].find(([i, q]) => (mesmoNome(q, p) || mesmoNome(i, p)) && q.curso === p.curso && mesmaDisciplina(q.disciplina, p.disciplina));
+      const outro = vistos.find((q) => mesmoNome(q, p) && q.curso === p.curso && mesmaDisciplina(q.disciplina, p.disciplina));
+      if (igual) repetidos.push({ projeto: p, de: igual[1], excluir: true });
+      else if (outro) repetidos.push({ projeto: p, de: outro, excluir: true });
+      else soNoSite.push({ projeto: p, excluir: true });
+      vistos.push(p);
+    }
+    return { planilha, itens, casados, repetidos, soNoSite };
   }
+
+  // Nome final: o do site quando é o mesmo da planilha com sigla ("EcoPet (ICM)") ou o mesmo grupo genérico.
+  const nomeFinal = (item, p) =>
+    p && (base(p.nome) === base(item.nome) || (generico(p.nome) && generico(item.nome) && numeroDoGrupo(p.nome) === numeroDoGrupo(item.nome))) ? p.nome : item.nome;
 
   // Cadastro final + mapa de códigos (antigo → novo/null), conforme as escolhas da janela.
   function montarFinal() {
@@ -255,30 +291,49 @@
       const { id: _i, codigo: _c, arte: _a, cor: _co, ...resto } = p;
       return resto;
     };
-    for (const item of plano.planilha.votacao) {
+    const gravar = (item, numero) => {
       const p = plano.casados.get(item);
-      const base = p ? guardado(p) : { resumo: "" };
-      final[item.codigo] = {
-        ...base,
-        nome: item.nome,
+      const dados = p ? guardado(p) : { resumo: "" };
+      const codigo = `${numero}${letraDe(item.curso)}`;
+      final[codigo] = {
+        ...dados,
+        nome: nomeFinal(item, p),
         curso: item.curso,
         disciplina: item.disciplina,
-        equipe: item.equipe || base.equipe || "",
-        numero: item.numero,
-        ...(fixar ? { stand: item.codigo, prioridade: true } : {}),
+        equipe: item.equipe || dados.equipe || "",
+        numero,
+        ...(fixar ? { stand: codigo, prioridade: true } : {}),
       };
-      if (p) mapa.set(p.codigo, item.codigo);
+      item.codigoFinal = codigo;
+      if (p) mapa.set(p.codigo, codigo);
+    };
+    for (const item of plano.planilha.votacao) gravar(item, item.numero);
+
+    // Fora da votação: depois do último código da votação do curso (mantém o número do site, se estiver livre lá).
+    const ultimo = (curso) => Math.max(0, ...plano.planilha.votacao.filter((i) => i.curso === curso).map((i) => i.numero));
+    const livre = (curso, n) => !final[`${n}${letraDe(curso)}`];
+    const pendentes = [];
+    for (const item of plano.planilha.fora) {
+      const p = plano.casados.get(item);
+      if (p && p.curso === item.curso && p.numero > ultimo(item.curso) && livre(item.curso, p.numero)) gravar(item, p.numero);
+      else pendentes.push(item);
     }
-    // Os mantidos que não estão na planilha vão para os próximos números livres do curso.
-    const mantidos = [...plano.naoParticipam, ...plano.soNoSite, ...plano.repetidos].filter((x) => !x.excluir);
-    const excluidos = [...plano.naoParticipam, ...plano.soNoSite, ...plano.repetidos].filter((x) => x.excluir);
-    for (const x of mantidos) {
+    const proximo = (curso) => {
+      let n = ultimo(curso) + 1;
+      while (!livre(curso, n)) n++;
+      return n;
+    };
+    for (const item of pendentes) gravar(item, proximo(item.curso));
+
+    // Os que só estão no site e ficam: próximos números livres do curso.
+    for (const x of [...plano.soNoSite, ...plano.repetidos]) {
       const p = x.projeto;
-      let numero = p.numero;
-      const ocupado = (n) => final[`${n}${letraDe(p.curso)}`];
-      if (ocupado(numero)) {
-        numero = Math.max(0, ...Object.values(final).filter((q) => q.curso === p.curso).map((q) => q.numero)) + 1;
+      if (x.excluir) {
+        mapa.set(p.codigo, null);
+        x.novoCodigo = null;
+        continue;
       }
+      const numero = livre(p.curso, p.numero) ? p.numero : proximo(p.curso);
       const novo = `${numero}${letraDe(p.curso)}`;
       const dados = { ...guardado(p), numero };
       if (numero !== p.numero && API.standNumerico(p.stand)) dados.stand = novo;
@@ -286,11 +341,20 @@
       x.novoCodigo = novo;
       mapa.set(p.codigo, novo);
     }
-    for (const x of excluidos) {
-      mapa.set(x.projeto.codigo, null);
-      x.novoCodigo = null;
-    }
     return { final, mapa };
+  }
+
+  // O que muda em cada projeto da planilha (depois de montarFinal, que dá o código final).
+  function mudancas(item) {
+    const p = plano.casados.get(item);
+    const f = item.codigoFinal;
+    const mud = [];
+    if (p.codigo !== f) mud.push(`código ${p.codigo} → ${f}`);
+    if (p.nome !== nomeFinal(item, p)) mud.push(`nome “${p.nome}” → “${item.nome}”`);
+    if (p.curso !== item.curso) mud.push(`curso ${curtoDe(p.curso)} → ${curtoDe(item.curso)}`);
+    if (limpar(p.disciplina) !== item.disciplina) mud.push(`disciplina “${p.disciplina || "—"}” → “${item.disciplina}”`);
+    if (item.equipe && limpar(p.equipe) !== item.equipe) mud.push("integrantes");
+    return mud;
   }
 
   /* Tela */
@@ -311,36 +375,43 @@
     const { final, mapa } = montarFinal();
     const nome = (p) => `<b>${esc(p.codigo)}</b> ${esc(p.nome)}`;
     const destino = (x) => (x.excluir ? "será excluído" : x.novoCodigo === x.projeto.codigo ? "fica como está" : `fica como ${x.novoCodigo}`);
-    const total = Object.keys(final).length;
+    const fora = (i) => (i.fora ? " · fora da votação (segundo a planilha)" : "");
+    const atualizar = [];
+    const iguais = [];
+    const criar = [];
+    for (const item of plano.itens) {
+      if (!plano.casados.has(item)) criar.push(item);
+      else {
+        const mud = mudancas(item);
+        (mud.length ? atualizar : iguais).push({ item, projeto: plano.casados.get(item), mud });
+      }
+    }
     const excluidos = [...mapa.values()].filter((v) => v === null).length;
     const porCurso = cursos.map((c) => `${Object.values(final).filter((p) => p.curso === c.id).length} ${c.curto}`).join(" · ");
 
     $("sinc-resultado").innerHTML = `
-      <p class="sinc-resumo">Depois de aplicar: <b>${total} projetos</b> (${porCurso}).
-        ${plano.atualizar.length} atualizado(s), ${plano.criar.length} criado(s), ${excluidos} excluído(s), ${plano.iguais.length} sem mudança.</p>
+      <p class="sinc-resumo">Depois de aplicar: <b>${Object.keys(final).length} projetos</b> (${porCurso}).
+        ${atualizar.length} atualizado(s), ${criar.length} criado(s), ${excluidos} excluído(s), ${iguais.length} sem mudança.</p>
       ${plano.planilha.avisos.length ? `<div class="sinc-avisos"><b>Avisos da planilha</b><ul>${plano.planilha.avisos.map((a) => `<li>${esc(a)}</li>`).join("")}</ul></div>` : ""}
-      ${secao("Atualizar", plano.atualizar.length, plano.atualizar.map((x) => linha(`${nome(x.projeto)} → <b>${esc(x.item.codigo)}</b> ${esc(x.item.nome)}`, esc(x.mud.join("; ")))).join(""))}
-      ${secao("Criar", plano.criar.length, plano.criar.map((i) => linha(`<b>${esc(i.codigo)}</b> ${esc(i.nome)}`, `${esc(curtoDe(i.curso))} · ${esc(i.disciplina)}`)).join(""))}
+      ${secao("Atualizar", atualizar.length, atualizar.map((x) => linha(`${nome(x.projeto)} → <b>${esc(x.item.codigoFinal)}</b> ${esc(nomeFinal(x.item, x.projeto))}`, esc(x.mud.join("; ") + fora(x.item)))).join(""))}
+      ${secao("Criar", criar.length, criar.map((i) => linha(`<b>${esc(i.codigoFinal)}</b> ${esc(i.nome)}`, `${esc(curtoDe(i.curso))} · ${esc(i.disciplina)}${fora(i)}`)).join(""))}
       ${secao(
         "Repetidos no site",
         plano.repetidos.length,
         plano.repetidos
-          .map((x, i) => linha(`${caixa("repetidos", i, x, "excluir")} ${nome(x.projeto)}`, `${esc(x.projeto.disciplina)} · ${x.de ? `repete “${esc(x.de.nome)}” (${esc(x.de.codigo)})` : "repetido"} · ${destino(x)}`))
+          .map((x, i) => linha(`${caixa("repetidos", i, x, "excluir")} ${nome(x.projeto)}`, `${esc(x.projeto.disciplina)} · repete “${esc(x.de.nome)}” (${esc(x.de.codigo)}) · ${destino(x)}`))
           .join(""),
         true,
         "alerta"
       )}
       ${secao(
-        "Na planilha como “não participante da votação”",
-        plano.naoParticipam.length,
-        plano.naoParticipam.map((x, i) => linha(`${caixa("naoParticipam", i, x, "excluir")} ${nome(x.projeto)}`, `${esc(x.projeto.disciplina)} · ${destino(x)}`)).join("")
-      )}
-      ${secao(
         "Só no site (não estão na planilha)",
         plano.soNoSite.length,
-        plano.soNoSite.map((x, i) => linha(`${caixa("soNoSite", i, x, "excluir")} ${nome(x.projeto)}`, `${esc(x.projeto.disciplina)} · ${destino(x)}`)).join("")
+        plano.soNoSite.map((x, i) => linha(`${caixa("soNoSite", i, x, "excluir")} ${nome(x.projeto)}`, `${esc(x.projeto.disciplina)} · ${destino(x)}`)).join(""),
+        true,
+        "alerta"
       )}
-      ${secao("Sem mudança", plano.iguais.length, plano.iguais.map((x) => linha(nome(x.projeto))).join(""), false)}`;
+      ${secao("Sem mudança", iguais.length, iguais.map((x) => linha(nome(x.projeto))).join(""), false)}`;
     $("sinc-aplicar").disabled = false;
   }
 
@@ -363,7 +434,9 @@
       }
       const [planilha, site] = await Promise.all([lerPlanilha(link), API.lerCadastro()]);
       plano = comparar(planilha, site);
-      feedback(`Planilha lida: ${planilha.votacao.length} projetos na votação e ${planilha.fora.length} fora dela. Confira e clique em “Aplicar”.`);
+      feedback(
+        `Planilha lida: ${planilha.votacao.length + planilha.fora.length} projetos (${planilha.votacao.length} na votação e ${planilha.fora.length} fora dela). Confira e clique em “Aplicar”.`
+      );
       render();
     } catch (erro) {
       console.error(erro);
