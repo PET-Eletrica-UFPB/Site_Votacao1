@@ -1169,3 +1169,5 @@ body:has(> .versao-site) { padding-bottom: 40px; }
   #aba-projetos { grid-template-columns: minmax(0, 1fr); }
   #aba-projetos .tabela-painel { order: -1; }
 }
+.filtro-ativo { margin: 12px 0 0; padding: 8px 12px; border-radius: 10px; background: rgba(238, 166, 20, .1); border: 1px solid rgba(238, 166, 20, .45); font-size: 13.5px; color: var(--amber-claro); }
+.filtro-ativo .botao-texto { display: inline; margin: 0 0 0 6px; padding: 0; font-size: 13.5px; color: var(--amber-claro); }

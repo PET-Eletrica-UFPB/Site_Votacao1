@@ -74,6 +74,17 @@ function renderLista() {
     const texto = normalizarBusca([p.nome, p.codigo, p.disciplina, p.equipe, p.stand].join(" "));
     return termos.every((t) => texto.includes(t));
   });
+  // Com busca ou filtro ativo, avisa quantos estão aparecendo (e oferece limpar).
+  const filtrando = termos.length || curso || disc;
+  $("filtro-ativo").hidden = !filtrando || !n;
+  if (filtrando) {
+    const partes = [
+      termos.length ? `busca “${$("busca").value.trim()}”` : "",
+      curso ? cursos.find((c) => c.id === curso)?.curto : "",
+      disc ? disc : "",
+    ].filter(Boolean);
+    $("filtro-ativo").innerHTML = `Mostrando <b>${visiveis.length} de ${n}</b> projetos (${esc(partes.join(" · "))}). <button class="botao-texto" id="limpar-filtros" type="button">Mostrar todos</button>`;
+  }
 
   if (!visiveis.length) {
     $("lista").innerHTML = `<p class="lista-vazia">${n ? "Nenhum projeto encontrado com esses filtros." : "Nenhum projeto cadastrado ainda. Use “+ Novo projeto”, “Importar das inscrições” ou “Sincronizar com planilha”."}</p>`;
@@ -287,6 +298,22 @@ $("form-projeto").addEventListener("input", () => {
 });
 
 $("busca").addEventListener("input", renderLista);
+// O navegador às vezes devolve o texto antigo da busca ao recarregar: a página começa sempre sem filtro.
+$("busca").value = "";
+addEventListener("pageshow", () => {
+  if ($("busca").value) {
+    $("busca").value = "";
+    renderLista();
+  }
+});
+$("filtro-ativo").addEventListener("click", (e) => {
+  if (!e.target.closest("#limpar-filtros")) return;
+  $("busca").value = "";
+  $("filtro-curso").value = "";
+  $("filtro-disciplina").value = "";
+  renderLista();
+  $("busca").focus();
+});
 $("filtro-curso").addEventListener("change", renderLista);
 $("filtro-disciplina").addEventListener("change", renderLista);
 
