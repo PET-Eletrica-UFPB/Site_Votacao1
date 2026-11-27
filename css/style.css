@@ -1179,3 +1179,13 @@ body:has(> .versao-site) { padding-bottom: 40px; }
 .metricas-opcionais summary { padding: 16px 0; cursor: pointer; font-weight: 700; }
 .metricas-opcionais summary small { display: block; margin-top: 2px; font-weight: 400; font-size: 13px; color: var(--tinta-3); }
 .metricas-opcionais .criterio:last-child { border-bottom: 0; }
+.geral-campo input {
+  width: 92px; height: 48px; padding: 0 10px; border-radius: 12px; border: 1px solid rgba(238, 166, 20, .7);
+  background: rgba(255, 255, 255, .06); color: var(--tinta); font: 700 22px/1 var(--sans); text-align: center;
+}
+.geral-campo input:focus { outline: 2px solid var(--amber); outline-offset: 2px; }
+.geral-barra { width: 100%; margin-top: 16px; accent-color: var(--amber); height: 28px; cursor: pointer; }
+.geral-barra.vazia { opacity: .45; }
+.geral-escala { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11.5px; color: var(--tinta-3); }
+.geral-erro { display: block; min-height: 0; margin-top: 4px; font-size: 12.5px; color: var(--amber-claro); }
+.geral-erro:empty { display: none; }

@@ -4,7 +4,11 @@ const itensDeNota = [GERAL, ...criterios];
 const { esc } = API;
 
 const $ = (id) => document.getElementById(id);
-const fmtNota = (n) => n.toFixed(1).replace(".", ",");
+// 8 → "8,0"; 1,2 → "1,2"; 8,75 → "8,75"
+const fmtNota = (n) => {
+  const t = (Math.round(n * 100) / 100).toFixed(2).replace(/0$/, "");
+  return t.replace(".", ",");
+};
 const SEM_DISCIPLINA = "Sem disciplina";
 const disciplinaDe = (p) => (p.disciplina || "").trim() || SEM_DISCIPLINA;
 
@@ -163,10 +167,38 @@ function htmlCriterio(c, extra = "") {
       </div>`;
 }
 
+// Avaliação geral: nota livre de 0 a 10 (com vírgula, ex.: 1,2), digitada ou na barra.
+function htmlGeral() {
+  return `
+      <div class="criterio criterio-geral vazio" data-crit="${GERAL.id}">
+        <div class="criterio-topo">
+          <div>
+            <label class="criterio-nome" id="rot-${GERAL.id}" for="geral-nota">${esc(GERAL.nome)}</label>
+            <p>${esc(GERAL.dica)} De 0 a 10, com vírgula se quiser (ex.: 1; 1,2; 7,8).</p>
+          </div>
+          <span class="geral-campo">
+            <input id="geral-nota" type="text" inputmode="decimal" autocomplete="off" placeholder="–" aria-describedby="geral-erro">
+          </span>
+        </div>
+        <input class="geral-barra" id="geral-barra" type="range" min="0" max="10" step="0.1" value="0" aria-labelledby="rot-${GERAL.id}">
+        <div class="geral-escala" aria-hidden="true"><span>0</span><span>2,5</span><span>5</span><span>7,5</span><span>10</span></div>
+        <small class="geral-erro" id="geral-erro" role="alert"></small>
+      </div>`;
+}
+
+// Texto digitado → nota (0 a 10, até 2 casas). null = vazio; NaN = inválido.
+function lerNotaGeral(texto) {
+  const t = texto.trim().replace(",", ".");
+  if (!t) return null;
+  if (!/^\d{1,2}(\.\d{0,2})?$/.test(t)) return NaN;
+  const n = Number(t);
+  return n >= 0 && n <= 10 ? Math.round(n * 100) / 100 : NaN;
+}
+
 // Avaliação geral primeiro; os critérios ficam recolhidos em "Métricas opcionais".
 function renderCriterios() {
   $("criterios").innerHTML =
-    htmlCriterio(GERAL, "criterio-geral") +
+    htmlGeral() +
     `<details class="metricas-opcionais" id="metricas-opcionais">
       <summary>Métricas opcionais <small>detalhe a nota por critério, se quiser (clique de novo numa nota para tirá-la)</small></summary>
       ${criterios.map((c) => htmlCriterio(c)).join("")}
@@ -175,6 +207,14 @@ function renderCriterios() {
 
 function pintarCriterio(c, valor) {
   const bloco = document.querySelector(`[data-crit="${c.id}"]`);
+  if (c === GERAL) {
+    bloco.classList.toggle("vazio", valor == null);
+    if (lerNotaGeral($("geral-nota").value) !== valor) $("geral-nota").value = valor == null ? "" : fmtNota(valor);
+    $("geral-barra").value = valor ?? 0;
+    $("geral-barra").classList.toggle("vazia", valor == null);
+    $("geral-erro").textContent = "";
+    return;
+  }
   bloco.classList.toggle("vazio", valor == null);
   bloco.querySelector(".criterio-valor").textContent = valor == null ? "–" : fmtNota(valor);
   bloco.querySelectorAll("[data-nota]").forEach((b) => {
@@ -289,7 +329,7 @@ $("criterios").addEventListener("click", (e) => {
   const c = itensDeNota.find((x) => x.id === botao.closest("[data-crit]").dataset.crit);
   const valor = Number(botao.dataset.nota);
   // Métrica opcional: clicar de novo na nota marcada tira a nota.
-  const tirar = c !== GERAL && e.detail > 0 && rascunhos[atualId].notas[c.id] === valor;
+  const tirar = e.detail > 0 && rascunhos[atualId].notas[c.id] === valor;
   definirNota(c, tirar ? null : valor);
 });
 
@@ -303,6 +343,26 @@ $("criterios").addEventListener("keydown", (e) => {
   const alvo = irmaos[(irmaos.indexOf(botao) + passo + irmaos.length) % irmaos.length];
   alvo.focus();
   alvo.click();
+});
+
+// Nota geral digitada: aceita vírgula; fora de 0 a 10 avisa e não conta.
+$("criterios").addEventListener("input", (e) => {
+  if (e.target.id === "geral-nota") {
+    const n = lerNotaGeral(e.target.value);
+    if (Number.isNaN(n)) {
+      definirNota(GERAL, null);
+      $("geral-erro").textContent = "Digite uma nota de 0 a 10 (ex.: 7,5).";
+      return;
+    }
+    definirNota(GERAL, n);
+  } else if (e.target.id === "geral-barra") {
+    definirNota(GERAL, Math.round(Number(e.target.value) * 10) / 10);
+    $("geral-nota").value = fmtNota(rascunhos[atualId].notas[GERAL.id]);
+  }
+});
+$("criterios").addEventListener("change", (e) => {
+  // Ao sair do campo, a nota fica escrita do jeito padrão (7.5 → 7,5).
+  if (e.target.id === "geral-nota" && rascunhos[atualId]?.notas[GERAL.id] != null) e.target.value = fmtNota(rascunhos[atualId].notas[GERAL.id]);
 });
 
 $("comentario").addEventListener("input", (e) => {

@@ -2,7 +2,7 @@
 window.PainelProfessores = (() => {
   const SEM_DISCIPLINA = "Sem disciplina";
   const disciplinaDe = (p) => (p.disciplina || "").trim() || SEM_DISCIPLINA;
-  const fmtNota = (n) => n.toFixed(1).replace(".", ",");
+  const fmtNota = (n) => (Math.round(n * 100) / 100).toFixed(2).replace(/0$/, "").replace(".", ",");
 
   let iniciado = false;
   let professores = [];
@@ -303,8 +303,16 @@ window.PainelProfessores = (() => {
       else await API.atualizarProfessor(editandoUid, dados);
       alterado = false;
       await carregar();
-      preencher(professores.find((p) => p.uid === editandoUid));
-      aviso(`${nome} ${eraNovo ? "cadastrado" : "atualizado"} com ${dados.projetos.length} projeto${dados.projetos.length === 1 ? "" : "s"}. Entregue o código de acesso a ele.`);
+      const projetosTxt = `${dados.projetos.length} projeto${dados.projetos.length === 1 ? "" : "s"}`;
+      if (eraNovo) {
+        // Cadastro feito: a ficha volta vazia, pronta para o próximo professor.
+        novoProfessor();
+        aviso(`${nome} cadastrado com ${projetosTxt}. Código de acesso: ${codigo} (entregue a ele; também fica na ficha dele, na lista). Pronto para o próximo cadastro.`);
+        $("prof-nome").focus();
+      } else {
+        preencher(professores.find((p) => p.uid === editandoUid));
+        aviso(`${nome} atualizado com ${projetosTxt}.`);
+      }
     } catch (erro) {
       if (eraNovo) editandoUid = null;
       aviso(erro.message, true);
