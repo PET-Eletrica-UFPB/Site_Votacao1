@@ -1175,10 +1175,29 @@ body:has(> .versao-site) { padding-bottom: 40px; }
 /* Área do professor: avaliação geral (obrigatória) e métricas opcionais recolhidas */
 .criterio-geral { padding: 18px; margin-bottom: 6px; border: 1px solid rgba(238, 166, 20, .55); border-radius: 16px; background: rgba(238, 166, 20, .07); }
 .criterio-geral .criterio-nome { font-size: 17px; }
-.metricas-opcionais { border-bottom: 1px solid var(--borda); }
-.metricas-opcionais summary { padding: 16px 0; cursor: pointer; font-weight: 700; }
-.metricas-opcionais summary small { display: block; margin-top: 2px; font-weight: 400; font-size: 13px; color: var(--tinta-3); }
+.metricas-opcionais { margin: 14px 0 6px; border: 1px solid var(--borda); border-radius: 16px; background: rgba(255, 255, 255, .025); transition: border-color .2s, background .2s; }
+.metricas-opcionais[open] { border-color: rgba(238, 166, 20, .45); background: rgba(255, 255, 255, .035); }
+.metricas-opcionais summary {
+  display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 16px;
+  cursor: pointer; list-style: none; user-select: none; transition: background .15s;
+}
+.metricas-opcionais summary::-webkit-details-marker { display: none; }
+.metricas-opcionais summary:hover { background: rgba(255, 255, 255, .04); }
+.metricas-opcionais summary:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.metricas-icone { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: rgba(238, 166, 20, .14); }
+.metricas-icone svg, .metricas-seta svg { width: 20px; height: 20px; fill: none; stroke: var(--amber-claro); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.metricas-texto { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.metricas-texto b { font-size: 15.5px; }
+.metricas-texto small { margin-top: 2px; font-size: 13px; color: var(--tinta-3); }
+.metricas-conta { flex: none; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--borda); font-family: var(--mono); font-size: 12px; color: var(--tinta-3); }
+.metricas-conta.ok { border-color: rgba(85, 173, 84, .6); color: var(--green-claro); }
+.metricas-seta { flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: rgba(255, 255, 255, .06); transition: transform .25s; }
+.metricas-seta svg { stroke: var(--tinta-2); }
+.metricas-opcionais[open] .metricas-seta { transform: rotate(180deg); }
+.metricas-corpo { padding: 0 16px 6px; border-top: 1px solid var(--borda); }
+.metricas-dica { margin: 12px 0 0; font-size: 12.5px; color: var(--tinta-3); }
 .metricas-opcionais .criterio:last-child { border-bottom: 0; }
+@media (max-width: 600px) { .metricas-texto small { display: none; } .metricas-icone { width: 34px; height: 34px; } }
 .geral-campo input {
   width: 92px; height: 48px; padding: 0 10px; border-radius: 12px; border: 1px solid rgba(238, 166, 20, .7);
   background: rgba(255, 255, 255, .06); color: var(--tinta); font: 700 22px/1 var(--sans); text-align: center;

@@ -200,8 +200,21 @@ function renderCriterios() {
   $("criterios").innerHTML =
     htmlGeral() +
     `<details class="metricas-opcionais" id="metricas-opcionais">
-      <summary>Métricas opcionais <small>detalhe a nota por critério, se quiser (clique de novo numa nota para tirá-la)</small></summary>
-      ${criterios.map((c) => htmlCriterio(c)).join("")}
+      <summary>
+        <span class="metricas-icone" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+        </span>
+        <span class="metricas-texto">
+          <b>Métricas opcionais</b>
+          <small>Detalhe a nota por critério, se quiser</small>
+        </span>
+        <span class="metricas-conta" id="metricas-conta">0 de ${criterios.length}</span>
+        <span class="metricas-seta" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
+      </summary>
+      <div class="metricas-corpo">
+        <p class="metricas-dica">Não mudam a nota do projeto quando há avaliação geral. Clique de novo numa nota para tirá-la.</p>
+        ${criterios.map((c) => htmlCriterio(c)).join("")}
+      </div>
     </details>`;
 }
 
@@ -230,6 +243,9 @@ function atualizarMedia(notas) {
   $("media-txt").textContent =
     media == null ? "Escolha a avaliação geral" : notas[GERAL.id] != null ? "Nota do projeto (avaliação geral)" : "Média ponderada das métricas";
   $("salvar").disabled = media == null;
+  const feitas = criterios.filter((c) => notas[c.id] != null).length;
+  $("metricas-conta").textContent = `${feitas} de ${criterios.length}`;
+  $("metricas-conta").classList.toggle("ok", feitas > 0);
 }
 
 function abrirProjeto(id) {
