@@ -48,7 +48,8 @@ window.PainelFormularios = (() => {
     const aberto = !!e.formulario?.aberto;
     $("form-aberto").checked = aberto;
     $("form-aberto-txt").textContent = aberto ? "Inscrições abertas" : "Inscrições fechadas";
-    $("form-link").href = `inscricoes.html#${tipo}`;
+    // O formulário de avaliação (satisfação) tem página própria; os de inscrição ficam em inscricoes.html.
+    $("form-link").href = tipo === "avaliacao" ? "avaliacao.html" : `inscricoes.html#${tipo}`;
     const n = e.rascunho?.perguntas.length || 0;
     $("form-qtd-perguntas").textContent = `${n} pergunta${n === 1 ? "" : "s"}${e.alterado ? " · não salvas" : ""}`;
     $("respostas-titulo").textContent = nomeDoForm(tipo);
