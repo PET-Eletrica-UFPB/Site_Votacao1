@@ -7,8 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20261128a">
-  <link rel="stylesheet" href="css/podio.css?v=20261128a">
+  <link rel="stylesheet" href="css/style.css?v=20261128b">
+  <link rel="stylesheet" href="css/podio.css?v=20261128b">
 </head>
 <body class="tela-podio">
   <div class="palco">
@@ -78,7 +78,7 @@
   <dialog id="loop-dialogo" class="loop-dialogo">
     <button class="fechar" id="loop-fechar" type="button" aria-label="Fechar">×</button>
     <h2>Loop</h2>
-    <p class="loop-ajuda">A tela passa sozinha por <b>pódio → planta → QR code</b> e recomeça. Fica salvo neste aparelho: se a TV recarregar a página, o loop volta sozinho.</p>
+    <p class="loop-ajuda">A tela passa sozinha por <b>pódio → planta → QR code</b>, 10 segundos em cada, e recomeça. Fica salvo neste aparelho: se a TV recarregar a página, o loop volta sozinho.</p>
     <form id="loop-form">
       <label class="campo primeiro">
         <span>Arquivo da planta (PNG ou PDF)</span>
@@ -106,10 +106,6 @@
         <span>Texto</span>
         <input id="loop-texto" type="text" maxlength="120">
       </label>
-      <label class="campo">
-        <span>Tempo de cada tela (segundos)</span>
-        <input id="loop-tempo" type="number" min="5" max="300" step="1" value="20">
-      </label>
       <p class="feedback" id="loop-feedback" role="status"></p>
       <div class="loop-botoes">
         <button class="btn btn-vidro" id="loop-parar" type="button">Parar loop</button>
@@ -118,10 +114,10 @@
     </form>
   </dialog>
 
-  <script src="js/data.js?v=20261128a"></script>
-  <script src="js/api.js?v=20261128a"></script>
-  <script src="js/artes.js?v=20261128a"></script>
-  <script src="js/podio.js?v=20261128a"></script>
-  <script src="js/podio-loop.js?v=20261128a"></script>
+  <script src="js/data.js?v=20261128b"></script>
+  <script src="js/api.js?v=20261128b"></script>
+  <script src="js/artes.js?v=20261128b"></script>
+  <script src="js/podio.js?v=20261128b"></script>
+  <script src="js/podio-loop.js?v=20261128b"></script>
 </body>
 </html>

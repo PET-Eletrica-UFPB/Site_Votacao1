@@ -9,10 +9,11 @@
   const CHAVE = "feira-pet:podio-loop";
   const DESTINOS = window.FEIRA.destinosQr;
   const CENAS = ["cena-podio", "cena-planta", "cena-qr"];
+  const TEMPO_CENA = 10; // segundos em cada tela
 
   const padrao = () => {
     const d = DESTINOS[0];
-    return { ativo: false, destino: d.id, link: linkDaPagina(d.pagina), titulo: d.titulo, texto: d.texto, tempo: 20, deitada: false };
+    return { ativo: false, destino: d.id, link: linkDaPagina(d.pagina), titulo: d.titulo, texto: d.texto, deitada: false };
   };
   const linkDaPagina = (pagina) => new URL(pagina, location.href).href.replace(/[?#].*$/, "");
   const valido = (t) => /^https?:\/\/\S+\.\S+/.test(t);
@@ -148,12 +149,12 @@
   function ligar() {
     clearInterval(relogio);
     document.body.classList.add("em-loop");
-    document.body.style.setProperty("--tempo-cena", `${config.tempo}s`);
+    document.body.style.setProperty("--tempo-cena", `${TEMPO_CENA}s`);
     $("loop-progresso").hidden = false;
     $("loop").textContent = "Loop ligado";
     desenharQr().catch((erro) => console.error(erro));
     irPara(0);
-    relogio = setInterval(proxima, config.tempo * 1000);
+    relogio = setInterval(proxima, TEMPO_CENA * 1000);
   }
   function desligar() {
     clearInterval(relogio);
@@ -172,7 +173,6 @@
     $("loop-link").readOnly = config.destino !== "outro";
     $("loop-titulo").value = config.titulo;
     $("loop-texto").value = config.texto;
-    $("loop-tempo").value = config.tempo;
     $("loop-deitada").checked = !!config.deitada;
     $("loop-parar").hidden = !config.ativo;
     $("loop-iniciar").textContent = config.ativo ? "Salvar e reiniciar" : "Iniciar loop";
@@ -262,14 +262,12 @@
     const link = $("loop-link").value.trim();
     if (!valido(link)) return feedback("Digite um link completo para o QR code, começando com https://", true);
     if (!planta) return feedback("Escolha o arquivo da planta (PNG ou PDF).", true);
-    const tempo = Math.min(300, Math.max(5, Math.round(Number($("loop-tempo").value) || 20)));
     config = {
       ativo: true,
       destino: $("loop-destino").value,
       link,
       titulo: $("loop-titulo").value.trim(),
       texto: $("loop-texto").value.trim(),
-      tempo,
       deitada: $("loop-deitada").checked,
     };
     guardarConfig();
