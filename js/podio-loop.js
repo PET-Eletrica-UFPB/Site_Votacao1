@@ -184,9 +184,34 @@
     $("loop-feedback").classList.toggle("erro", erro);
   }
 
+  // Mudar o loop pede a senha do PET a cada vez (a TV fica em lugar público).
   $("loop").addEventListener("click", () => {
-    preencher();
-    $("loop-dialogo").showModal();
+    $("loop-senha-form").reset();
+    $("loop-senha-feedback").textContent = "";
+    $("loop-senha").showModal();
+    $("loop-senha-campo").focus();
+  });
+  $("loop-senha-fechar").addEventListener("click", () => $("loop-senha").close());
+  $("loop-senha-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const senha = $("loop-senha-campo").value;
+    if (!senha) return;
+    const botao = $("loop-senha-entrar");
+    botao.disabled = true;
+    $("loop-senha-feedback").classList.remove("erro");
+    $("loop-senha-feedback").textContent = "Conferindo…";
+    try {
+      await API.conferirSenhaPet(senha);
+      $("loop-senha").close();
+      preencher();
+      $("loop-dialogo").showModal();
+    } catch (erro) {
+      $("loop-senha-feedback").classList.add("erro");
+      $("loop-senha-feedback").textContent = erro.message || "Senha incorreta.";
+      $("loop-senha-campo").select();
+    } finally {
+      botao.disabled = false;
+    }
   });
   $("loop-fechar").addEventListener("click", () => $("loop-dialogo").close());
 

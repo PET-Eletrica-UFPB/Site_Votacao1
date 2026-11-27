@@ -7,8 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20261127z">
-  <link rel="stylesheet" href="css/podio.css?v=20261127z">
+  <link rel="stylesheet" href="css/style.css?v=20261128a">
+  <link rel="stylesheet" href="css/podio.css?v=20261128a">
 </head>
 <body class="tela-podio">
   <div class="palco">
@@ -33,13 +33,7 @@
 
     <!-- Loop: planta e QR code entre um pódio e outro -->
     <section class="cena cena-planta" id="cena-planta" aria-label="Planta da feira">
-      <header class="podio-topo cena-topo">
-        <span class="marca"><img src="img/logo-pet-compacto.png" alt="PET Elétrica UFPB"></span>
-        <h1>Planta <em>da feira</em></h1>
-        <p>Cada cor é uma disciplina: procure a sua!</p>
-      </header>
       <div class="planta-moldura" id="planta-moldura"><img id="planta-img" alt="Planta da feira com a posição de cada disciplina"></div>
-      <footer class="podio-rodape"><span>Feira de Engenharia e Energia · <b>PET Elétrica UFPB</b></span></footer>
     </section>
 
     <section class="cena cena-qr" id="cena-qr" aria-label="QR code">
@@ -64,6 +58,22 @@
       <a class="btn btn-vidro" href="index.html">Sair</a>
     </div>
   </div>
+
+  <dialog id="loop-senha" class="loop-dialogo loop-senha">
+    <button class="fechar" id="loop-senha-fechar" type="button" aria-label="Fechar">×</button>
+    <h2>Loop</h2>
+    <p class="loop-ajuda">Para mudar o loop, digite a senha da Área dos Petianos.</p>
+    <form id="loop-senha-form">
+      <label class="campo primeiro">
+        <span>Senha do PET</span>
+        <input id="loop-senha-campo" type="password" autocomplete="current-password" required>
+      </label>
+      <p class="feedback" id="loop-senha-feedback" role="status"></p>
+      <div class="loop-botoes">
+        <button class="btn btn-amber" id="loop-senha-entrar" type="submit">Continuar</button>
+      </div>
+    </form>
+  </dialog>
 
   <dialog id="loop-dialogo" class="loop-dialogo">
     <button class="fechar" id="loop-fechar" type="button" aria-label="Fechar">×</button>
@@ -108,10 +118,10 @@
     </form>
   </dialog>
 
-  <script src="js/data.js?v=20261127z"></script>
-  <script src="js/api.js?v=20261127z"></script>
-  <script src="js/artes.js?v=20261127z"></script>
-  <script src="js/podio.js?v=20261127z"></script>
-  <script src="js/podio-loop.js?v=20261127z"></script>
+  <script src="js/data.js?v=20261128a"></script>
+  <script src="js/api.js?v=20261128a"></script>
+  <script src="js/artes.js?v=20261128a"></script>
+  <script src="js/podio.js?v=20261128a"></script>
+  <script src="js/podio-loop.js?v=20261128a"></script>
 </body>
 </html>

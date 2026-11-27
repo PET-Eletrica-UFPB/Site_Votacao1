@@ -105,8 +105,9 @@
 .cena-topo .marca img { height: calc(var(--u) * 9); }
 .cena-planta .podio-topo h1 { font-size: calc(var(--u) * 8.4); }
 .cena-planta .podio-topo p { font-size: calc(var(--u) * 2.8); }
+/* Só a imagem, ocupando a tela inteira dentro da margem do palco. */
 .planta-moldura {
-  flex: 1; min-height: 0; position: relative; container-type: size; margin-top: calc(var(--u) * 3);
+  flex: 1; min-height: 0; position: relative; container-type: size;
   display: grid; place-items: center;
 }
 .planta-moldura img {
@@ -166,3 +167,4 @@
 .loop-botoes { display: flex; gap: 8px; margin-top: 18px; }
 .loop-botoes .btn { flex: 1; }
 .loop-botoes [hidden] { display: none; }
+.loop-senha { width: min(400px, calc(100vw - 32px)); }

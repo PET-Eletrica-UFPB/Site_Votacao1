@@ -222,6 +222,13 @@ window.API = (() => {
     expira: Date.now() + Number(dados.expiresIn) * 1000,
   });
 
+  // Confere a senha da conta do PET sem deixar ninguém logado (ex.: liberar o Loop do Modo Pódio na TV).
+  async function conferirSenhaPet(senha) {
+    const dados = await login(window.FEIRA.emailPet, senha, "Senha incorreta.");
+    if (dados.localId !== UID_PET) throw new Error("Senha incorreta.");
+    return true;
+  }
+
   /* Login dos petianos */
   async function entrar(email, senha) {
     const dados = await login(email, senha, "E-mail ou senha incorretos.");
@@ -792,7 +799,7 @@ window.API = (() => {
 
   return {
     esc, carregarProjetos, lerCadastro, listasGravadas, buscarVotos,
-    entrar, sair: contaPet.sair, esqueciSenha, sessaoAtual: contaPet.atual, salvarProjeto, removerProjeto,
+    entrar, conferirSenhaPet, sair: contaPet.sair, esqueciSenha, sessaoAtual: contaPet.atual, salvarProjeto, removerProjeto,
     listarProfessores, codigosDosProfessores, cadastrarProfessor, atualizarProfessor, removerProfessor, lerAvaliacoes,
     entrarProfessor, sairProfessor: contaProfessor.sair, sessaoProfessor: contaProfessor.atual,
     meuPerfil, minhasAvaliacoes, salvarAvaliacao,
