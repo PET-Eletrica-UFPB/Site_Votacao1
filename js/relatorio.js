@@ -214,6 +214,7 @@ window.Relatorio = (() => {
       const media = feitas.length ? feitas.reduce((s, l) => s + Number(l.avaliacao.media), 0) / feitas.length : null;
       return {
         ...p,
+        cursoId: p.curso,
         curso: cursos.find((c) => c.id === p.curso)?.curto || p.curso,
         linhas,
         feitas: feitas.length,
@@ -221,15 +222,26 @@ window.Relatorio = (() => {
       };
     });
 
-    const disciplinas = new Map();
+    // Curso → disciplinas (na ordem dos códigos) → projetos pela média final. Elétrica antes de Renováveis.
+    const ordemCurso = (id) => {
+      const i = cursos.findIndex((c) => c.id === id);
+      return i < 0 ? 99 : i;
+    };
+    const grupos = new Map();
     for (const p of porProjeto) {
-      const d = disciplinaDe(p);
-      if (!disciplinas.has(d)) disciplinas.set(d, []);
-      disciplinas.get(d).push(p);
+      const k = `${p.cursoId}|${disciplinaDe(p)}`;
+      if (!grupos.has(k)) grupos.set(k, { cursoId: p.cursoId, nome: disciplinaDe(p), lista: [] });
+      grupos.get(k).lista.push(p);
     }
-    for (const lista of disciplinas.values()) {
-      lista.sort((a, b) => (b.media ?? -1) - (a.media ?? -1) || a.nome.localeCompare(b.nome, "pt-BR"));
-    }
+    const primeiroNumero = (g) => Math.min(...g.lista.map((x) => Number(x.numero) || 999));
+    const ordenados = [...grupos.values()].sort(
+      (a, b) => ordemCurso(a.cursoId) - ordemCurso(b.cursoId) || primeiroNumero(a) - primeiroNumero(b) || a.nome.localeCompare(b.nome, "pt-BR")
+    );
+    for (const g of ordenados) g.lista.sort((a, b) => (b.media ?? -1) - (a.media ?? -1) || a.nome.localeCompare(b.nome, "pt-BR"));
+    const porCurso = [...new Set(ordenados.map((g) => g.cursoId))].map((id) => ({
+      curso: cursos.find((c) => c.id === id) || { id, nome: id || "Sem curso", curto: id || "Sem curso" },
+      disciplinas: ordenados.filter((g) => g.cursoId === id).map((g) => [g.nome, g.lista]),
+    }));
 
     const porProfessor = professores.map((prof) => {
       const codigos = new Set([...prof.projetos, ...Object.keys(avaliacoes[prof.uid] || {})]);
@@ -238,6 +250,7 @@ window.Relatorio = (() => {
       const medias = feitos.map((p) => Number(avaliacoes[prof.uid][p.codigo].media));
       return {
         nome: prof.nome,
+        cursoId: prof.curso || "",
         total: atribuidos.length,
         feitos: feitos.length,
         mediaDada: medias.length ? medias.reduce((a, b) => a + b, 0) / medias.length : null,
@@ -250,8 +263,10 @@ window.Relatorio = (() => {
     return {
       criterios,
       porProjeto,
-      disciplinas: [...disciplinas.entries()].sort(([a], [b]) => a.localeCompare(b, "pt-BR")),
-      porProfessor,
+      porCurso,
+      disciplinas: porCurso.flatMap((c) => c.disciplinas),
+      // Professores de Elétrica, depois de Renováveis, depois sem curso; em ordem alfabética.
+      porProfessor: porProfessor.sort((a, b) => ordemCurso(a.cursoId || "zz") - ordemCurso(b.cursoId || "zz") || a.nome.localeCompare(b.nome, "pt-BR")),
       esperadas,
       feitas,
       projetosAvaliados: comMedia.length,
@@ -281,53 +296,59 @@ window.Relatorio = (() => {
     );
     p.y += 4;
 
-    /* 1. Resultado por disciplina */
-    p.tituloSecao("Resultado por disciplina", "Projetos ordenados pela média final dentro de cada disciplina.");
-    for (const [disciplina, lista] of r.disciplinas) {
-      p.subtitulo(disciplina);
-      p.tabela({
-        head: [["Pos.", "Código", "Projeto", "Curso", "Avaliações", "Média final"]],
-        body: lista.map((x, i) => [
-          x.media == null ? "–" : `${i + 1}º`,
-          x.codigo,
-          x.nome,
-          x.curso,
-          x.linhas.length ? `${x.feitas}/${x.linhas.length}` : "sem avaliador",
-          fmt(x.media),
-        ]),
-        columnStyles: {
-          0: { cellWidth: 12, halign: "center" },
-          1: { cellWidth: 16, halign: "center", font: "courier" },
-          3: { cellWidth: 28 },
-          4: { cellWidth: 22, halign: "center" },
-          5: { cellWidth: 22, halign: "center", fontStyle: "bold" },
-        },
-        didParseCell: (c) => {
-          if (c.section === "body" && c.row.index === 0 && lista[0].media != null) c.cell.styles.fillColor = [253, 243, 220];
-        },
-      });
-    }
+    /* 1. Resultado por disciplina, separado por curso (Elétrica primeiro) */
+    r.porCurso.forEach(({ curso, disciplinas }, k) => {
+      if (k > 0) p.novaPagina();
+      const n = disciplinas.reduce((s, [, l]) => s + l.length, 0);
+      p.tituloSecao(`Resultado · ${curso.nome}`, `${n} projeto${n === 1 ? "" : "s"} em ${disciplinas.length} disciplina${disciplinas.length === 1 ? "" : "s"}, ordenados pela média final dentro de cada disciplina.`);
+      for (const [disciplina, lista] of disciplinas) {
+        p.subtitulo(disciplina);
+        p.tabela({
+          head: [["Pos.", "Código", "Projeto", "Avaliações", "Média final"]],
+          body: lista.map((x, i) => [
+            x.media == null ? "–" : `${i + 1}º`,
+            x.codigo,
+            x.nome,
+            x.linhas.length ? `${x.feitas}/${x.linhas.length}` : "sem avaliador",
+            fmt(x.media),
+          ]),
+          columnStyles: {
+            0: { cellWidth: 12, halign: "center" },
+            1: { cellWidth: 16, halign: "center", font: "courier" },
+            3: { cellWidth: 24, halign: "center" },
+            4: { cellWidth: 24, halign: "center", fontStyle: "bold" },
+          },
+          didParseCell: (c) => {
+            if (c.section === "body" && c.row.index === 0 && lista[0].media != null) c.cell.styles.fillColor = [253, 243, 220];
+          },
+        });
+      }
+    });
 
     /* 2. Andamento por professor */
-    p.tituloSecao("Andamento por professor", "Quantos projetos cada professor recebeu e quantos já avaliou.");
+    const cursoCurto = (id) => window.FEIRA.cursos.find((c) => c.id === id)?.curto || "–";
+    p.novaPagina();
+    p.tituloSecao("Andamento por professor", "Quantos projetos cada professor recebeu e quantos já avaliou (Elétrica, depois Renováveis).");
     p.tabela({
-      head: [["Professor", "Projetos", "Avaliados", "Pendentes", "Média das notas dadas"]],
-      body: r.porProfessor.map((x) => [x.nome, x.total, x.feitos, x.total - x.feitos, fmt(x.mediaDada)]),
+      head: [["Professor", "Curso", "Projetos", "Avaliados", "Pendentes", "Média das notas dadas"]],
+      body: r.porProfessor.map((x) => [x.nome, cursoCurto(x.cursoId), x.total, x.feitos, x.total - x.feitos, fmt(x.mediaDada)]),
       columnStyles: {
-        1: { cellWidth: 22, halign: "center" },
-        2: { cellWidth: 22, halign: "center" },
-        3: { cellWidth: 22, halign: "center" },
-        4: { cellWidth: 40, halign: "center" },
+        1: { cellWidth: 30 },
+        2: { cellWidth: 20, halign: "center" },
+        3: { cellWidth: 20, halign: "center" },
+        4: { cellWidth: 20, halign: "center" },
+        5: { cellWidth: 34, halign: "center" },
       },
       didParseCell: (c) => {
-        if (c.section === "body" && c.column.index === 3 && Number(c.cell.raw) > 0) c.cell.styles.textColor = COR.alerta;
+        if (c.section === "body" && c.column.index === 4 && Number(c.cell.raw) > 0) c.cell.styles.textColor = COR.alerta;
       },
     });
 
     /* 3. Notas de cada projeto */
+    for (const { curso, disciplinas } of r.porCurso) {
     p.novaPagina();
-    p.tituloSecao("Notas de cada projeto", "Notas de cada professor por critério, com a média ponderada e os comentários deixados para a equipe.");
-    for (const [disciplina, lista] of r.disciplinas) {
+    p.tituloSecao(`Notas de cada projeto · ${curso.nome}`, "Nota de cada professor (avaliação geral e métricas opcionais) e os comentários deixados para a equipe.");
+    for (const [disciplina, lista] of disciplinas) {
       for (const x of lista) {
         p.espaco(46);
         let y = p.y;
@@ -383,6 +404,7 @@ window.Relatorio = (() => {
         p.y += 7;
       }
     }
+    }
 
     p.salvar("avaliacoes-feira");
   }
@@ -410,8 +432,9 @@ window.Relatorio = (() => {
         }
       }
     }
-    const profs = [["Professor", "Projetos", "Avaliados", "Pendentes", "Média das notas dadas"]];
-    r.porProfessor.forEach((x) => profs.push([x.nome, x.total, x.feitos, x.total - x.feitos, num(x.mediaDada)]));
+    const cursoCurto = (id) => window.FEIRA.cursos.find((c) => c.id === id)?.curto || "";
+    const profs = [["Professor", "Curso", "Projetos", "Avaliados", "Pendentes", "Média das notas dadas"]];
+    r.porProfessor.forEach((x) => profs.push([x.nome, cursoCurto(x.cursoId), x.total, x.feitos, x.total - x.feitos, num(x.mediaDada)]));
     return [
       { nome: "Resultado por disciplina", linhas: resultado },
       { nome: "Notas de cada professor", linhas: notas },
