@@ -248,18 +248,20 @@
     ajustarEscolhas();
     render();
 
-    const avisos = [];
+    const avisos = []; // pedem atenção (amarelo)
+    const infos = []; // só informam
     const grandes = melhor.pares.filter((p) => p.length === 2 && p[0].total > GRANDE && p[1].total > GRANDE).length;
     if (grandes) avisos.push(`há mais disciplinas grandes (mais de ${GRANDE} projetos) do que professores: ${plural(grandes, "professor ficou", "professores ficaram")} com duas delas`);
     const repetidas = [...escolhas.entries()].filter(([, v]) => v.filter(Boolean).length > 1).map(([d]) => d);
-    if (repetidas.length) avisos.push(`como há mais vagas que disciplinas, ${repetidas.join(", ")} ${repetidas.length === 1 ? "ficou" : "ficaram"} com dois professores`);
+    if (repetidas.length) infos.push(`como há mais vagas que disciplinas, ${repetidas.join(", ")} ${repetidas.length === 1 ? "ficou" : "ficaram"} com mais de um professor avaliador`);
     const trocados = melhor.pares.reduce((s, par, i) => s + par.filter((x) => foraDoCurso(profs[i], x.curso)).length, 0);
     if (trocados) avisos.push(`faltam professores de um dos cursos: ${plural(trocados, "disciplina ficou", "disciplinas ficaram")} com professor do outro curso`);
     if (semProfessor.length) avisos.push(`faltam professores: ${semProfessor.join(", ")} ${semProfessor.length === 1 ? "ficou" : "ficaram"} sem avaliador`);
     feedback(
       `Lista montada: ${plural(profs.length, "professor", "professores")}, ${POR_PROFESSOR} disciplinas para cada.` +
-        (avisos.length ? ` Atenção: ${avisos.join("; ")}.` : " Nenhuma disciplina repetida.") +
-        " Use de novo para outra combinação, ou troque à mão.",
+        (infos.length ? ` Obs.: ${infos.join("; ")}.` : "") +
+        (avisos.length ? ` Atenção: ${avisos.join("; ")}.` : infos.length ? "" : " Nenhuma disciplina repetida.") +
+        " Confira e clique em “Salvar”, ou use de novo para outra combinação.",
       avisos.length > 0
     );
   }
@@ -407,8 +409,14 @@
       if (notas.length) perdem.push(`• ${p.nome}: ${notas.join(", ")}`);
     }
     const avisos = [];
-    const trocados = melhor.pares.reduce((s, par, i) => s + par.filter((x) => foraDoCurso(profs[i], x.curso)).length, 0);
-    if (trocados) avisos.push(`faltam professores de um dos cursos: ${plural(trocados, "disciplina ficou", "disciplinas ficaram")} com professor do outro curso`);
+    // Disciplinas com professor do outro curso (contadas a partir das escolhas da janela).
+    const profPorChave = new Map(profs.map((p) => [p.chave, p]));
+    let trocados = 0;
+    for (const [d, vagas] of escolhas) {
+      const curso = cursoDaDisciplina(grupos.get(d) || []);
+      for (const c of new Set(vagas.filter(Boolean))) if (profPorChave.has(c) && foraDoCurso(profPorChave.get(c), curso)) trocados++;
+    }
+    if (trocados) avisos.push(`${plural(trocados, "disciplina fica", "disciplinas ficam")} com professor do outro curso.`);
     if (semProfessor.length) avisos.push(`Ficam sem professor: ${semProfessor.join(", ")}.`);
     if (perdem.length) avisos.push(`Estes professores deixam de ver projetos que já avaliaram (as notas param de contar):\n${perdem.join("\n")}`);
     const novos = profs.filter((p) => !p.uid);
