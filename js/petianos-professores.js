@@ -343,6 +343,103 @@ window.PainelProfessores = (() => {
     }
   });
 
+  /* Credenciais: usuário (nome escolhido no login) e código de acesso de cada professor, em tabela e em
+     cartões para recortar, para o credenciamento entregar aos professores. */
+  async function baixarCredenciais() {
+    const [profs, codigos] = await Promise.all([API.listarProfessores(), API.codigosDosProfessores()]);
+    if (!profs.length) throw new Error("Nenhum professor cadastrado ainda.");
+    const lista = await API.lerCadastro();
+    const cursoCurto = (id) => cursos.find((c) => c.id === id)?.curto || "–";
+    const ordemCurso = (id) => (id === "eletrica" ? 0 : id === "renovaveis" ? 1 : 2);
+    const linhas = profs
+      .map((p) => ({
+        nome: p.nome,
+        curso: p.curso || "",
+        codigo: codigos[p.uid] || "",
+        disciplinas: [...new Set(lista.filter((x) => p.projetos.includes(x.codigo)).map(disciplinaDe))].sort((a, b) => a.localeCompare(b, "pt-BR")),
+      }))
+      .sort((a, b) => ordemCurso(a.curso) - ordemCurso(b.curso) || a.nome.localeCompare(b.nome, "pt-BR"));
+    const endereco = new URL("professores.html", location.href).href.replace(/[?#].*$/, "");
+
+    const p = await PDF.criar({
+      rotulo: "PET ELÉTRICA UFPB  ·  CREDENCIAMENTO",
+      titulo: "Credenciais dos professores",
+      subtitulo: "Usuário e código de acesso da banca avaliadora",
+      cabecalho: "Credenciais dos professores",
+    });
+    const { doc, L, M, COR, texto, fonte } = p;
+    p.tituloSecao("Como o professor entra", `1) Abra ${endereco}  ·  2) Em “Professor(a)”, escolha o próprio nome (o usuário)  ·  3) Digite o código de acesso e toque em “Entrar”.`);
+    p.paragrafo("Documento com os códigos de acesso: entregue a cada professor só o dele e guarde esta lista com o credenciamento.", 8.6, COR.alerta);
+    p.tabela({
+      head: [["Nº", "Usuário (nome no login)", "Curso", "Código de acesso", "Disciplinas"]],
+      body: linhas.map((x, i) => [i + 1, x.nome, cursoCurto(x.curso), x.codigo || "sem código", x.disciplinas.join("\n") || "–"]),
+      columnStyles: {
+        0: { cellWidth: 9, halign: "center" },
+        1: { cellWidth: 52, fontStyle: "bold" },
+        2: { cellWidth: 28 },
+        3: { cellWidth: 30, halign: "center", font: "courier", fontStyle: "bold", fontSize: 11 },
+      },
+    });
+
+    // Cartões para recortar: 2 colunas × 5 linhas por página.
+    p.novaPagina();
+    p.tituloSecao("Cartões para recortar", "Um por professor: recorte nas linhas tracejadas e entregue.");
+    const colunas = 2;
+    const gap = 6;
+    const larg = (L - 2 * M - gap) / colunas;
+    const alt = 46;
+    let topo = p.y;
+    linhas.forEach((x, i) => {
+      const k = i % colunas;
+      if (k === 0 && i > 0) topo += alt + gap;
+      if (topo + alt > p.A - 20) {
+        p.novaPagina();
+        topo = p.y;
+      }
+      const x0 = M + k * (larg + gap);
+      doc.setLineDashPattern([1.5, 1.2], 0);
+      doc.setDrawColor(...COR.cinza);
+      doc.setLineWidth(0.25);
+      doc.roundedRect(x0, topo, larg, alt, 2, 2, "S");
+      doc.setLineDashPattern([], 0);
+      doc.setFillColor(...COR.navy);
+      doc.rect(x0 + 0.6, topo + 0.6, 1.6, alt - 1.2, "F");
+      fonte("bold", 7.5, COR.cinza);
+      texto("FEIRA DE ENGENHARIA E ENERGIA · BANCA AVALIADORA", x0 + 6, topo + 7);
+      fonte("bold", 12, COR.navy);
+      const nome = doc.splitTextToSize(x.nome, larg - 12);
+      texto(nome[0], x0 + 6, topo + 14);
+      fonte("normal", 8, COR.cinza);
+      texto(`Usuário: escolha “${x.nome}” na lista`.slice(0, 70), x0 + 6, topo + 20);
+      fonte("normal", 8, COR.cinza);
+      texto("Código de acesso", x0 + 6, topo + 27);
+      fonte("bold", 18, COR.tinta, "courier");
+      texto(x.codigo || "—", x0 + 6, topo + 35);
+      fonte("normal", 7, COR.cinza);
+      texto(doc.splitTextToSize(endereco.replace(/^https?:\/\//, ""), larg - 12)[0], x0 + 6, topo + 42);
+    });
+    p.y = topo + alt + gap;
+    p.salvar("credenciais-professores");
+  }
+
+  $("baixar-credenciais").addEventListener("click", async () => {
+    const botao = $("baixar-credenciais");
+    botao.disabled = true;
+    $("pdf-situacao").className = "urna-situacao";
+    $("pdf-situacao").textContent = "Gerando as credenciais…";
+    try {
+      await baixarCredenciais();
+      $("pdf-situacao").className = "urna-situacao ok";
+      $("pdf-situacao").textContent = "Credenciais baixadas.";
+    } catch (erro) {
+      console.error(erro);
+      $("pdf-situacao").className = "urna-situacao alerta";
+      $("pdf-situacao").textContent = `Não consegui gerar as credenciais. ${erro.message}`;
+    } finally {
+      botao.disabled = false;
+    }
+  });
+
   $("baixar-pdf").addEventListener("click", async () => {
     const botao = $("baixar-pdf");
     botao.disabled = true;
