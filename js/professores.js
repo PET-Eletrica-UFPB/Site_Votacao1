@@ -1,4 +1,6 @@
-const { cursos, criterios, notas: NOTAS } = window.FEIRA;
+const { cursos, criterios, avaliacaoGeral: GERAL, notas: NOTAS } = window.FEIRA;
+// Itens com botões de nota: a avaliação geral (obrigatória) e os critérios (métricas opcionais).
+const itensDeNota = [GERAL, ...criterios];
 const { esc } = API;
 
 const $ = (id) => document.getElementById(id);
@@ -78,7 +80,9 @@ function sair() {
 }
 
 /* Cálculo */
+// Nota do projeto: a avaliação geral. Sem ela, a média ponderada das métricas, se todas estiverem preenchidas.
 function calcularMedia(notas) {
+  if (notas[GERAL.id] != null) return notas[GERAL.id];
   if (criterios.some((c) => notas[c.id] == null)) return null;
   const pesos = criterios.reduce((soma, c) => soma + c.peso, 0);
   return criterios.reduce((soma, c) => soma + notas[c.id] * c.peso, 0) / pesos;
@@ -143,13 +147,12 @@ function htmlItem(p) {
 }
 
 /* Ficha de avaliação */
-function renderCriterios() {
-  $("criterios").innerHTML = criterios
-    .map((c) => `
-      <div class="criterio" data-crit="${c.id}">
+function htmlCriterio(c, extra = "") {
+  return `
+      <div class="criterio ${extra}" data-crit="${c.id}">
         <div class="criterio-topo">
           <div>
-            <span class="criterio-nome" id="rot-${c.id}">${esc(c.nome)}<small>peso ${c.peso}</small></span>
+            <span class="criterio-nome" id="rot-${c.id}">${esc(c.nome)}${c.peso ? `<small>peso ${c.peso}</small>` : ""}</span>
             <p>${esc(c.dica)}</p>
           </div>
           <b class="criterio-valor" aria-hidden="true">–</b>
@@ -157,8 +160,17 @@ function renderCriterios() {
         <div class="notas-botoes" role="radiogroup" aria-labelledby="rot-${c.id}">
           ${NOTAS.map((n) => `<button type="button" role="radio" aria-checked="false" data-nota="${n}">${fmtNota(n).replace(",0", "")}</button>`).join("")}
         </div>
-      </div>`)
-    .join("");
+      </div>`;
+}
+
+// Avaliação geral primeiro; os critérios ficam recolhidos em "Métricas opcionais".
+function renderCriterios() {
+  $("criterios").innerHTML =
+    htmlCriterio(GERAL, "criterio-geral") +
+    `<details class="metricas-opcionais" id="metricas-opcionais">
+      <summary>Métricas opcionais <small>detalhe a nota por critério, se quiser (clique de novo numa nota para tirá-la)</small></summary>
+      ${criterios.map((c) => htmlCriterio(c)).join("")}
+    </details>`;
 }
 
 function pintarCriterio(c, valor) {
@@ -175,7 +187,8 @@ function pintarCriterio(c, valor) {
 function atualizarMedia(notas) {
   const media = calcularMedia(notas);
   $("media").textContent = media == null ? "–" : fmtNota(media);
-  $("media-txt").textContent = media == null ? "Escolha uma nota em cada critério" : "Média ponderada";
+  $("media-txt").textContent =
+    media == null ? "Escolha a avaliação geral" : notas[GERAL.id] != null ? "Nota do projeto (avaliação geral)" : "Média ponderada das métricas";
   $("salvar").disabled = media == null;
 }
 
@@ -194,13 +207,16 @@ function abrirProjeto(id) {
   $("ficha-resumo").textContent = p.resumo || "";
   $("comentario").value = rascunhos[id].comentario;
 
-  criterios.forEach((c) => pintarCriterio(c, rascunhos[id].notas[c.id] ?? null));
+  itensDeNota.forEach((c) => pintarCriterio(c, rascunhos[id].notas[c.id] ?? null));
+  // Métricas já preenchidas aparecem abertas; senão ficam recolhidas.
+  $("metricas-opcionais").open = criterios.some((c) => rascunhos[id].notas[c.id] != null);
   atualizarMedia(rascunhos[id].notas);
   renderLista();
 }
 
 function definirNota(c, valor) {
-  rascunhos[atualId].notas[c.id] = valor;
+  if (valor == null) delete rascunhos[atualId].notas[c.id];
+  else rascunhos[atualId].notas[c.id] = valor;
   pintarCriterio(c, valor);
   atualizarMedia(rascunhos[atualId].notas);
 }
@@ -270,8 +286,11 @@ $("lista").addEventListener("click", (e) => {
 $("criterios").addEventListener("click", (e) => {
   const botao = e.target.closest("[data-nota]");
   if (!botao) return;
-  const c = criterios.find((x) => x.id === botao.closest("[data-crit]").dataset.crit);
-  definirNota(c, Number(botao.dataset.nota));
+  const c = itensDeNota.find((x) => x.id === botao.closest("[data-crit]").dataset.crit);
+  const valor = Number(botao.dataset.nota);
+  // Métrica opcional: clicar de novo na nota marcada tira a nota.
+  const tirar = c !== GERAL && e.detail > 0 && rascunhos[atualId].notas[c.id] === valor;
+  definirNota(c, tirar ? null : valor);
 });
 
 // Setas do teclado andam entre as notas, como em um grupo de opções.

@@ -277,7 +277,7 @@ window.Relatorio = (() => {
 
     const pesos = r.criterios.map((c) => `${c.nome} (peso ${c.peso})`).join(", ");
     p.paragrafo(
-      `Cada professor dá uma nota de 0 a 10 em cada critério: ${pesos}. A média do professor é a média ponderada desses critérios, e a média final do projeto é a média simples entre os professores que o avaliaram.`
+      `Cada professor dá uma avaliação geral de 0 a 10 ao projeto, que é a nota dele. Os critérios são opcionais: ${pesos}; quando o professor não dá a avaliação geral e preenche todos os critérios, a nota dele é a média ponderada dos critérios. A média final do projeto é a média simples entre os professores que o avaliaram.`
     );
     p.y += 4;
 
@@ -357,14 +357,14 @@ window.Relatorio = (() => {
 
         p.tabela(
           {
-            head: [["Professor", ...r.criterios.map((c) => `${c.curto || c.nome} (${c.peso})`), "Média"]],
+            head: [["Professor", "Geral", ...r.criterios.map((c) => `${c.curto || c.nome} (${c.peso})`), "Nota"]],
             body: x.linhas.map(({ professor, avaliacao }) =>
               avaliacao
-                ? [professor, ...r.criterios.map((c) => fmtCurto(avaliacao.notas?.[c.id])), fmt(Number(avaliacao.media))]
-                : [professor, { content: "Ainda não avaliou", colSpan: r.criterios.length + 1, styles: { textColor: COR.alerta, fontStyle: "italic", halign: "center" } }]
+                ? [professor, fmtCurto(avaliacao.notas?.geral), ...r.criterios.map((c) => fmtCurto(avaliacao.notas?.[c.id])), fmt(Number(avaliacao.media))]
+                : [professor, { content: "Ainda não avaliou", colSpan: r.criterios.length + 2, styles: { textColor: COR.alerta, fontStyle: "italic", halign: "center" } }]
             ),
             styles: { fontSize: 8.4, halign: "center" },
-            columnStyles: { 0: { halign: "left", cellWidth: 46 }, [r.criterios.length + 1]: { fontStyle: "bold" } },
+            columnStyles: { 0: { halign: "left", cellWidth: 42 }, [r.criterios.length + 2]: { fontStyle: "bold" } },
           },
           4
         );
@@ -395,12 +395,13 @@ window.Relatorio = (() => {
     for (const [disciplina, lista] of r.disciplinas) {
       lista.forEach((x, i) => resultado.push([disciplina, x.media == null ? "" : i + 1, x.codigo, x.nome, x.curso, x.feitas, x.linhas.length, num(x.media)]));
     }
-    const notas = [["Código", "Projeto", "Disciplina", "Curso", "Professor", ...r.criterios.map((c) => `${c.nome} (peso ${c.peso})`), "Média do professor", "Comentário", "Situação"]];
+    const notas = [["Código", "Projeto", "Disciplina", "Curso", "Professor", "Avaliação geral", ...r.criterios.map((c) => `${c.nome} (peso ${c.peso}, opcional)`), "Nota do professor", "Comentário", "Situação"]];
     for (const [disciplina, lista] of r.disciplinas) {
       for (const x of lista) {
         for (const { professor, avaliacao } of x.linhas) {
           notas.push([
             x.codigo, x.nome, disciplina, x.curso, professor,
+            avaliacao ? num(avaliacao.notas?.geral) : "",
             ...r.criterios.map((c) => (avaliacao ? num(avaliacao.notas?.[c.id]) : "")),
             avaliacao ? num(Number(avaliacao.media)) : "",
             avaliacao?.comentario || "",

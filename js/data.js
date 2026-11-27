@@ -33,6 +33,8 @@ window.FEIRA = {
   ],
 
   // Critérios da avaliação dos professores: o peso entra na média.
+  // Nota única que o professor dá ao projeto (a única obrigatória). Os critérios abaixo são opcionais.
+  avaliacaoGeral: { id: "geral", nome: "Avaliação geral", curto: "Geral", dica: "Sua nota para o projeto como um todo." },
   criterios: [
     { id: "dominio", nome: "Domínio técnico", curto: "Domínio", dica: "A equipe explica os fundamentos do projeto com segurança?", peso: 3 },
     { id: "inovacao", nome: "Inovação", curto: "Inovação", dica: "A solução traz algo novo ou uma abordagem criativa?", peso: 2 },

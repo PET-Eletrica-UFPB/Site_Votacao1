@@ -1171,3 +1171,11 @@ body:has(> .versao-site) { padding-bottom: 40px; }
 }
 .filtro-ativo { margin: 12px 0 0; padding: 8px 12px; border-radius: 10px; background: rgba(238, 166, 20, .1); border: 1px solid rgba(238, 166, 20, .45); font-size: 13.5px; color: var(--amber-claro); }
 .filtro-ativo .botao-texto { display: inline; margin: 0 0 0 6px; padding: 0; font-size: 13.5px; color: var(--amber-claro); }
+
+/* Área do professor: avaliação geral (obrigatória) e métricas opcionais recolhidas */
+.criterio-geral { padding: 18px; margin-bottom: 6px; border: 1px solid rgba(238, 166, 20, .55); border-radius: 16px; background: rgba(238, 166, 20, .07); }
+.criterio-geral .criterio-nome { font-size: 17px; }
+.metricas-opcionais { border-bottom: 1px solid var(--borda); }
+.metricas-opcionais summary { padding: 16px 0; cursor: pointer; font-weight: 700; }
+.metricas-opcionais summary small { display: block; margin-top: 2px; font-weight: 400; font-size: 13px; color: var(--tinta-3); }
+.metricas-opcionais .criterio:last-child { border-bottom: 0; }
