@@ -146,10 +146,11 @@ window.FEIRA = {
   // Destinos dos QR codes (aba QR codes do painel e loop do Modo Pódio). "pagina" null = link digitado.
   destinosQr: [
     { id: "avaliacao", pagina: "avaliacao.html", nome: "Formulário de avaliação (satisfação)", titulo: "Avalie a feira!", texto: "Aponte a câmera do celular e conte como foi a sua experiência." },
+    // "./" = endereço do site (abre o menu principal, sem login).
+    { id: "inicio", pagina: "./", nome: "Acesso ao site (menu principal)", titulo: "Acesse o site da feira", texto: "Aponte a câmera do celular para abrir o site: projetos, placar, inscrições e mais." },
     { id: "inscricoes", pagina: "inscricoes.html", nome: "Inscrições", titulo: "Inscreva-se na feira", texto: "Aponte a câmera do celular para abrir os formulários de inscrição." },
     { id: "projetos", pagina: "projetos.html", nome: "Projetos da feira", titulo: "Conheça os projetos", texto: "Aponte a câmera do celular para ver todos os projetos da feira." },
     { id: "placar", pagina: "placar.html", nome: "Placar ao vivo", titulo: "Acompanhe o placar", texto: "Aponte a câmera do celular para ver a votação em tempo real." },
-    { id: "inicio", pagina: "index.html", nome: "Página inicial", titulo: "Feira de Engenharia e Energia", texto: "Aponte a câmera do celular para abrir o site da feira." },
     { id: "outro", pagina: null, nome: "Outro link", titulo: "", texto: "Aponte a câmera do celular para abrir o link." },
   ],
 };
