@@ -416,7 +416,7 @@
     await gravar(mudancas, mensagem);
   }
 
-  /* PDF: cada disciplina começa numa página, com presença e espaço para assinatura. */
+  /* PDF: cada disciplina começa numa página, com a presença marcada no site (sem coluna de assinatura). */
   async function baixarPdf(lista, nomeArquivo, subtitulo) {
     const p = await PDF.criar({
       rotulo: "PET ELÉTRICA UFPB  ·  FREQUÊNCIA",
@@ -436,10 +436,9 @@
         }
         p.subtitulo(`${d.nome}  (${d.alunos.filter(presente).length} de ${plural(d.alunos.length, "aluno presente", "alunos presentes")})`);
         p.tabela({
-          head: [["Nº", "Aluno", "Projeto", "Presença", "Assinatura"]],
-          body: d.alunos.map((a, n) => [n + 1, a.nome, a.projetos.join(" · ") || "–", presente(a) ? "Presente" : "", ""]),
-          styles: { minCellHeight: 9 },
-          columnStyles: { 0: { cellWidth: 10, halign: "center" }, 1: { cellWidth: 56 }, 2: { cellWidth: 44 }, 3: { cellWidth: 20, halign: "center" }, 4: { cellWidth: "auto" } },
+          head: [["Nº", "Aluno", "Projeto", "Presença"]],
+          body: d.alunos.map((a, n) => [n + 1, a.nome, a.projetos.join(" · ") || "–", presente(a) ? "Presente" : ""]),
+          columnStyles: { 0: { cellWidth: 10, halign: "center" }, 1: { cellWidth: 78 }, 2: { cellWidth: "auto" }, 3: { cellWidth: 24, halign: "center" } },
         });
       }
     }
