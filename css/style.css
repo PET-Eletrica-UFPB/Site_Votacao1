@@ -1111,3 +1111,61 @@ body:has(> .versao-site) { padding-bottom: 40px; }
 .sinc-secao li small { margin-top: 2px; font-size: 12px; color: var(--tinta-3); }
 .sinc-caixa { display: inline-flex; align-items: center; gap: 4px; margin-right: 6px; font-size: 12px; color: var(--tinta-2); cursor: pointer; }
 @media (max-width: 600px) { .sinc-link { flex-direction: column; align-items: stretch; } }
+
+/* Aba Projetos: tabela larga (agrupada por curso e disciplina) e ficha em janela */
+.tabela-cabeca { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.tabela-cabeca .btn { flex: none; }
+.tabela-filtros { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1.5fr); gap: 12px; }
+.tabela-filtros .campo { margin-top: 0; }
+.tabela-painel .feedback:empty { min-height: 0; margin: 0; }
+.tabela-projetos { margin-top: 8px; }
+.tabela-curso + .tabela-curso { margin-top: 28px; }
+.tabela-curso h2 { font-family: var(--serif); font-weight: 400; font-size: 28px; line-height: 1.1; margin-top: 10px; }
+.tabela-curso h2 small { margin-left: 8px; font-family: var(--sans, inherit); font-size: 13px; color: var(--tinta-3); }
+.tabela-grupo { margin-top: 12px; border: 1px solid var(--borda); border-radius: 14px; overflow: hidden; }
+.tabela-grupo h3 {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  padding: 10px 14px; background: rgba(255, 255, 255, .045); font-size: 14.5px; font-weight: 700;
+}
+.tabela-grupo h3 small { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--tinta-3); white-space: nowrap; }
+.tabela-grupo table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.tabela-grupo th {
+  padding: 7px 14px; text-align: left; font-family: var(--mono); font-size: 11px; font-weight: 500;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--tinta-3); border-top: 1px solid var(--borda);
+}
+.tabela-grupo td { padding: 9px 14px; border-top: 1px solid var(--borda); vertical-align: top; font-size: 14px; }
+.tabela-grupo td b { display: block; font-weight: 600; line-height: 1.3; }
+.tabela-grupo td small { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden; margin-top: 2px; font-size: 12.5px; color: var(--tinta-3); }
+.tabela-grupo .col-codigo { width: 84px; }
+.tabela-grupo .col-equipe { width: 42%; color: var(--tinta-2); font-size: 13px; }
+.tabela-grupo td.col-equipe { display: table-cell; }
+.tabela-grupo td.col-equipe { overflow: hidden; text-overflow: ellipsis; }
+.tabela-grupo tbody tr { cursor: pointer; transition: background .12s; }
+.tabela-grupo tbody tr:hover { background: var(--superficie); }
+.tabela-grupo tbody tr:focus-visible { outline: 2px solid var(--amber); outline-offset: -2px; }
+.tabela-grupo tbody tr[aria-current="true"] { background: var(--superficie-forte); }
+.tabela-grupo .vazio { color: var(--tinta-3); }
+.tabela-projetos .lista-vazia { padding: 24px 0; text-align: center; color: var(--tinta-3); }
+
+.ficha-modal { width: min(880px, calc(100vw - 24px)); max-height: calc(100vh - 24px); overflow-y: auto; background: transparent; border: 0; }
+.ficha-modal .ficha { background: var(--fundo-2); }
+.ficha-modal .fechar { z-index: 2; }
+.ficha-modal .ficha-cabeca { padding-right: 64px; }
+
+@media (max-width: 760px) {
+  .tabela-filtros { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .tabela-filtros .busca { grid-column: 1 / -1; }
+  .tabela-grupo thead { display: none; }
+  .tabela-grupo table, .tabela-grupo tbody { display: block; }
+  .tabela-grupo tr { display: grid; grid-template-columns: 64px minmax(0, 1fr); border-top: 1px solid var(--borda); }
+  .tabela-grupo td { border-top: 0; padding: 8px 12px; }
+  .tabela-grupo td.col-equipe { display: block; grid-column: 2; width: auto; padding-top: 0; }
+  .tabela-grupo .col-codigo { width: auto; }
+}
+#aba-projetos { max-width: 1560px; grid-template-columns: 300px minmax(0, 1fr); }
+.tabela-grupo th.col-equipe { font-size: 11px; color: var(--tinta-3); }
+.tabela-filtros input, .tabela-filtros select { height: 48px; padding-block: 0; }
+@media (max-width: 1040px) {
+  #aba-projetos { grid-template-columns: minmax(0, 1fr); }
+  #aba-projetos .tabela-painel { order: -1; }
+}

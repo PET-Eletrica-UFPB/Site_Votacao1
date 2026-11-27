@@ -36,31 +36,101 @@ async function recarregar() {
   PainelProfessores.projetosMudaram();
 }
 
-/* Lista lateral */
+/* Tabela de projetos: agrupada por curso e disciplina, com busca e filtros. Clicar abre a ficha. */
+const normalizarBusca = (t) => String(t ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+const disciplinaDe = (p) => (p.disciplina || "").trim() || "Sem disciplina";
+
+function opcoesDosFiltros() {
+  const curso = $("filtro-curso").value;
+  $("filtro-curso").innerHTML =
+    `<option value="">Todos (${projetos.length})</option>` +
+    cursos.map((c) => `<option value="${c.id}">${esc(c.curto)} (${projetos.filter((p) => p.curso === c.id).length})</option>`).join("");
+  $("filtro-curso").value = curso;
+  const disc = $("filtro-disciplina").value;
+  const contagem = new Map();
+  for (const p of projetos.filter((x) => !curso || x.curso === curso)) contagem.set(disciplinaDe(p), (contagem.get(disciplinaDe(p)) || 0) + 1);
+  const nomes = [...contagem.keys()].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  $("filtro-disciplina").innerHTML =
+    `<option value="">Todas (${nomes.length})</option>` + nomes.map((d) => `<option value="${esc(d)}">${esc(d)} (${contagem.get(d)})</option>`).join("");
+  $("filtro-disciplina").value = nomes.includes(disc) ? disc : "";
+}
+
 function renderLista() {
   const n = projetos.length;
   $("total-projetos").textContent = n;
   $("total-txt").textContent = n === 1 ? "projeto inscrito" : "projetos inscritos";
+  const nDisc = new Set(projetos.map(disciplinaDe)).size;
+  $("lista-resumo").textContent = n
+    ? `${cursos.map((c) => `${projetos.filter((p) => p.curso === c.id).length} de ${c.curto}`).join(" · ")} · ${nDisc} disciplina${nDisc === 1 ? "" : "s"}. Clique num projeto para editar.`
+    : "Nenhum projeto cadastrado ainda.";
+  opcoesDosFiltros();
 
-  const busca = $("busca").value.trim().toLowerCase();
-  const visiveis = projetos.filter((p) =>
-    [p.nome, p.disciplina, p.equipe, p.codigo].some((t) => (t || "").toLowerCase().includes(busca))
-  );
+  const termos = normalizarBusca($("busca").value).split(/\s+/).filter(Boolean);
+  const curso = $("filtro-curso").value;
+  const disc = $("filtro-disciplina").value;
+  const visiveis = projetos.filter((p) => {
+    if (curso && p.curso !== curso) return false;
+    if (disc && disciplinaDe(p) !== disc) return false;
+    const texto = normalizarBusca([p.nome, p.codigo, p.disciplina, p.equipe, p.stand].join(" "));
+    return termos.every((t) => texto.includes(t));
+  });
 
-  $("lista").innerHTML = visiveis.length
-    ? visiveis
-        .map((p) => `
-          <li>
-            <button class="item-projeto" data-codigo="${esc(p.codigo)}" aria-current="${p.codigo === editandoCodigo}">
-              <span class="item-stand ${API.codigoFixo(p) ? "fixo" : ""}" ${API.codigoFixo(p) ? 'title="Prioridade: código fixo"' : ""}>${esc(p.codigo)}</span>
-              <span>
-                <span class="item-nome">${esc(p.nome)}</span>
-                <span class="item-sub">${esc(p.disciplina)}</span>
-              </span>
-            </button>
-          </li>`)
-        .join("")
-    : `<li class="lista-vazia">${n ? "Nenhum projeto encontrado." : "Nenhum projeto inscrito ainda."}</li>`;
+  if (!visiveis.length) {
+    $("lista").innerHTML = `<p class="lista-vazia">${n ? "Nenhum projeto encontrado com esses filtros." : "Nenhum projeto cadastrado ainda. Use “+ Novo projeto”, “Importar das inscrições” ou “Sincronizar com planilha”."}</p>`;
+    return;
+  }
+  // Curso → disciplina (na ordem do primeiro código de cada uma) → projetos pelo número.
+  const blocos = [];
+  for (const c of cursos) {
+    const doCurso = visiveis.filter((p) => p.curso === c.id).sort((a, b) => a.numero - b.numero);
+    if (!doCurso.length) continue;
+    const grupos = new Map();
+    for (const p of doCurso) {
+      if (!grupos.has(disciplinaDe(p))) grupos.set(disciplinaDe(p), []);
+      grupos.get(disciplinaDe(p)).push(p);
+    }
+    blocos.push(`
+      <section class="tabela-curso">
+        <h2>${esc(c.nome)} <small>${doCurso.length} projeto${doCurso.length === 1 ? "" : "s"}</small></h2>
+        ${[...grupos.entries()]
+          .map(([nome, lista]) => {
+            const faixa = lista.length > 1 ? `${lista[0].codigo} a ${lista.at(-1).codigo}` : lista[0].codigo;
+            return `
+          <div class="tabela-grupo">
+            <h3>${esc(nome)} <small>${lista.length} · ${esc(faixa)}</small></h3>
+            <table>
+              <thead><tr><th class="col-codigo">Código</th><th>Projeto</th><th class="col-equipe">Integrantes</th></tr></thead>
+              <tbody>
+                ${lista
+                  .map((p) => {
+                    const fixo = API.codigoFixo(p);
+                    return `
+                <tr data-codigo="${esc(p.codigo)}" tabindex="0" aria-current="${p.codigo === editandoCodigo}">
+                  <td class="col-codigo"><span class="item-stand ${fixo ? "fixo" : ""}" ${fixo ? 'title="Prioridade: código fixo"' : ""}>${esc(p.codigo)}</span></td>
+                  <td><b>${esc(p.nome)}</b>${p.resumo ? `<small>${esc(p.resumo)}</small>` : ""}</td>
+                  <td class="col-equipe">${p.equipe ? esc(p.equipe) : '<span class="vazio">—</span>'}</td>
+                </tr>`;
+                  })
+                  .join("")}
+              </tbody>
+            </table>
+          </div>`;
+          })
+          .join("")}
+      </section>`);
+  }
+  $("lista").innerHTML = blocos.join("");
+}
+
+/* Ficha do projeto em janela */
+function abrirFicha() {
+  $("ficha-feedback").textContent = "";
+  if (!$("ficha-dialogo").open) $("ficha-dialogo").showModal();
+}
+function fecharFicha() {
+  if (!podeDescartar()) return;
+  alterado = false;
+  $("ficha-dialogo").close();
 }
 
 /* Urnas: compara o que cada urna publicou no Firebase com o cadastro atual. */
@@ -147,9 +217,12 @@ async function sincronizarInscricoes() {
   }
 }
 
+// Mensagem da aba (acima da tabela) e, com a ficha aberta, também dentro dela.
 function aviso(texto, erro = false) {
-  $("feedback").textContent = texto;
-  $("feedback").classList.toggle("erro", erro);
+  for (const id of ["feedback", "ficha-feedback"]) {
+    $(id).textContent = texto;
+    $(id).classList.toggle("erro", erro);
+  }
 }
 
 /* Eventos */
@@ -214,21 +287,44 @@ $("form-projeto").addEventListener("input", () => {
 });
 
 $("busca").addEventListener("input", renderLista);
+$("filtro-curso").addEventListener("change", renderLista);
+$("filtro-disciplina").addEventListener("change", renderLista);
 
 $("novo").addEventListener("click", () => {
-  if (!podeDescartar()) return;
+  if ($("ficha-dialogo").open && !podeDescartar()) return;
   novoProjeto();
   aviso("");
+  abrirFicha();
   $("nome").focus();
 });
 
-$("lista").addEventListener("click", (e) => {
-  const item = e.target.closest(".item-projeto");
-  if (!item || !podeDescartar()) return;
-  editandoCodigo = item.dataset.codigo;
-  preencher(projetos.find((p) => p.codigo === editandoCodigo));
+function abrirProjeto(codigo) {
+  const projeto = projetos.find((p) => p.codigo === codigo);
+  if (!projeto) return;
+  editandoCodigo = codigo;
+  preencher(projeto);
   aviso("");
-  if (matchMedia("(max-width: 1040px)").matches) $("ficha").scrollIntoView();
+  abrirFicha();
+}
+$("lista").addEventListener("click", (e) => {
+  const linha = e.target.closest("tr[data-codigo]");
+  if (linha) abrirProjeto(linha.dataset.codigo);
+});
+$("lista").addEventListener("keydown", (e) => {
+  const linha = e.target.closest("tr[data-codigo]");
+  if (linha && (e.key === "Enter" || e.key === " ")) {
+    e.preventDefault();
+    abrirProjeto(linha.dataset.codigo);
+  }
+});
+$("ficha-fechar").addEventListener("click", fecharFicha);
+// Esc ou clique fora: pergunta antes de descartar alterações.
+$("ficha-dialogo").addEventListener("cancel", (e) => {
+  e.preventDefault();
+  fecharFicha();
+});
+$("ficha-dialogo").addEventListener("click", (e) => {
+  if (e.target === $("ficha-dialogo")) fecharFicha();
 });
 
 $("form-projeto").addEventListener("submit", async (e) => {
@@ -281,6 +377,7 @@ $("confirmar-sim").addEventListener("click", async () => {
     await API.removerProjeto(editandoCodigo);
     alterado = false;
     novoProjeto();
+    $("ficha-dialogo").close();
     await recarregar();
     aviso(`“${nome}” foi excluído.`);
   } catch (erro) {

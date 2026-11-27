@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20261127o">
+  <link rel="stylesheet" href="css/style.css?v=20261127q">
 </head>
 <body>
   <div class="login" id="tela-login">
@@ -64,7 +64,6 @@
       <aside class="lateral">
         <div class="progresso">
           <b id="total-projetos"></b><span id="total-txt"></span>
-          <button class="btn btn-amber novo-projeto" id="novo" type="button">+ Novo projeto</button>
           <button class="btn btn-vidro importar-btn" id="placas" type="button">Placas de mesa</button>
           <button class="btn btn-vidro importar-btn" id="planta-abrir" type="button">Planta da feira</button>
           <button class="btn btn-vidro importar-btn" id="importar-abrir" type="button">Importar das inscrições</button>
@@ -82,67 +81,37 @@
           <div id="urnas-ino"></div>
         </div>
         <p class="lista-aviso" id="aviso-cadastro" hidden></p>
-        <label class="campo busca">
-          <span>Buscar nos inscritos</span>
-          <input id="busca" type="search" placeholder="Nome, disciplina ou equipe">
-        </label>
-        <ul class="lista-projetos" id="lista"></ul>
       </aside>
 
-      <main class="ficha" id="ficha">
-        <div class="ficha-cabeca">
-          <p class="rotulo">Área dos Petianos</p>
-          <h1 id="ficha-titulo">Novo projeto</h1>
-          <p class="numero-urna" id="numero-urna" hidden></p>
-        </div>
-        <form class="ficha-corpo" id="form-projeto">
-          <label class="campo primeiro">
-            <span>Nome do projeto</span>
-            <input id="nome" required maxlength="80" placeholder="Ex.: Rastreador solar de baixo custo">
-          </label>
-          <label class="campo">
-            <span>Curso (define o pódio e a letra na urna)</span>
-            <select id="curso" required></select>
-          </label>
-          <div class="campos-duplos">
-            <label class="campo">
-              <span>Disciplina ligada ao projeto</span>
-              <input id="disciplina" list="lista-disciplinas" required maxlength="80" placeholder="Escolha ou digite">
-              <datalist id="lista-disciplinas"></datalist>
-            </label>
-            <label class="campo">
-              <span>Stand (opcional)</span>
-              <span class="campo-sufixo">
-                <input id="stand" maxlength="2" inputmode="numeric" pattern="[0-9]*" placeholder="Ex.: 16" aria-describedby="stand-dica">
-                <b id="stand-letra" aria-hidden="true"></b>
-              </span>
-              <small class="campo-dica" id="stand-dica">Digite só o número: a letra do curso entra sozinha (16 → 16A na Elétrica, 16B nas Renováveis) e vira o código de votação.</small>
-            </label>
+      <main class="ficha tabela-painel">
+        <div class="ficha-cabeca tabela-cabeca">
+          <div>
+            <p class="rotulo">Área dos Petianos</p>
+            <h1>Projetos</h1>
+            <p id="lista-resumo"></p>
           </div>
-          <label class="interruptor prioridade-interruptor">
-            <input type="checkbox" id="prioridade" role="switch" aria-describedby="prioridade-dica">
-            <span class="interruptor-trilho" aria-hidden="true"></span>
-            <span>Prioridade: código fixo</span>
-          </label>
-          <small class="campo-dica" id="prioridade-dica">Com prioridade, o código não muda na organização automática: os outros projetos pulam esse número. Desmarque para ele voltar à sequência. Ao preencher o stand, a prioridade é marcada sozinha.</small>
-          <label class="campo">
-            <span>Equipe (opcional)</span>
-            <input id="equipe" maxlength="400" placeholder="Nome da equipe ou dos integrantes">
-          </label>
-          <label class="campo">
-            <span>Breve resumo (opcional)</span>
-            <textarea id="resumo" maxlength="400" rows="5" placeholder="O que o projeto faz e qual problema resolve"></textarea>
-            <small class="contador" id="contador"></small>
-          </label>
-          <div class="ficha-rodape">
-            <button class="btn btn-vidro" id="excluir" type="button" hidden>Excluir projeto</button>
-            <div class="ficha-acoes">
-              <button class="btn btn-amber" id="salvar" type="submit">Cadastrar projeto</button>
-            </div>
+          <button class="btn btn-amber" id="novo" type="button">+ Novo projeto</button>
+        </div>
+        <div class="ficha-corpo">
+          <div class="tabela-filtros">
+            <label class="campo busca">
+              <span>Buscar</span>
+              <input id="busca" type="search" placeholder="Nome, código, disciplina ou integrante">
+            </label>
+            <label class="campo">
+              <span>Curso</span>
+              <select id="filtro-curso"></select>
+            </label>
+            <label class="campo">
+              <span>Disciplina</span>
+              <select id="filtro-disciplina"></select>
+            </label>
           </div>
           <p class="feedback" id="feedback" role="status"></p>
-        </form>
+          <div class="tabela-projetos" id="lista"></div>
+        </div>
       </main>
+
     </div>
 
     <!-- Aba: frequência -->
@@ -810,6 +779,64 @@
     </div>
   </dialog>
 
+  <dialog id="ficha-dialogo" class="ficha-modal" aria-labelledby="ficha-titulo">
+    <button class="fechar" id="ficha-fechar" type="button" aria-label="Fechar">×</button>
+        <div class="ficha" id="ficha">
+          <div class="ficha-cabeca">
+            <p class="rotulo">Área dos Petianos</p>
+            <h1 id="ficha-titulo">Novo projeto</h1>
+            <p class="numero-urna" id="numero-urna" hidden></p>
+          </div>
+          <form class="ficha-corpo" id="form-projeto">
+            <label class="campo primeiro">
+              <span>Nome do projeto</span>
+              <input id="nome" required maxlength="80" placeholder="Ex.: Rastreador solar de baixo custo">
+            </label>
+            <label class="campo">
+              <span>Curso (define o pódio e a letra na urna)</span>
+              <select id="curso" required></select>
+            </label>
+            <div class="campos-duplos">
+              <label class="campo">
+                <span>Disciplina ligada ao projeto</span>
+                <input id="disciplina" list="lista-disciplinas" required maxlength="80" placeholder="Escolha ou digite">
+                <datalist id="lista-disciplinas"></datalist>
+              </label>
+              <label class="campo">
+                <span>Stand (opcional)</span>
+                <span class="campo-sufixo">
+                  <input id="stand" maxlength="2" inputmode="numeric" pattern="[0-9]*" placeholder="Ex.: 16" aria-describedby="stand-dica">
+                  <b id="stand-letra" aria-hidden="true"></b>
+                </span>
+                <small class="campo-dica" id="stand-dica">Digite só o número: a letra do curso entra sozinha (16 → 16A na Elétrica, 16B nas Renováveis) e vira o código de votação.</small>
+              </label>
+            </div>
+            <label class="interruptor prioridade-interruptor">
+              <input type="checkbox" id="prioridade" role="switch" aria-describedby="prioridade-dica">
+              <span class="interruptor-trilho" aria-hidden="true"></span>
+              <span>Prioridade: código fixo</span>
+            </label>
+            <small class="campo-dica" id="prioridade-dica">Com prioridade, o código não muda na organização automática: os outros projetos pulam esse número. Desmarque para ele voltar à sequência. Ao preencher o stand, a prioridade é marcada sozinha.</small>
+            <label class="campo">
+              <span>Equipe (opcional)</span>
+              <input id="equipe" maxlength="400" placeholder="Nome da equipe ou dos integrantes">
+            </label>
+            <label class="campo">
+              <span>Breve resumo (opcional)</span>
+              <textarea id="resumo" maxlength="400" rows="5" placeholder="O que o projeto faz e qual problema resolve"></textarea>
+              <small class="contador" id="contador"></small>
+            </label>
+            <div class="ficha-rodape">
+              <button class="btn btn-vidro" id="excluir" type="button" hidden>Excluir projeto</button>
+              <div class="ficha-acoes">
+                <button class="btn btn-amber" id="salvar" type="submit">Cadastrar projeto</button>
+              </div>
+            </div>
+            <p class="feedback" id="ficha-feedback" role="status"></p>
+          </form>
+        </div>
+  </dialog>
+
   <dialog id="confirmar" class="confirmar">
     <h2>Excluir este projeto?</h2>
     <p><strong id="confirmar-nome"></strong> sairá do site e do placar, junto com as notas que os professores deram a ele. As urnas só mudam depois de gravar o código de novo.</p>
@@ -859,33 +886,33 @@
     </form>
   </dialog>
 
-  <script src="js/data.js?v=20261127o"></script>
-  <script src="js/versao-site.js?v=20261127o"></script>
-  <script src="js/api.js?v=20261127o"></script>
-  <script src="js/senha.js?v=20261127o"></script>
-  <script src="js/modelo-urna.js?v=20261127o"></script>
-  <script src="js/gerador-urna.js?v=20261127o"></script>
-  <script src="js/relatorio.js?v=20261127o"></script>
-  <script src="js/exportar.js?v=20261127o"></script>
-  <script src="js/planta.js?v=20261127o"></script>
-  <script src="js/placas.js?v=20261127o"></script>
-  <script src="js/petianos-ajuste.js?v=20261127o"></script>
-  <script src="js/inscricao-projeto.js?v=20261127o"></script>
-  <script src="js/petianos.js?v=20261127o"></script>
-  <script src="js/petianos-professores.js?v=20261127o"></script>
-  <script src="js/petianos-distribuir.js?v=20261127o"></script>
-  <script src="js/petianos-formularios.js?v=20261127o"></script>
-  <script src="js/nomes.js?v=20261127o"></script>
-  <script src="js/petianos-importar.js?v=20261127o"></script>
-  <script src="js/petianos-planilha.js?v=20261127o"></script>
-  <script src="js/petianos-limpar.js?v=20261127o"></script>
-  <script src="js/feiras-dados.js?v=20261127o"></script>
-  <script src="js/petianos-feiras.js?v=20261127o"></script>
-  <script src="js/petianos-frequencia.js?v=20261127o"></script>
-  <script src="js/petianos-sincronizar.js?v=20261127o"></script>
-  <script src="js/petianos-codigos.js?v=20261127o"></script>
-  <script src="js/petianos-qrcode.js?v=20261127o"></script>
-  <script src="js/petianos-placas.js?v=20261127o"></script>
-  <script src="js/petianos-planta.js?v=20261127o"></script>
+  <script src="js/data.js?v=20261127q"></script>
+  <script src="js/versao-site.js?v=20261127q"></script>
+  <script src="js/api.js?v=20261127q"></script>
+  <script src="js/senha.js?v=20261127q"></script>
+  <script src="js/modelo-urna.js?v=20261127q"></script>
+  <script src="js/gerador-urna.js?v=20261127q"></script>
+  <script src="js/relatorio.js?v=20261127q"></script>
+  <script src="js/exportar.js?v=20261127q"></script>
+  <script src="js/planta.js?v=20261127q"></script>
+  <script src="js/placas.js?v=20261127q"></script>
+  <script src="js/petianos-ajuste.js?v=20261127q"></script>
+  <script src="js/inscricao-projeto.js?v=20261127q"></script>
+  <script src="js/petianos.js?v=20261127q"></script>
+  <script src="js/petianos-professores.js?v=20261127q"></script>
+  <script src="js/petianos-distribuir.js?v=20261127q"></script>
+  <script src="js/petianos-formularios.js?v=20261127q"></script>
+  <script src="js/nomes.js?v=20261127q"></script>
+  <script src="js/petianos-importar.js?v=20261127q"></script>
+  <script src="js/petianos-planilha.js?v=20261127q"></script>
+  <script src="js/petianos-limpar.js?v=20261127q"></script>
+  <script src="js/feiras-dados.js?v=20261127q"></script>
+  <script src="js/petianos-feiras.js?v=20261127q"></script>
+  <script src="js/petianos-frequencia.js?v=20261127q"></script>
+  <script src="js/petianos-sincronizar.js?v=20261127q"></script>
+  <script src="js/petianos-codigos.js?v=20261127q"></script>
+  <script src="js/petianos-qrcode.js?v=20261127q"></script>
+  <script src="js/petianos-placas.js?v=20261127q"></script>
+  <script src="js/petianos-planta.js?v=20261127q"></script>
 </body>
 </html>
